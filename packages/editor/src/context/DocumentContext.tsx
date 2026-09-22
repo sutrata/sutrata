@@ -8,7 +8,6 @@ import { importDocx as importDocxToSutra } from '../file/docx-importer'
 import { runCommand, getEditorView } from '../editor/editor-bus'
 import { setFlatFrontmatterField } from '../editor/frontmatter-field'
 import { makeSetBlock } from '../shell/toolbar-actions'
-import { setTranslitMode as pluginSetTranslit } from '../editor/transliterate-input'
 import { resolveStyle } from '../styles/registry'
 import type { ScreenplayStyleDefinition } from '../styles/types'
 
@@ -31,7 +30,6 @@ interface DocumentContextValue {
   aiOnboardingVisible: boolean
   voiceActive: boolean
   metadataVisible: boolean
-  translitMode: boolean
   findReplaceVisible: boolean
   findMode: FindMode
   styleVisible: boolean
@@ -52,7 +50,6 @@ interface DocumentContextValue {
   setAIOnboardingVisible: (v: boolean) => void
   setVoiceActive: (v: boolean) => void
   setMetadataVisible: (v: boolean) => void
-  setTranslitMode: (enabled: boolean) => void
   setFindReplaceVisible: (visible: boolean) => void
   setFindMode: (mode: FindMode) => void
   setStyleVisible: (v: boolean) => void
@@ -137,7 +134,6 @@ export function DocumentProvider({ children, storageAdapter }: { children: React
   const [aiOnboardingVisible, setAIOnboardingVisible] = useState(false)
   const [voiceActive, setVoiceActive] = useState(false)
   const [metadataVisible, setMetadataVisible] = useState(true)
-  const [translitMode, setTranslitModeState] = useState(false)
   const [findReplaceVisible, setFindReplaceVisible] = useState(false)
   const [findMode, setFindMode] = useState<FindMode>('find')
   const [styleVisible, setStyleVisible] = useState(false)
@@ -223,11 +219,6 @@ export function DocumentProvider({ children, storageAdapter }: { children: React
     setTextState(next)
     setAst(parse(next))
     setDirty(true)
-  }, [])
-
-  const setTranslitMode = useCallback((enabled: boolean) => {
-    setTranslitModeState(enabled)
-    pluginSetTranslit(enabled, 'hi') // default to Hindi; will use LanguageContext in production
   }, [])
 
   const frontmatterData = ast.frontmatter?.data as Record<string, unknown> | undefined
@@ -563,12 +554,11 @@ export function DocumentProvider({ children, storageAdapter }: { children: React
         if (e.code === 'KeyE') { e.preventDefault(); setMode(m => m === 'formatted' ? 'source' : 'formatted'); return }
         if (e.code === 'KeyH') { e.preventDefault(); setRibbonVisible(v => !v); return }  // was KeyR
         if (e.code === 'KeyB') { e.preventDefault(); setNavVisible(v => !v); return }
-        if (e.code === 'KeyK') { e.preventDefault(); setTranslitMode(!translitMode); return }
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [saveFile, openFile, translitMode, setTranslitMode])
+  }, [saveFile, openFile])
 
   // Native menu IPC (Desktop wrapper only) — receives commands from the main process menu
   useEffect(() => {
@@ -592,14 +582,12 @@ export function DocumentProvider({ children, storageAdapter }: { children: React
           setRibbonVisible(v => !v); break
         case 'edit:toggleNav':
           setNavVisible(v => !v); break
-        case 'edit:toggleTranslit':
-          setTranslitMode(!translitMode); break
         case 'edit:toggleMetadata':
           setMetadataVisible(!metadataVisible); break
       }
     })
     return off
-  }, [isDirty, newDocument, openFile, saveFile, saveFileAs, setText, setMode, setRibbonVisible, setNavVisible, setTranslitMode, translitMode, metadataVisible, showConfirm])
+  }, [isDirty, newDocument, openFile, saveFile, saveFileAs, setText, setMode, setRibbonVisible, setNavVisible, metadataVisible, showConfirm])
 
   // Native window-close guard (Desktop wrapper only). beforeunload isn't reliable for
   // an OS-level close across Tauri's backing webviews, so the Rust side intercepts it
@@ -635,11 +623,11 @@ export function DocumentProvider({ children, storageAdapter }: { children: React
       <DocumentContext.Provider value={{
         text, ast, mode, filePath, isDirty, lastSaveTarget, ribbonVisible, navVisible, exportVisible, settingsVisible,
         aiOnboardingVisible, voiceActive, metadataVisible,
-        translitMode, findReplaceVisible, findMode, styleVisible, customStyles, resolvedStyle, watermarkText,
+        findReplaceVisible, findMode, styleVisible, customStyles, resolvedStyle, watermarkText,
         confirmModal, toasts, versions, versionHistoryVisible,
         setText, setMode, setFilePath, setRibbonVisible, setNavVisible, setExportVisible, setSettingsVisible,
         setAIOnboardingVisible, setVoiceActive, setMetadataVisible,
-        setTranslitMode, setFindReplaceVisible, setFindMode, setStyleVisible, setVersionHistoryVisible, setDocumentStyle, reloadCustomStyles,
+        setFindReplaceVisible, setFindMode, setStyleVisible, setVersionHistoryVisible, setDocumentStyle, reloadCustomStyles,
         markClean, save, newDocument, openFile, saveFile, saveFileAs, importDocx, restoreVersion, clearVersionHistory,
         showConfirm, closeConfirm, showToast, dismissToast,
       }}>

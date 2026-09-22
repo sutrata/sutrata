@@ -4,7 +4,6 @@ import { keymap } from 'prosemirror-keymap'
 import { buildKeymap } from './keymap'
 import { createLanguageClassPlugin } from './language-class-plugin'
 import { createImePluginWithRef } from './ime-plugin'
-import { createTranslitPlugin } from './transliterate-input'
 import { createAutocompletePlugin } from '../autocomplete/AutocompletePlugin'
 import { createSpellcheckPlugin } from '../spellcheck/spellcheck-plugin'
 import { createAttrPencilPlugin } from './attr-pencil-plugin'
@@ -17,7 +16,6 @@ export function buildPlugins() {
     keymap(baseKeymap),
     createLanguageClassPlugin(),
     createImePluginWithRef(),
-    createTranslitPlugin(),
     createAutocompletePlugin(),
     createSpellcheckPlugin(),
     createAttrPencilPlugin(),

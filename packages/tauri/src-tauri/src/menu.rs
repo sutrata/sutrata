@@ -27,7 +27,6 @@ pub fn build_menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
         .item(&MenuItemBuilder::new("Toggle Source View").id("edit:toggleSource").accelerator("CmdOrCtrl+Shift+E").build(app)?)
         .item(&MenuItemBuilder::new("Toggle Toolbar").id("edit:toggleRibbon").accelerator("CmdOrCtrl+Shift+H").build(app)?)
         .item(&MenuItemBuilder::new("Toggle Navigator").id("edit:toggleNav").accelerator("CmdOrCtrl+Shift+B").build(app)?)
-        .item(&MenuItemBuilder::new("Toggle Translit").id("edit:toggleTranslit").accelerator("CmdOrCtrl+Shift+K").build(app)?)
         .build()?;
 
     let view_menu = SubmenuBuilder::new(app, "View")

@@ -27,7 +27,6 @@
   "appbar.switchToFormatted": "Switch to Formatted",
   "appbar.showToolbar": "Show toolbar",
   "appbar.hideToolbar": "Hide toolbar",
-  "appbar.translit": "Transliteration mode",
   "navigator.title": "Scenes",
   "navigator.frontmatter": "Title Page",
   "navigator.empty": "No scenes yet. Start with a scene heading (##).",

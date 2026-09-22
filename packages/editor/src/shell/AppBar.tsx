@@ -42,7 +42,7 @@ export function AppBar() {
     mode, setMode, isDirty, filePath, ribbonVisible, setRibbonVisible,
     navVisible, setNavVisible, exportVisible, setExportVisible,
     settingsVisible, setSettingsVisible, metadataVisible, setMetadataVisible,
-    translitMode, setTranslitMode, voiceActive, setVoiceActive, newDocument, openFile, saveFile, saveFileAs, setText,
+    voiceActive, setVoiceActive, newDocument, openFile, saveFile, saveFileAs, setText,
     importDocx, styleVisible, setStyleVisible, showConfirm, showToast,
   } = useDocument()
   const { t, locale } = useTranslation()
@@ -95,7 +95,7 @@ export function AppBar() {
 
       <span className="cs-ab-spacer cs-ab-desktop-only" />
 
-      {/* Center zone: View Mode, Ribbon, Transliteration, Metadata (Desktop only) */}
+      {/* Center zone: View Mode, Ribbon, Metadata (Desktop only) */}
       <div className="cs-ab-group cs-ab-desktop-group">
         <AbBtn
           label={mode === 'formatted' ? t('appbar.switchToSource') : t('appbar.switchToFormatted')}
@@ -111,14 +111,6 @@ export function AppBar() {
           onClick={() => setRibbonVisible(!ribbonVisible)}
         >
           <RibbonIcon size={18} />
-        </AbBtn>
-        <AbBtn
-          label={t('appbar.translit')}
-          shortcut="Ctrl+Shift+K"
-          active={translitMode}
-          onClick={() => setTranslitMode(!translitMode)}
-        >
-          <span style={{ fontWeight: 600 }}>अ</span>
         </AbBtn>
         <AbBtn
           label="Voice Dictation"
@@ -256,14 +248,6 @@ export function AppBar() {
               >
                 <RibbonIcon size={18} />
                 <span>{ribbonVisible ? t('appbar.hideToolbar') : t('appbar.showToolbar')}</span>
-              </button>
-              <button
-                type="button"
-                className={`cs-mm-item${translitMode ? ' cs-mm-active' : ''}`}
-                onClick={() => { setTranslitMode(!translitMode); setMobileMenuOpen(false) }}
-              >
-                <span style={{ fontWeight: 700, width: 18, textAlign: 'center' }}>अ</span>
-                <span>{t('appbar.translit')}</span>
               </button>
               <button
                 type="button"

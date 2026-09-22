@@ -29,7 +29,7 @@ describe('spellcheck-plugin', () => {
   it('plugin is registered in buildPlugins', async () => {
     const { buildPlugins } = await import('../../src/editor/plugins')
     const plugins = buildPlugins()
-    // Should have more than 4 plugins (history, keymaps x2, languageClass, ime, translit, autocomplete, spellcheck)
+    // Should have more than 4 plugins (history, keymaps x2, languageClass, ime, autocomplete, spellcheck)
     expect(plugins.length).toBeGreaterThan(4)
   })
 
