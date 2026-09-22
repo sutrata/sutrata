@@ -6,7 +6,8 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc && node scripts/copy-assets.mjs",
+    "build": "node scripts/generate-providers.mjs && tsc && node scripts/copy-assets.mjs",
+    "generate:providers": "node scripts/generate-providers.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

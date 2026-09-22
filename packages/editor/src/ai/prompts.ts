@@ -19,25 +19,44 @@ CRITICAL INSTRUCTIONS:
 - The output must contain nothing but the final formatted Sutra screenplay lines.
 `;
 
-export const DURATION_ESTIMATION_PROMPT = `[INSTRUCTION]
-Estimate the onscreen duration of the screenplay scene provided below in MM:SS format (e.g. 01:30).
+/**
+ * Combined synopsis+duration prompt. Merged into one call (and one JSON
+ * response) instead of two separate requests to halve per-scene LLM cost.
+ * Paired with SCENE_METADATA_SCHEMA — the response format instructions
+ * (JSON-only, matching the schema) are appended by callAIStructured, not
+ * hardcoded here, so the same prompt works across providers.
+ */
+export const SCENE_METADATA_PROMPT = `[INSTRUCTION]
+Analyze the screenplay scene provided below and produce two fields:
+1. "synopsis": A concise, 1-2 sentence synopsis of the main action and conflict.
+2. "duration": The estimated onscreen duration of the scene, in "MM:SS" format (e.g. 01:30).
 
-[RULES]
+[RULES FOR "synopsis"]
+1. Match the language of the scene: If the scene is in Tamil, the synopsis MUST be written in Tamil. If the scene is in Hindi, the synopsis MUST be written in Hindi, etc. Do NOT translate to English.
+2. Do NOT include any explanations, definitions, drafts, translations, or bullet points.
+3. Do NOT include headings, prefixes (such as "Synopsis:" or "Draft:"), or suffixes.
+4. Absolutely no English introduction, reasoning, or meta-commentary.
+
+[RULES FOR "duration"]
 1. Dialogue speed: ~140 words per minute.
 2. Action lines: ~4 seconds per line of description.
-3. Output ONLY the estimated duration in "MM:SS" format.
-4. Do NOT include any calculations, explanations, breakdown, notes, or extra text.
-5. Absolutely no preamble or postamble.
+3. The value must be ONLY the estimated duration in "MM:SS" format — no calculations, explanations, breakdown, or notes.
 `;
 
-export const SYNOPSIS_GENERATION_PROMPT = `[INSTRUCTION]
-Generate a concise, 1-2 sentence synopsis of the main action and conflict for the screenplay scene provided below.
-
-[RULES]
-1. Match the language of the scene: If the scene is in Tamil, the synopsis MUST be written in Tamil. If the scene is in Hindi, the synopsis MUST be written in Hindi, etc. Do NOT translate to English.
-2. Output ONLY the synopsis text.
-3. Do NOT include any explanations, definitions, drafts, translations, or bullet points.
-4. Do NOT output headings, prefixes (such as "Synopsis:" or "Draft:"), or suffixes.
-5. Absolutely no English introduction, reasoning, or meta-commentary.
-`;
+/** JSON schema for SCENE_METADATA_PROMPT's response — see callAIStructured. */
+export const SCENE_METADATA_SCHEMA = {
+  type: 'object',
+  properties: {
+    synopsis: {
+      type: 'string',
+      description: "1-2 sentence synopsis of the scene's main action and conflict, in the scene's own language/script",
+    },
+    duration: {
+      type: 'string',
+      description: 'Estimated onscreen duration of the scene as MM:SS',
+    },
+  },
+  required: ['synopsis', 'duration'],
+  additionalProperties: false,
+} as const;
 

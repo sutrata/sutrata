@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useDocument } from '../context/DocumentContext'
 import { voiceServiceInstance } from './voice-service'
-import { getApiKey, getAIConfig, callAI } from './ai-client'
+import { getAIConfig, callAI, hasConfiguredApiKey } from './ai-client'
 import { VOICE_FORMAT_SYSTEM_PROMPT } from './prompts'
 import { insertSutra } from '../editor/insert-helper'
 import { VoiceConfirmDialog } from './VoiceConfirmDialog'
@@ -87,7 +87,7 @@ export function VoiceToolbar() {
       try {
         const config = getAIConfig()
         const prompt = `Raw Voice Transcript (${langCode}):\n"${fullTranscript}"`
-        const result = await callAI(prompt, VOICE_FORMAT_SYSTEM_PROMPT, config)
+        const result = await callAI(prompt, VOICE_FORMAT_SYSTEM_PROMPT, config, { clean: 'voice' })
         insertSutra(result.trim(), mode)
         setVoiceActive(false)
         showToast('Voice dictation inserted.', 'success')
@@ -103,8 +103,8 @@ export function VoiceToolbar() {
   }
 
   const handleStart = async () => {
-    const key = (await getApiKey('gemini')) || (await getApiKey('groq')) || (await getApiKey('anthropic'))
-    if (!key) {
+    const hasKey = await hasConfiguredApiKey(getAIConfig())
+    if (!hasKey) {
       showToast('AI keys are required to format dictated text. Opening Setup...', 'info')
       setAIOnboardingVisible(true)
       return

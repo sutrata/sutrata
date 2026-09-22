@@ -28,7 +28,7 @@ export function VoiceConfirmDialog({ rawTranscript, langCode, onConfirm, onCance
     try {
       const config = getAIConfig()
       const prompt = `Raw Voice Transcript (${langCode}):\n"${rawTranscript}"`
-      const result = await callAI(prompt, VOICE_FORMAT_SYSTEM_PROMPT, config)
+      const result = await callAI(prompt, VOICE_FORMAT_SYSTEM_PROMPT, config, { clean: 'voice' })
       setFormattedText(result.trim())
     } catch (e: any) {
       console.error('AI formatting failed:', e)

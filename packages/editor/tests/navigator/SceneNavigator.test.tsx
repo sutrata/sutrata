@@ -105,23 +105,21 @@ describe('SceneNavigator', () => {
     expect(mockCmView.focus).toHaveBeenCalled()
   })
 
-  it('shows synopsis/duration AI actions as icon-only buttons beside the synopsis field, not as labeled buttons in a separate row', async () => {
+  it('shows a single merged synopsis+duration AI action as an icon-only button beside the synopsis field, not as labeled buttons in a separate row', async () => {
     let container!: HTMLElement
     await act(async () => {
       ;({ container } = render(<Wrapper />))
     })
 
-    // No visible text labels — icon-only per-scene actions now.
+    // No visible text labels — icon-only per-scene action now.
     expect(screen.queryByText('Synopsis')).toBeNull()
     expect(screen.queryByText('Duration')).toBeNull()
 
-    // Still reachable via their accessible names, and living inside the
+    // Still reachable via its accessible name, and living inside the
     // synopsis row (sibling of the synopsis text/input), not a separate row.
-    const synopsisBtn = screen.getAllByLabelText('Generate Synopsis with AI')[0]!
-    const durationBtn = screen.getAllByLabelText('Estimate Duration with AI')[0]!
-    const row = synopsisBtn.closest('.cs-nav-synopsis-row')
+    const metadataBtn = screen.getAllByLabelText('Generate synopsis & estimate duration')[0]!
+    const row = metadataBtn.closest('.cs-nav-synopsis-row')
     expect(row).not.toBeNull()
-    expect(row!.contains(durationBtn)).toBe(true)
     expect(row!.querySelector('.cs-nav-scene-synopsis')).not.toBeNull()
   })
 

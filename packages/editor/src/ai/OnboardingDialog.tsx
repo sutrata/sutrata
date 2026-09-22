@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import {
   getApiKey, setApiKey, deleteApiKey, getAIConfig, saveAIConfig,
-  fetchProviders, testConnection, AIConfig
+  fetchProviders, testConnection, listModels, AIConfig, ProviderConfig
 } from './ai-client'
 import { SparklesIcon } from '../shell/icons'
 
@@ -11,7 +11,8 @@ interface Props {
 
 export function OnboardingDialog({ onClose }: Props) {
   const [activeTab, setActiveTab] = useState<'intro' | 'keys' | 'custom'>('intro')
-  const [providerId, setProviderId] = useState<string>('gemini')
+  const [providers, setProviders] = useState<ProviderConfig[]>([])
+  const [providerId, setProviderId] = useState<string>('anthropic')
   const [keyInput, setKeyInput] = useState<string>('')
   const [showKey, setShowKey] = useState<boolean>(false)
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle')
@@ -25,6 +26,11 @@ export function OnboardingDialog({ onClose }: Props) {
   const [customModels, setCustomModels] = useState('')
 
   const dialogRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    void fetchProviders(config).then(setProviders)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.customProviders])
 
   useEffect(() => {
     dialogRef.current?.focus()
@@ -64,15 +70,15 @@ export function OnboardingDialog({ onClose }: Props) {
     const trimmed = keyInput.trim()
     if (trimmed) {
       await setApiKey(providerId, trimmed)
-      const updated = { ...config }
-      updated.preferredProvider = providerId
-      if (providerId === 'gemini') {
-        updated.preferredModel = 'gemma-4-31b-it'
-      } else if (providerId === 'groq') {
-        updated.preferredModel = 'llama-3.3-70b-versatile'
-      } else if (providerId === 'anthropic') {
-        updated.preferredModel = 'claude-3-5-sonnet-latest'
+
+      const provider = providers.find(p => p.id === providerId)
+      let preferredModel = provider?.models[0]?.id || ''
+      if (provider) {
+        const liveModels = await listModels(provider, trimmed)
+        preferredModel = liveModels[0]?.id || preferredModel
       }
+
+      const updated = { ...config, preferredProvider: providerId, preferredModel }
       setConfig(updated)
       saveAIConfig(updated)
       setTestStatus('success')
@@ -228,12 +234,8 @@ export function OnboardingDialog({ onClose }: Props) {
                   value={providerId}
                   onChange={e => setProviderId(e.target.value)}
                 >
-                  <option value="gemini">Google AI Studio (Gemini / Gemma)</option>
-                  <option value="groq">Groq (Llama / Mixtral)</option>
-                  <option value="openrouter">OpenRouter</option>
-                  <option value="anthropic">Anthropic (Claude)</option>
-                  {config.customProviders.map(p => (
-                    <option key={p.id} value={p.id}>{p.name} (Custom)</option>
+                  {providers.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>
               </div>

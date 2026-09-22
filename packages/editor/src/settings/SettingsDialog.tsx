@@ -9,7 +9,9 @@ import {
   setApiKey,
   deleteApiKey,
   testConnection,
+  listModels,
   ProviderConfig,
+  ModelConfig,
   AIConfig,
 } from '../ai/ai-client'
 
@@ -44,6 +46,8 @@ export function SettingsDialog({ onClose }: Props) {
   const [showKey, setShowKey] = useState<boolean>(false)
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle')
   const [testError, setTestError] = useState<string>('')
+  const [dynamicModels, setDynamicModels] = useState<ModelConfig[] | null>(null)
+  const [modelsLoading, setModelsLoading] = useState<boolean>(false)
 
   useEffect(() => {
     dialogRef.current?.focus()
@@ -55,16 +59,34 @@ export function SettingsDialog({ onClose }: Props) {
     setProviders(p)
   }
 
+  // Loads the stored key for the selected provider, then refreshes its
+  // model list from the provider's live /models endpoint (falls back to the
+  // static list on any error — see listModels). Depends on `providers` too
+  // so it re-runs once fetchProviders() resolves on mount, instead of
+  // racing it.
   useEffect(() => {
-    void loadKeyForProvider(aiConfig.preferredProvider)
-  }, [aiConfig.preferredProvider])
+    let cancelled = false
+    const run = async () => {
+      setTestStatus('idle')
+      setTestError('')
+      const key = await getApiKey(aiConfig.preferredProvider)
+      if (cancelled) return
+      setActiveKey(key || '')
+      setDynamicModels(null)
 
-  const loadKeyForProvider = async (pid: string) => {
-    setTestStatus('idle')
-    setTestError('')
-    const key = await getApiKey(pid)
-    setActiveKey(key || '')
-  }
+      const provider = providers.find(p => p.id === aiConfig.preferredProvider)
+      if (key && provider) {
+        setModelsLoading(true)
+        const models = await listModels(provider, key)
+        if (!cancelled) {
+          setDynamicModels(models)
+          setModelsLoading(false)
+        }
+      }
+    }
+    void run()
+    return () => { cancelled = true }
+  }, [aiConfig.preferredProvider, providers])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') onClose()
@@ -116,6 +138,12 @@ export function SettingsDialog({ onClose }: Props) {
       const ok = await testConnection(aiConfig.preferredProvider, activeKey.trim(), aiConfig)
       if (ok) {
         setTestStatus('success')
+        const provider = providers.find(p => p.id === aiConfig.preferredProvider)
+        if (provider) {
+          setModelsLoading(true)
+          setDynamicModels(await listModels(provider, activeKey.trim()))
+          setModelsLoading(false)
+        }
       } else {
         setTestStatus('error')
         setTestError('Connection failed: empty or invalid response.')
@@ -127,7 +155,7 @@ export function SettingsDialog({ onClose }: Props) {
   }
 
   const currentProvider = providers.find(p => p.id === aiConfig.preferredProvider)
-  const models = currentProvider?.models || []
+  const models = dynamicModels ?? currentProvider?.models ?? []
 
   return (
     <div className="cs-dialog-overlay" onClick={onClose}>
@@ -188,7 +216,7 @@ export function SettingsDialog({ onClose }: Props) {
 
           <div className="cs-settings-row">
             <label className="cs-settings-label" htmlFor="cs-ai-model-select">
-              Preferred Model
+              Preferred Model{modelsLoading ? ' (refreshing...)' : ''}
             </label>
             <select
               id="cs-ai-model-select"

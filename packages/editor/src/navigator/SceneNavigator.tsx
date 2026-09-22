@@ -7,9 +7,9 @@ import { getEditorView, getSourceView } from '../editor/editor-bus'
 import { schema } from '../editor/schema'
 import { EditorView as CmView } from '@codemirror/view'
 import { StatisticsDialog } from './StatisticsDialog'
-import { EyeIcon, EyeOffIcon, LockIcon, StatsIcon, SparklesIcon, ClockIcon, CloseIcon } from '../shell/icons'
-import { getAIConfig, callAI, getApiKey } from '../ai/ai-client'
-import { SYNOPSIS_GENERATION_PROMPT, DURATION_ESTIMATION_PROMPT } from '../ai/prompts'
+import { EyeIcon, EyeOffIcon, LockIcon, StatsIcon, SparklesIcon, CloseIcon } from '../shell/icons'
+import { getAIConfig, callAIStructured, hasConfiguredApiKey } from '../ai/ai-client'
+import { SCENE_METADATA_PROMPT, SCENE_METADATA_SCHEMA } from '../ai/prompts'
 import { prosemirrorToSutra } from '../editor/prosemirror-to-sutra'
 
 /** Update the scene synopsis in the raw Sutra text. */
@@ -232,13 +232,13 @@ export function SceneNavigator() {
     setScenes(buildSceneList(text))
   }, [text])
 
-  const handleSingleSynopsis = useCallback(async (scene: SceneEntry) => {
+  const handleSceneMetadata = useCallback(async (scene: SceneEntry) => {
     setIsProcessing(true)
-    setProgressText('Generating synopsis...')
+    setProgressText('Generating synopsis & estimating duration...')
     try {
-      const key = (await getApiKey('gemini')) || (await getApiKey('groq')) || (await getApiKey('anthropic'))
-      if (!key) {
-        showToast('AI keys are required to generate synopsis. Opening Setup...', 'info')
+      const aiConfig = getAIConfig()
+      if (!(await hasConfiguredApiKey(aiConfig))) {
+        showToast('AI keys are required to generate synopsis & duration. Opening Setup...', 'info')
         setAIOnboardingVisible(true)
         return
       }
@@ -249,70 +249,35 @@ export function SceneNavigator() {
       const end = idx + 1 < scenes.length ? scenes[idx + 1]!.textOffset : text.length
       const sceneText = text.substring(start, end)
 
-      const aiConfig = getAIConfig()
-      const res = await callAI(sceneText, SYNOPSIS_GENERATION_PROMPT, aiConfig)
-      const cleaned = res.trim()
+      const { synopsis, duration } = await callAIStructured<{ synopsis: string; duration: string }>(
+        sceneText, SCENE_METADATA_PROMPT, aiConfig, SCENE_METADATA_SCHEMA
+      )
 
       const view = getEditorView()
       if (view) {
-        updateSceneMetadataInProseMirror(scene.index, 'synopsis', cleaned)
+        updateSceneMetadataInProseMirror(scene.index, 'synopsis', synopsis.trim())
+        updateSceneMetadataInProseMirror(scene.index, 'est-duration', duration.trim())
       } else {
-        const nextText = updateSceneMetadataInText(text, scene.textOffset, 'synopsis', cleaned)
+        let nextText = updateSceneMetadataInText(text, scene.textOffset, 'synopsis', synopsis.trim())
+        nextText = updateSceneMetadataInText(nextText, scene.textOffset, 'est-duration', duration.trim())
         setText(nextText)
       }
-      showToast(`Generated synopsis for scene ${scene.id || scene.index}.`, 'success')
+      showToast(`Generated synopsis & duration for scene ${scene.id || scene.index}.`, 'success')
     } catch (e: any) {
-      showToast(`Synopsis generation failed: ${e.message || String(e)}`, 'error')
+      showToast(`Scene metadata generation failed: ${e.message || String(e)}`, 'error')
     } finally {
       setIsProcessing(false)
       setProgressText('')
     }
   }, [scenes, text, setText, setAIOnboardingVisible, showToast])
 
-  const handleSingleDuration = useCallback(async (scene: SceneEntry) => {
+  const handleGenerateAllSceneMetadata = useCallback(async () => {
     setIsProcessing(true)
-    setProgressText('Estimating scene duration...')
+    setProgressText('Starting batch synopsis & duration generation...')
     try {
-      const key = (await getApiKey('gemini')) || (await getApiKey('groq')) || (await getApiKey('anthropic'))
-      if (!key) {
-        showToast('AI keys are required to estimate scene duration. Opening Setup...', 'info')
-        setAIOnboardingVisible(true)
-        return
-      }
-
-      const idx = scenes.findIndex(s => s.index === scene.index)
-      if (idx === -1) return
-      const start = scene.textOffset
-      const end = idx + 1 < scenes.length ? scenes[idx + 1]!.textOffset : text.length
-      const sceneText = text.substring(start, end)
-
       const aiConfig = getAIConfig()
-      const res = await callAI(sceneText, DURATION_ESTIMATION_PROMPT, aiConfig)
-      const cleaned = res.trim()
-
-      const view = getEditorView()
-      if (view) {
-        updateSceneMetadataInProseMirror(scene.index, 'est-duration', cleaned)
-      } else {
-        const nextText = updateSceneMetadataInText(text, scene.textOffset, 'est-duration', cleaned)
-        setText(nextText)
-      }
-      showToast(`Estimated duration for scene ${scene.id || scene.index}: ${cleaned}`, 'success')
-    } catch (e: any) {
-      showToast(`Duration estimation failed: ${e.message || String(e)}`, 'error')
-    } finally {
-      setIsProcessing(false)
-      setProgressText('')
-    }
-  }, [scenes, text, setText, setAIOnboardingVisible, showToast])
-
-  const handleGenerateAllSynopses = useCallback(async () => {
-    setIsProcessing(true)
-    setProgressText('Starting batch synopsis generation...')
-    try {
-      const key = (await getApiKey('gemini')) || (await getApiKey('groq')) || (await getApiKey('anthropic'))
-      if (!key) {
-        showToast('AI keys are required to generate synopses. Opening Setup...', 'info')
+      if (!(await hasConfiguredApiKey(aiConfig))) {
+        showToast('AI keys are required to generate synopsis & duration. Opening Setup...', 'info')
         setAIOnboardingVisible(true)
         return
       }
@@ -322,17 +287,16 @@ export function SceneNavigator() {
       let currentText = pmView ? prosemirrorToSutra(pmView.state.doc) : (cmView ? cmView.state.doc.toString() : textRef.current)
 
       let currentScenes = buildSceneList(currentText)
-      const missing = currentScenes.filter(s => !s.synopsis)
+      const missing = currentScenes.filter(s => !s.synopsis || !s.estDuration)
       if (missing.length === 0) {
-        showToast('All scenes already have synopses.', 'info')
+        showToast('All scenes already have synopsis and duration.', 'info')
         return
       }
 
-      const aiConfig = getAIConfig()
       let current = 0
       for (const scene of missing) {
         current++
-        setProgressText(`Generating synopsis (${current}/${missing.length})...`)
+        setProgressText(`Generating synopsis & duration (${current}/${missing.length})...`)
 
         currentText = pmView ? prosemirrorToSutra(pmView.state.doc) : (cmView ? cmView.state.doc.toString() : textRef.current)
         currentScenes = buildSceneList(currentText)
@@ -346,13 +310,17 @@ export function SceneNavigator() {
         const sceneText = currentText.substring(start, end)
 
         try {
-          const res = await callAI(sceneText, SYNOPSIS_GENERATION_PROMPT, aiConfig)
-          const cleaned = res.trim()
+          const { synopsis, duration } = await callAIStructured<{ synopsis: string; duration: string }>(
+            sceneText, SCENE_METADATA_PROMPT, aiConfig, SCENE_METADATA_SCHEMA
+          )
 
           if (pmView) {
-            updateSceneMetadataInProseMirror(scene.index, 'synopsis', cleaned)
+            if (!latestScene.synopsis) updateSceneMetadataInProseMirror(scene.index, 'synopsis', synopsis.trim())
+            if (!latestScene.estDuration) updateSceneMetadataInProseMirror(scene.index, 'est-duration', duration.trim())
           } else {
-            const nextText = updateSceneMetadataInText(currentText, latestScene.textOffset, 'synopsis', cleaned)
+            let nextText = currentText
+            if (!latestScene.synopsis) nextText = updateSceneMetadataInText(nextText, latestScene.textOffset, 'synopsis', synopsis.trim())
+            if (!latestScene.estDuration) nextText = updateSceneMetadataInText(nextText, latestScene.textOffset, 'est-duration', duration.trim())
             if (cmView) {
               cmView.dispatch({
                 changes: { from: 0, to: cmView.state.doc.length, insert: nextText }
@@ -362,82 +330,13 @@ export function SceneNavigator() {
             }
           }
         } catch (err) {
-          console.warn(`Failed synopsis for scene ${scene.index}:`, err)
+          console.warn(`Failed scene metadata for scene ${scene.index}:`, err)
         }
       }
 
-      showToast(`Generated synopses for ${missing.length} scenes.`, 'success')
+      showToast(`Generated synopsis & duration for ${missing.length} scenes.`, 'success')
     } catch (e: any) {
       showToast(`Batch generation failed: ${e.message || String(e)}`, 'error')
-    } finally {
-      setIsProcessing(false)
-      setProgressText('')
-    }
-  }, [setText, setAIOnboardingVisible, showToast])
-
-  const handleEstimateAllDurations = useCallback(async () => {
-    setIsProcessing(true)
-    setProgressText('Starting batch duration estimation...')
-    try {
-      const key = (await getApiKey('gemini')) || (await getApiKey('groq')) || (await getApiKey('anthropic'))
-      if (!key) {
-        showToast('AI keys are required to estimate scene durations. Opening Setup...', 'info')
-        setAIOnboardingVisible(true)
-        return
-      }
-
-      const pmView = getEditorView()
-      const cmView = getSourceView()
-      let currentText = pmView ? prosemirrorToSutra(pmView.state.doc) : (cmView ? cmView.state.doc.toString() : textRef.current)
-
-      let currentScenes = buildSceneList(currentText)
-      const missing = currentScenes.filter(s => !s.estDuration)
-      if (missing.length === 0) {
-        showToast('All scenes already have estimated durations.', 'info')
-        return
-      }
-
-      const aiConfig = getAIConfig()
-      let current = 0
-      for (const scene of missing) {
-        current++
-        setProgressText(`Estimating duration (${current}/${missing.length})...`)
-
-        currentText = pmView ? prosemirrorToSutra(pmView.state.doc) : (cmView ? cmView.state.doc.toString() : textRef.current)
-        currentScenes = buildSceneList(currentText)
-
-        const latestScene = currentScenes.find(s => s.index === scene.index)
-        if (!latestScene) continue
-
-        const start = latestScene.textOffset
-        const idx = currentScenes.findIndex(s => s.index === scene.index)
-        const end = idx + 1 < currentScenes.length ? currentScenes[idx + 1]!.textOffset : currentText.length
-        const sceneText = currentText.substring(start, end)
-
-        try {
-          const res = await callAI(sceneText, DURATION_ESTIMATION_PROMPT, aiConfig)
-          const cleaned = res.trim()
-
-          if (pmView) {
-            updateSceneMetadataInProseMirror(scene.index, 'est-duration', cleaned)
-          } else {
-            const nextText = updateSceneMetadataInText(currentText, latestScene.textOffset, 'est-duration', cleaned)
-            if (cmView) {
-              cmView.dispatch({
-                changes: { from: 0, to: cmView.state.doc.length, insert: nextText }
-              })
-            } else {
-              setText(nextText)
-            }
-          }
-        } catch (err) {
-          console.warn(`Failed duration for scene ${scene.index}:`, err)
-        }
-      }
-
-      showToast(`Estimated durations for ${missing.length} scenes.`, 'success')
-    } catch (e: any) {
-      showToast(`Batch duration estimation failed: ${e.message || String(e)}`, 'error')
     } finally {
       setIsProcessing(false)
       setProgressText('')
@@ -694,24 +593,13 @@ export function SceneNavigator() {
             <button
               type="button"
               className="cs-nav-action-btn"
-              onClick={handleGenerateAllSynopses}
+              onClick={handleGenerateAllSceneMetadata}
               disabled={isProcessing}
-              title="Generate Missing Synopses with AI"
-              aria-label="Generate Missing Synopses with AI"
+              title="Generate synopsis & estimate duration (all scenes)"
+              aria-label="Generate synopsis & estimate duration (all scenes)"
               style={{ opacity: isProcessing ? 0.5 : 1 }}
             >
               <SparklesIcon size={14} />
-            </button>
-            <button
-              type="button"
-              className="cs-nav-action-btn"
-              onClick={handleEstimateAllDurations}
-              disabled={isProcessing}
-              title="Estimate All Scene Durations with AI"
-              aria-label="Estimate All Scene Durations with AI"
-              style={{ opacity: isProcessing ? 0.5 : 1 }}
-            >
-              <ClockIcon size={14} />
             </button>
             <button
               type="button"
@@ -833,25 +721,14 @@ export function SceneNavigator() {
 
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); void handleSingleSynopsis(scene) }}
+                    onClick={(e) => { e.stopPropagation(); void handleSceneMetadata(scene) }}
                     disabled={isProcessing}
-                    title="Generate Synopsis with AI"
-                    aria-label="Generate Synopsis with AI"
+                    title="Generate synopsis & estimate duration"
+                    aria-label="Generate synopsis & estimate duration"
                     className="cs-nav-action-btn cs-nav-synopsis-ai-btn"
                     style={{ color: 'var(--cs-ui-accent, #c4760a)', ...(isProcessing ? { opacity: 0.5 } : {}) }}
                   >
                     <SparklesIcon size={12} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); void handleSingleDuration(scene) }}
-                    disabled={isProcessing}
-                    title="Estimate Duration with AI"
-                    aria-label="Estimate Duration with AI"
-                    className="cs-nav-action-btn cs-nav-synopsis-ai-btn"
-                    style={{ color: 'var(--cs-ui-accent, #c4760a)', ...(isProcessing ? { opacity: 0.5 } : {}) }}
-                  >
-                    <ClockIcon size={12} />
                   </button>
                 </div>
               )}
