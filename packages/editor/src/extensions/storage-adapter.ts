@@ -46,6 +46,12 @@ export interface StorageAdapter {
    * history UI's "clear all versions" action.
    */
   deleteAllVersions?(path: string): Promise<void>
+
+  /**
+   * Optional: save a version snapshot for a document. Adapters should only
+   * persist a new version entry when there is a difference against the previous version.
+   */
+  saveVersion?(path: string, content: string): Promise<boolean>
 }
 
 const StorageAdapterContext = createContext<StorageAdapter | null>(null)

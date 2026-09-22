@@ -1,7 +1,7 @@
 import type { StorageAdapter } from '@sutrata/editor'
 import {
   saveDocument, loadDocument, listVersions, saveStyle, loadAllStyles, deleteStyle,
-  saveFileHandle, loadFileHandle, deleteAllVersions,
+  saveFileHandle, loadFileHandle, deleteAllVersions, saveVersion,
 } from './file/storage'
 import { openFileFromDisk, openDocxFromDisk, openStyleJsonFromDisk, saveFileToDisk } from './file/file-access'
 
@@ -48,6 +48,7 @@ export const localStorageAdapter: StorageAdapter = {
   saveDocument: saveDocumentAdaptive,
   loadDocument: loadDocumentAdaptive,
   listVersions,
+  saveVersion,
   saveStyle,
   loadAllStyles,
   deleteStyle,

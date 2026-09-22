@@ -99,18 +99,45 @@ export async function deleteStyle(id: string): Promise<void> {
   })
 }
 
-export async function saveDocument(path: string, content: string): Promise<void> {
-  const db = await openDb()
+let lastTimestamp = 0
+function getMonotonicTimestamp(): number {
   const now = Date.now()
+  lastTimestamp = now > lastTimestamp ? now : lastTimestamp + 1
+  return lastTimestamp
+}
+
+/** Saves a new version snapshot for `path` only if `content` differs from the most
+ *  recent version (or if no previous version exists yet). Returns true if a version
+ *  was saved, false if skipped due to no difference. */
+export async function saveVersion(path: string, content: string): Promise<boolean> {
+  const versions = await listVersions(path)
+  const previous = versions[0]
+  if (previous && previous.content === content) {
+    return false
+  }
+  const db = await openDb()
+  const now = getMonotonicTimestamp()
   const versionId = `${path}__${now}_${Math.random().toString(36).slice(2)}`
   await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction([STORE_DOCS, STORE_VERSIONS], 'readwrite')
-    tx.objectStore(STORE_DOCS).put({ path, content, savedAt: now })
+    const tx = db.transaction(STORE_VERSIONS, 'readwrite')
     tx.objectStore(STORE_VERSIONS).add({ id: versionId, path, content, timestamp: now })
     tx.oncomplete = () => resolve()
     tx.onerror = () => reject(tx.error ?? new Error('IDB transaction failed'))
   })
   await pruneVersions(path)
+  return true
+}
+
+export async function saveDocument(path: string, content: string): Promise<void> {
+  const db = await openDb()
+  const now = getMonotonicTimestamp()
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE_DOCS, 'readwrite')
+    tx.objectStore(STORE_DOCS).put({ path, content, savedAt: now })
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error)
+  })
+  await saveVersion(path, content)
 }
 
 export async function loadDocument(path: string): Promise<string | null> {
@@ -131,7 +158,7 @@ export async function listVersions(path: string): Promise<VersionEntry[]> {
     const req = idx.getAll(IDBKeyRange.only(path))
     req.onsuccess = () => {
       const entries: VersionEntry[] = (req.result as { id: string; timestamp: number; content: string }[])
-        .sort((a, b) => b.timestamp - a.timestamp)
+        .sort((a, b) => (b.timestamp !== a.timestamp ? b.timestamp - a.timestamp : b.id.localeCompare(a.id)))
         .map(r => ({ id: r.id, timestamp: r.timestamp, content: r.content }))
       resolve(entries)
     }
