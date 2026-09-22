@@ -1,10 +1,10 @@
 # Sutra — A Plain-Text Screenplay Format for World Languages
 
-**Version:** 1.0 Draft
-**File extension:** `.sutra`
-**MIME type:** `text/x-sutra`
-**Status:** For Review
-**License:** [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) — this specification (text and grammar) is free to implement, copy, and adapt, including by competing tools, provided attribution is given to the Sutra project. The reference parser (`@sutra/parser`) is separately licensed Apache-2.0; see its own `LICENSE` file.
+**Version:** 1.0 Draft  
+**File extension:** `.sutra`  
+**MIME type:** `text/x-sutra`  
+**Status:** For Review  
+**License:** [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) — this specification (text and grammar) is free to implement, copy, and adapt, including by competing tools, provided attribution is given to the Sutra project. The reference parser (`@sutra/parser`) is separately licensed Apache-2.0; see its own `LICENSE` file.  
 
 ---
 
