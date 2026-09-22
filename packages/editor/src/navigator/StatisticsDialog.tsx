@@ -71,14 +71,24 @@ export function StatisticsDialog({ onClose }: Props) {
   // Word count helper
   const wordCount = text.split(/\s+/).filter(Boolean).length
 
-  // Sum up estimated duration
-  let totalMinutes = 0
+  // Sum up estimated duration. Each scene's est-duration is "MM:SS" — sum
+  // in seconds and only convert to minutes/hours once, at the end. Summing
+  // the MM parts alone (the previous approach) silently dropped every
+  // scene's seconds component, undercounting the total by tens of minutes
+  // on a script with many scenes.
+  let totalSeconds = 0
   scenes.forEach(s => {
-    const minMatch = /(\d+)/.exec(s.estDuration)
-    if (minMatch && minMatch[1]) {
-      totalMinutes += Number.parseInt(minMatch[1], 10)
+    const match = /^(\d+):(\d{1,2})$/.exec(s.estDuration.trim())
+    if (match && match[1] && match[2]) {
+      totalSeconds += Number.parseInt(match[1], 10) * 60 + Number.parseInt(match[2], 10)
     }
   })
+  const totalMinutes = Math.round(totalSeconds / 60)
+  const totalDurationLabel = totalSeconds === 0
+    ? 'TBD'
+    : totalMinutes >= 60
+      ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
+      : `${totalMinutes} min`
 
   return (
     <div
@@ -113,7 +123,7 @@ export function StatisticsDialog({ onClose }: Props) {
             </div>
             <div className="cs-stats-card">
               <div className="cs-stats-card-val">
-                {totalMinutes ? `${totalMinutes} min` : 'TBD'}
+                {totalDurationLabel}
               </div>
               <div className="cs-stats-card-lbl">Est. Duration</div>
             </div>
