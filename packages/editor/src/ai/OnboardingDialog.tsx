@@ -314,8 +314,9 @@ export function OnboardingDialog({ onClose }: Props) {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
                 <div>
-                  <label className="cs-settings-label">Provider ID (e.g. ollama):</label>
+                  <label className="cs-settings-label" htmlFor="cs-ob-custom-id">Provider ID (e.g. ollama):</label>
                   <input
+                    id="cs-ob-custom-id"
                     type="text"
                     className="cs-voice-textarea"
                     style={{ width: '100%', height: '34px', minHeight: '34px', padding: '6px 10px' }}
@@ -325,8 +326,9 @@ export function OnboardingDialog({ onClose }: Props) {
                   />
                 </div>
                 <div>
-                  <label className="cs-settings-label">Display Name:</label>
+                  <label className="cs-settings-label" htmlFor="cs-ob-custom-name">Display Name:</label>
                   <input
+                    id="cs-ob-custom-name"
                     type="text"
                     className="cs-voice-textarea"
                     style={{ width: '100%', height: '34px', minHeight: '34px', padding: '6px 10px' }}
@@ -336,8 +338,9 @@ export function OnboardingDialog({ onClose }: Props) {
                   />
                 </div>
                 <div>
-                  <label className="cs-settings-label">Base URL:</label>
+                  <label className="cs-settings-label" htmlFor="cs-ob-custom-url">Base URL:</label>
                   <input
+                    id="cs-ob-custom-url"
                     type="text"
                     className="cs-voice-textarea"
                     style={{ width: '100%', height: '34px', minHeight: '34px', padding: '6px 10px' }}
@@ -347,8 +350,9 @@ export function OnboardingDialog({ onClose }: Props) {
                   />
                 </div>
                 <div>
-                  <label className="cs-settings-label">Models (id:name comma-separated):</label>
+                  <label className="cs-settings-label" htmlFor="cs-ob-custom-models">Models (id:name comma-separated):</label>
                   <input
+                    id="cs-ob-custom-models"
                     type="text"
                     className="cs-voice-textarea"
                     style={{ width: '100%', height: '34px', minHeight: '34px', padding: '6px 10px' }}

@@ -220,7 +220,8 @@ export function VoiceToolbar() {
               width={110}
               height={26}
               className="cs-voice-waveform"
-              aria-hidden="true"
+              role="img"
+              aria-label="Audio waveform visualization"
             />
           </div>
         ) : (

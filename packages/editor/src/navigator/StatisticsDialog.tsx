@@ -76,7 +76,7 @@ export function StatisticsDialog({ onClose }: Props) {
   scenes.forEach(s => {
     const minMatch = /(\d+)/.exec(s.estDuration)
     if (minMatch && minMatch[1]) {
-      totalMinutes += parseInt(minMatch[1], 10)
+      totalMinutes += Number.parseInt(minMatch[1], 10)
     }
   })
 

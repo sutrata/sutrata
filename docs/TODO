@@ -25,10 +25,3 @@
    not offering them — need actual pa.json/or.json/si.json translations first.
    (Checked footer LanguageStatus's script-language dropdown too, per report —
    that one already has Punjabi, Odia, and Sinhala; nothing to fix there.)
-
----
-Done since the last pass (2026-09-19): footer/status-bar localization —
-StatusBar.tsx now routes every label through t(), with statusbar.* keys added
-to all 9 locale files. Sinhala (si) also added as a fully supported script:
-fonts, script detection, docx/print font maps, starter template, tofu-gate
-corpus entry.

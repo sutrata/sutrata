@@ -28,7 +28,7 @@ function openDb(): Promise<IDBDatabase> {
       }
     }
     req.onsuccess = () => resolve(req.result)
-    req.onerror = () => reject(req.error)
+    req.onerror = () => reject(req.error ?? new Error('IDB request failed'))
   })
 }
 
@@ -44,7 +44,7 @@ export async function saveFileHandle(path: string, handle: unknown): Promise<voi
     const tx = db.transaction(STORE_HANDLES, 'readwrite')
     tx.objectStore(STORE_HANDLES).put({ path, handle })
     tx.oncomplete = () => resolve()
-    tx.onerror = () => reject(tx.error)
+    tx.onerror = () => reject(tx.error ?? new Error('IDB transaction failed'))
   })
 }
 
@@ -54,7 +54,7 @@ export async function loadFileHandle(path: string): Promise<unknown | null> {
     const tx = db.transaction(STORE_HANDLES, 'readonly')
     const req = tx.objectStore(STORE_HANDLES).get(path)
     req.onsuccess = () => resolve((req.result as { handle: unknown } | undefined)?.handle ?? null)
-    req.onerror = () => reject(req.error)
+    req.onerror = () => reject(req.error ?? new Error('IDB request failed'))
   })
   if (!handle) return null
   // Only hand back a handle that's usable without prompting — the File System
@@ -75,7 +75,7 @@ export async function saveStyle(style: ScreenplayStyleDefinition): Promise<void>
     const tx = db.transaction(STORE_STYLES, 'readwrite')
     tx.objectStore(STORE_STYLES).put(style)
     tx.oncomplete = () => resolve()
-    tx.onerror = () => reject(tx.error)
+    tx.onerror = () => reject(tx.error ?? new Error('IDB transaction failed'))
   })
 }
 
@@ -85,7 +85,7 @@ export async function loadAllStyles(): Promise<ScreenplayStyleDefinition[]> {
     const tx = db.transaction(STORE_STYLES, 'readonly')
     const req = tx.objectStore(STORE_STYLES).getAll()
     req.onsuccess = () => resolve(req.result as ScreenplayStyleDefinition[])
-    req.onerror = () => reject(req.error)
+    req.onerror = () => reject(req.error ?? new Error('IDB request failed'))
   })
 }
 
@@ -95,7 +95,7 @@ export async function deleteStyle(id: string): Promise<void> {
     const tx = db.transaction(STORE_STYLES, 'readwrite')
     tx.objectStore(STORE_STYLES).delete(id)
     tx.oncomplete = () => resolve()
-    tx.onerror = () => reject(tx.error)
+    tx.onerror = () => reject(tx.error ?? new Error('IDB transaction failed'))
   })
 }
 
@@ -108,7 +108,7 @@ export async function saveDocument(path: string, content: string): Promise<void>
     tx.objectStore(STORE_DOCS).put({ path, content, savedAt: now })
     tx.objectStore(STORE_VERSIONS).add({ id: versionId, path, content, timestamp: now })
     tx.oncomplete = () => resolve()
-    tx.onerror = () => reject(tx.error)
+    tx.onerror = () => reject(tx.error ?? new Error('IDB transaction failed'))
   })
   await pruneVersions(path)
 }
@@ -119,7 +119,7 @@ export async function loadDocument(path: string): Promise<string | null> {
     const tx = db.transaction(STORE_DOCS, 'readonly')
     const req = tx.objectStore(STORE_DOCS).get(path)
     req.onsuccess = () => resolve((req.result as { content: string } | undefined)?.content ?? null)
-    req.onerror = () => reject(req.error)
+    req.onerror = () => reject(req.error ?? new Error('IDB request failed'))
   })
 }
 
@@ -135,7 +135,7 @@ export async function listVersions(path: string): Promise<VersionEntry[]> {
         .map(r => ({ id: r.id, timestamp: r.timestamp, content: r.content }))
       resolve(entries)
     }
-    req.onerror = () => reject(req.error)
+    req.onerror = () => reject(req.error ?? new Error('IDB request failed'))
   })
 }
 
@@ -149,7 +149,7 @@ async function pruneVersions(path: string): Promise<void> {
     const store = tx.objectStore(STORE_VERSIONS)
     for (const v of toDelete) store.delete(v.id)
     tx.oncomplete = () => resolve()
-    tx.onerror = () => reject(tx.error)
+    tx.onerror = () => reject(tx.error ?? new Error('IDB transaction failed'))
   })
 }
 
@@ -162,6 +162,6 @@ export async function deleteAllVersions(path: string): Promise<void> {
     const store = tx.objectStore(STORE_VERSIONS)
     for (const v of versions) store.delete(v.id)
     tx.oncomplete = () => resolve()
-    tx.onerror = () => reject(tx.error)
+    tx.onerror = () => reject(tx.error ?? new Error('IDB transaction failed'))
   })
 }
