@@ -1,0 +1,70 @@
+{
+  "scripts": [
+    {
+      "lang": "hi",
+      "script": "Devanagari",
+      "sample": "यह एक नमूना पंक्ति है।",
+      "fontFamily": "'Noto Sans Devanagari', monospace"
+    },
+    {
+      "lang": "ta",
+      "script": "Tamil",
+      "sample": "இது ஒரு மாதிரி வரி.",
+      "fontFamily": "'Noto Sans Tamil', monospace"
+    },
+    {
+      "lang": "te",
+      "script": "Telugu",
+      "sample": "ఇది ఒక నమూనా లైన్.",
+      "fontFamily": "'Noto Sans Telugu', monospace"
+    },
+    {
+      "lang": "kn",
+      "script": "Kannada",
+      "sample": "ಇದು ಒಂದು ಮಾದರಿ ಸಾಲು.",
+      "fontFamily": "'Noto Sans Kannada', monospace"
+    },
+    {
+      "lang": "ml",
+      "script": "Malayalam",
+      "sample": "ഇത് ഒരു സാമ്പിൾ ലൈൻ ആണ്.",
+      "fontFamily": "'Noto Sans Malayalam', monospace"
+    },
+    {
+      "lang": "bn",
+      "script": "Bengali",
+      "sample": "এটি একটি নমুনা লাইন।",
+      "fontFamily": "'Noto Sans Bengali', monospace"
+    },
+    {
+      "lang": "gu",
+      "script": "Gujarati",
+      "sample": "આ એક નમૂનો લાઇન છે.",
+      "fontFamily": "'Noto Sans Gujarati', monospace"
+    },
+    {
+      "lang": "pa",
+      "script": "Gurmukhi",
+      "sample": "ਇਹ ਇੱਕ ਨਮੂਨਾ ਲਾਈਨ ਹੈ।",
+      "fontFamily": "'Noto Sans Gurmukhi', monospace"
+    },
+    {
+      "lang": "or",
+      "script": "Odia",
+      "sample": "ଏହା ଏକ ନମୁନା ଲାଇନ।",
+      "fontFamily": "'Noto Sans Oriya', monospace"
+    },
+    {
+      "lang": "si",
+      "script": "Sinhala",
+      "sample": "මෙය නියැදි පේළියකි.",
+      "fontFamily": "'Noto Sans Sinhala', monospace"
+    },
+    {
+      "lang": "en",
+      "script": "Latin",
+      "sample": "This is a sample line.",
+      "fontFamily": "'Courier Prime', monospace"
+    }
+  ]
+}

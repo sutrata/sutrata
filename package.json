@@ -1,0 +1,16 @@
+{
+  "name": "sutrata",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "scripts": {
+    "test": "pnpm -r test",
+    "build": "pnpm --filter @sutra/parser build && pnpm --filter @sutrata/editor build && pnpm --filter @sutrata/app build",
+    "build:tauri": "pnpm --filter @sutrata/tauri build",
+    "dev:web": "pnpm --filter @sutrata/app dev",
+    "dev:tauri": "pnpm --filter @sutrata/tauri dev"
+  },
+  "devDependencies": {
+    "canvas": "^2.11.0",
+    "typescript": "^5.4.0"
+  }
+}

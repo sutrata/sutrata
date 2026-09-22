@@ -1,0 +1,34 @@
+---
+title: Test Script
+author: Alice
+page: A4
+---
+
+# ACT ONE {#act1}
+
+## INT. OFFICE - DAY {#sc1}
+& synopsis: John arrives late.
+& actors: John, Mary
+
+The office is bright and empty.
+
+@JOHN
+Hello, is anyone here?
+
+@MARY
+( from behind a filing cabinet )
+I'm here.
+
+>> CUT TO:
+
+## EXT. STREET - NIGHT {#sc2}
+
+Rain falls on the empty pavement.
+
+~ Chall chhaiyaan chhaiyaan
+
+[[ Add establishing shot ]]
+
+<!-- old version below -->
+
+===

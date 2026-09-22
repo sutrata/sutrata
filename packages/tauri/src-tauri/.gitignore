@@ -1,0 +1,14 @@
+target/
+gen/
+.env
+.env.*
+*.log
+*.pdb
+*.rlib
+*.rmeta
+*.d
+*.lock
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

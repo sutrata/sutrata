@@ -1,0 +1,34 @@
+1. Spellcheck — real Hunspell WASM engine. The plugin is wired into the editor
+   (createSpellcheckPlugin), but the checker behind it (SimpleSpellChecker,
+   packages/app/src/spellcheck/hunspell.ts) is an in-memory word-set placeholder:
+   no .dic/.aff loading, and suggest() always returns []. Need to load real
+   Hunspell dictionaries per language.
+2. Language UI (low priority — display-only indicator done; full feature needs design):
+   - One-click {lang=} override: right-click context menu, inserts tag at cursor or wraps selection
+   - Language tags ({lang=XX}): not yet handled by parser/editor. Need to decide:
+     a) AST representation in parser
+     b) Editor rendering and preservation of tags
+     c) How LanguageContext resolves effective language from tags vs frontmatter
+     d) Whether tags apply to inline spans or whole block elements
+3. Navigator color-coding by tags/location/status — not implemented; only a
+   generic accent color exists for hover/selection, not data-driven coloring.
+4. Watermark for exports — frontmatter watermark: renders on-screen and in
+   print/PDF export (workflow-reports.ts), but is not applied in DOCX export
+   (docx-exporter.ts). Also no per-export toggle to opt out when the field is
+   set — it's implicitly always-on.
+5. Settings → UI Language dropdown (SettingsDialog.tsx's UI_LANGUAGES) has only
+   the 9 languages with real locale files (en/hi/ta/te/ml/kn/bn/gu/mr) — matches
+   product spec §10.5's P1 UI-language list exactly, so not a bug, but Punjabi,
+   Odia, and Sinhala have no locale/*.json translations yet, which is why
+   they're absent here. Adding them to the dropdown without real translations
+   would silently fall back to English for ~100 UI strings, which is worse than
+   not offering them — need actual pa.json/or.json/si.json translations first.
+   (Checked footer LanguageStatus's script-language dropdown too, per report —
+   that one already has Punjabi, Odia, and Sinhala; nothing to fix there.)
+
+---
+Done since the last pass (2026-09-19): footer/status-bar localization —
+StatusBar.tsx now routes every label through t(), with statusbar.* keys added
+to all 9 locale files. Sinhala (si) also added as a fully supported script:
+fonts, script detection, docx/print font maps, starter template, tofu-gate
+corpus entry.

@@ -1,0 +1,9 @@
+[[permission]]
+identifier = "allow-commands"
+description = "Enables access to core file operations."
+commands.allow = [
+  "read_file",
+  "write_file",
+  "show_open_dialog",
+  "show_save_dialog"
+]

@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.vite/
+node_modules
+.local/
+.claude/
+.agent/
+.agents/
+.codex/
+.impeccable/
+CLAUDE.local.md
