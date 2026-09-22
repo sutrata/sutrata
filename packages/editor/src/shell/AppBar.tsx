@@ -42,7 +42,7 @@ export function AppBar() {
     mode, setMode, isDirty, filePath, ribbonVisible, setRibbonVisible,
     navVisible, setNavVisible, exportVisible, setExportVisible,
     settingsVisible, setSettingsVisible, metadataVisible, setMetadataVisible,
-    translitMode, setTranslitMode, voiceActive, setVoiceActive, openFile, saveFile, saveFileAs, setText,
+    translitMode, setTranslitMode, voiceActive, setVoiceActive, newDocument, openFile, saveFile, saveFileAs, setText,
     importDocx, styleVisible, setStyleVisible, showConfirm, showToast,
   } = useDocument()
   const { t, locale } = useTranslation()
@@ -51,17 +51,7 @@ export function AppBar() {
   const nextMode = mode === 'formatted' ? 'source' : 'formatted'
 
   const handleNew = () => {
-    if (!isDirty) {
-      setText(getTemplate(locale))
-    } else {
-      showConfirm({
-        title: 'Discard Unsaved Changes?',
-        message: 'Starting a new screenplay will discard all unsaved edits to your current document.',
-        confirmLabel: 'Discard & Create New',
-        destructive: true,
-        onConfirm: () => setText(getTemplate(locale)),
-      })
-    }
+    newDocument(getTemplate(locale))
   }
 
   const handleImportDocx = async () => {

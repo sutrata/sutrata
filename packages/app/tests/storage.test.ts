@@ -172,26 +172,25 @@ describe('storage version differential saving', () => {
     expect(finalVersions).toHaveLength(3)
   })
 
-  it('saveDocument updates document content and only saves new version on difference', async () => {
+  it('saveDocument updates document content for recovery without creating versions (autosave safety)', async () => {
     const path = 'screenplay.sutra'
     const content1 = 'INT. COFFEE SHOP - DAY\n\nDraft 1'
 
+    // Autosave writes to document store
     await saveDocument(path, content1)
     expect(await loadDocument(path)).toBe(content1)
+    // No versions created by autosave
+    expect(await listVersions(path)).toHaveLength(0)
+
+    // Explicit version save creates the version
+    await saveVersion(path, content1)
     expect(await listVersions(path)).toHaveLength(1)
 
-    // Repeated saveDocument with identical content: document is updated/saved, but no duplicate version
-    await saveDocument(path, content1)
-    expect(await loadDocument(path)).toBe(content1)
-    expect(await listVersions(path)).toHaveLength(1)
-
-    // Save with new content: document updated and new version created
+    // Autosaving newer content does not create an unprompted version snapshot
     const content2 = 'INT. COFFEE SHOP - DAY\n\nDraft 2'
     await saveDocument(path, content2)
     expect(await loadDocument(path)).toBe(content2)
-    const versions = await listVersions(path)
-    expect(versions).toHaveLength(2)
-    expect(versions[0]!.content).toBe(content2)
+    expect(await listVersions(path)).toHaveLength(1)
   })
 
   it('allows saving after deleteAllVersions clears history', async () => {

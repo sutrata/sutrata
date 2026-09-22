@@ -61,6 +61,7 @@ interface DocumentContextValue {
   reloadCustomStyles: () => Promise<void>
   markClean: () => void
   save: () => Promise<void>
+  newDocument: (initialContent?: string) => void
   openFile: () => Promise<void>
   saveFile: () => Promise<void>
   saveFileAs: () => Promise<void>
@@ -267,10 +268,44 @@ export function DocumentProvider({ children, storageAdapter }: { children: React
     }
   }, [storageAdapter, showToast])
 
+  const newDocument = useCallback((initialContent?: string) => {
+    const doNew = () => {
+      if (pauseTimerRef.current) { clearTimeout(pauseTimerRef.current); pauseTimerRef.current = null }
+      if (maxWaitTimerRef.current) { clearTimeout(maxWaitTimerRef.current); maxWaitTimerRef.current = null }
+      dirtySinceRef.current = null
+      fileHandleRef.current = null
+      clearRecoveryPointer()
+      const content = initialContent ?? EMPTY_DOC
+      setTextState(content)
+      setAst(parse(content))
+      setFilePath(null)
+      setDirty(false)
+      setLastSaveTarget(null)
+      setVersions([])
+    }
+
+    if (!isDirty) {
+      doNew()
+      return
+    }
+
+    showConfirm({
+      title: 'Discard Unsaved Changes?',
+      message: 'Starting a new screenplay will discard all unsaved edits to your current document.',
+      confirmLabel: 'Discard & Create New',
+      destructive: true,
+      onConfirm: doNew,
+    })
+  }, [isDirty, showConfirm])
+
   const openFile = useCallback(async () => {
     const doOpen = async () => {
       const result = await storageAdapter.openFile()
       if (!result) return
+      if (pauseTimerRef.current) { clearTimeout(pauseTimerRef.current); pauseTimerRef.current = null }
+      if (maxWaitTimerRef.current) { clearTimeout(maxWaitTimerRef.current); maxWaitTimerRef.current = null }
+      dirtySinceRef.current = null
+      clearRecoveryPointer()
       let content = result.content
       const isFountain = result.name.endsWith('.fountain')
       if (isFountain) {
@@ -534,17 +569,7 @@ export function DocumentProvider({ children, storageAdapter }: { children: React
     const off = api.onMenuCommand((cmd) => {
       switch (cmd) {
         case 'file:new':
-          if (!isDirty) {
-            setText(EMPTY_DOC)
-          } else {
-            showConfirm({
-              title: 'Discard Unsaved Changes?',
-              message: 'Starting a new document will discard any unsaved edits to your current screenplay.',
-              confirmLabel: 'Discard and Create New',
-              destructive: true,
-              onConfirm: () => setText(EMPTY_DOC),
-            })
-          }
+          newDocument(EMPTY_DOC)
           break
         case 'file:open':    void openFile();   break
         case 'file:save':    void saveFile();   break
@@ -566,7 +591,7 @@ export function DocumentProvider({ children, storageAdapter }: { children: React
       }
     })
     return off
-  }, [isDirty, openFile, saveFile, saveFileAs, setText, setMode, setRibbonVisible, setNavVisible, setTranslitMode, translitMode, metadataVisible, showConfirm])
+  }, [isDirty, newDocument, openFile, saveFile, saveFileAs, setText, setMode, setRibbonVisible, setNavVisible, setTranslitMode, translitMode, metadataVisible, showConfirm])
 
   // Native window-close guard (Desktop wrapper only). beforeunload isn't reliable for
   // an OS-level close across Tauri's backing webviews, so the Rust side intercepts it
@@ -607,7 +632,7 @@ export function DocumentProvider({ children, storageAdapter }: { children: React
         setText, setMode, setFilePath, setRibbonVisible, setNavVisible, setExportVisible, setSettingsVisible,
         setAIOnboardingVisible, setVoiceActive, setMetadataVisible,
         setTranslitMode, setFindReplaceVisible, setFindMode, setStyleVisible, setVersionHistoryVisible, setDocumentStyle, reloadCustomStyles,
-        markClean, save, openFile, saveFile, saveFileAs, importDocx, restoreVersion, clearVersionHistory,
+        markClean, save, newDocument, openFile, saveFile, saveFileAs, importDocx, restoreVersion, clearVersionHistory,
         showConfirm, closeConfirm, showToast, dismissToast,
       }}>
         {children}

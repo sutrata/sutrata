@@ -59,7 +59,7 @@ describe('DocumentContext visibility flags', () => {
 
 function FullProbe() {
   const {
-    text, isDirty, filePath, lastSaveTarget, setText, openFile, saveFile, saveFileAs, save,
+    text, isDirty, filePath, lastSaveTarget, setText, newDocument, openFile, saveFile, saveFileAs, save,
     confirmModal, toasts, versions, restoreVersion, clearVersionHistory,
   } = useDocument()
   return (
@@ -72,6 +72,7 @@ function FullProbe() {
       <span data-testid="confirm-title">{confirmModal?.title ?? ''}</span>
       <span data-testid="versions">{versions.map(v => v.id).join('|')}</span>
       <button onClick={() => setText('## Scene 1\n\nEdited by the user.\n')}>edit</button>
+      <button onClick={() => newDocument()}>new</button>
       <button onClick={() => void openFile()}>open</button>
       <button onClick={() => void saveFile()}>save</button>
       <button onClick={() => void saveFileAs()}>saveAs</button>
@@ -481,5 +482,38 @@ describe('DocumentContext version history (power-user feature)', () => {
 
     expect(adapter.deleteAllVersions).toHaveBeenCalledWith('myscript.sutra')
     expect(screen.getByTestId('versions').textContent).toBe('')
+  })
+
+  it('newDocument resets filePath and versions so new file is not tracked under old file history', async () => {
+    const versionList = [
+      { id: 'v1', timestamp: 100, content: '## Scene 1\n\nFirst save.\n' },
+    ]
+    const adapter = makeMockStorageAdapter({
+      openFile: vi.fn().mockResolvedValue({ name: 'myscript.sutra', content: '## Scene 1\n\nHi.\n', handle: null }),
+      listVersions: vi.fn().mockResolvedValue(versionList),
+      saveDocument: vi.fn().mockResolvedValue(undefined),
+    })
+    render(<DocumentProvider storageAdapter={adapter}><FullProbe /></DocumentProvider>)
+
+    // Open existing file with versions
+    await act(async () => { fireEvent.click(screen.getByText('open')) })
+    await waitFor(() => {
+      expect(screen.getByTestId('filePath').textContent).toBe('myscript.sutra')
+      expect(screen.getByTestId('versions').textContent).toBe('v1')
+    })
+
+    // Start a new document
+    act(() => { fireEvent.click(screen.getByText('new')) })
+
+    // filePath and versions must be cleared immediately
+    expect(screen.getByTestId('filePath').textContent).toBe('null')
+    expect(screen.getByTestId('versions').textContent).toBe('')
+    expect(screen.getByTestId('dirty').textContent).toBe('false')
+
+    // An edit to the new document and subsequent autosave must NOT write to 'myscript.sutra'
+    fireEvent.click(screen.getByText('edit'))
+    await act(async () => { fireEvent.click(screen.getByText('autosaveNow')) })
+    expect(adapter.saveDocument).toHaveBeenCalledWith('__autosave__', expect.any(String))
+    expect(adapter.saveDocument).not.toHaveBeenCalledWith('myscript.sutra', expect.any(String))
   })
 })

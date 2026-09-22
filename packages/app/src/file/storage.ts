@@ -137,7 +137,6 @@ export async function saveDocument(path: string, content: string): Promise<void>
     tx.oncomplete = () => resolve()
     tx.onerror = () => reject(tx.error)
   })
-  await saveVersion(path, content)
 }
 
 export async function loadDocument(path: string): Promise<string | null> {

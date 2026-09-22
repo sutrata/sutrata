@@ -38,8 +38,10 @@ async function saveFileToDiskWithVersion(
 ): Promise<{ savedName: string; handle: unknown } | null> {
   const result = await saveFileToDisk(name, content, existingHandle as Parameters<typeof saveFileToDisk>[2])
   if (result) {
-    // Create a version entry for this explicit save
+    // Keep document store in sync for recovery
     await saveDocument(result.savedName, content)
+    // Create a version entry for this explicit save (only if different from previous version)
+    await saveVersion(result.savedName, content)
   }
   return result
 }
