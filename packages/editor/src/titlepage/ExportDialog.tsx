@@ -40,6 +40,7 @@ export function ExportDialog() {
   const [romanizeScope, setRomanizeScope] = useState<'off' | 'all' | 'dialogue'>('off')
   const [romanizeVariant, setRomanizeVariant] = useState<RomanizeVariant>('strict')
   const [romanizeReports, setRomanizeReports] = useState(false)
+  const [skipNotes, setSkipNotes] = useState(false)
   const hasIndicText = /[\u0900-\u0DFF]/.test(text)
   const styleChoices = allStyles(customStyles)
   const showStylePicker = tab === 'screenplay' && (format === 'docx' || format === 'pdf')
@@ -83,14 +84,14 @@ export function ExportDialog() {
       } else if (format === 'docx') {
         setWarnings([])
         const { doc, suffix } = screenplayAst()
-        const blob = await exportToDocx(doc, styleOverride || undefined, customStyles)
+        const blob = await exportToDocx(doc, styleOverride || undefined, customStyles, skipNotes)
         downloadBlob(`${baseName}${suffix}.docx`, blob)
         showToast('Exported Word document (.docx)', 'success')
       } else if (format === 'pdf') {
         setWarnings([])
         const { doc, suffix } = screenplayAst()
         const title = `${baseName.toUpperCase()} - SCREENPLAY${suffix ? ' (ROMANIZED)' : ''}`
-        await openScreenplayPrintPreview(doc, title, styleOverride || undefined, customStyles)
+        await openScreenplayPrintPreview(doc, title, styleOverride || undefined, customStyles, skipNotes)
         showToast('Opened Screenplay Print Preview', 'info')
       } else if (format === 'oneliner-print') {
         setWarnings([])
@@ -297,6 +298,20 @@ export function ExportDialog() {
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
                   </select>
+                </div>
+              )}
+
+              {showStylePicker && (
+                <div className="cs-settings-row" style={{ marginTop: '8px', padding: '10px', background: 'var(--cs-ui-bg-panel-subtle, #f4f2ea)', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    id="cs-export-skip-notes"
+                    type="checkbox"
+                    checked={skipNotes}
+                    onChange={e => setSkipNotes(e.target.checked)}
+                  />
+                  <label htmlFor="cs-export-skip-notes" className="cs-settings-label" style={{ fontSize: '12px', margin: 0 }}>
+                    Skip notes ([[ ]])
+                  </label>
                 </div>
               )}
 

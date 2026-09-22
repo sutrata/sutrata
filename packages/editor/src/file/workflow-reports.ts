@@ -490,14 +490,16 @@ export async function openPrintPreview(scenes: WorkflowSceneData[], title = 'One
 
 /** Print Screenplay Preview in formatted style. `styleOverride` picks a style id for
  *  this export only (without touching the document); otherwise the document's
- *  frontmatter `style:` field is used, falling back to the default style. */
+ *  frontmatter `style:` field is used, falling back to the default style. `skipNotes`
+ *  omits both block-level and inline `[[ ]]` notes from the exported document. */
 export async function openScreenplayPrintPreview(
   ast: DocumentNode,
   title = 'Screenplay',
   styleOverride?: string,
   customStyles: ScreenplayStyleDefinition[] = [],
+  skipNotes = false,
 ) {
-  const html = await buildScreenplayPrintHtml(ast, title, styleOverride, customStyles)
+  const html = await buildScreenplayPrintHtml(ast, title, styleOverride, customStyles, skipNotes)
 
   // Desktop shell: generate a real vector-text PDF via the platform's browser
   // engine (WebView2 PrintToPdf on Windows) instead of the OS print dialog,
@@ -522,6 +524,7 @@ async function buildScreenplayPrintHtml(
   title: string,
   styleOverride?: string,
   customStyles: ScreenplayStyleDefinition[] = [],
+  skipNotes = false,
 ): Promise<string> {
   const frontmatter = ast.frontmatter?.data as Record<string, unknown> | undefined
   const defaultLang = (frontmatter?.['lang'] as string) ?? 'en'
@@ -584,7 +587,7 @@ async function buildScreenplayPrintHtml(
       if (s.type === 'bold') return `<strong>${renderSpans(s.spans)}</strong>`
       if (s.type === 'italic') return `<em>${renderSpans(s.spans)}</em>`
       if (s.type === 'underline') return `<u>${renderSpans(s.spans)}</u>`
-      if (s.type === 'note') return `<span class="print-note">[[ ${textHtml(s.text)} ]]</span>`
+      if (s.type === 'note') return skipNotes ? '' : `<span class="print-note">[[ ${textHtml(s.text)} ]]</span>`
       return ''
     }).join('')
   }
@@ -647,7 +650,7 @@ async function buildScreenplayPrintHtml(
       return `<div class="print-lyrics">${renderSpans(n.spans)}</div>`
     }
     if (n.type === 'note') {
-      return `<div class="print-note">${textHtml(n.text)}</div>`
+      return skipNotes ? '' : `<div class="print-note">${textHtml(n.text)}</div>`
     }
     if (n.type === 'comment') {
       return `<div class="print-comment">&lt;!-- ${textHtml(n.text)} --&gt;</div>`

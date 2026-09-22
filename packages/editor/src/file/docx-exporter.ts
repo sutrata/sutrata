@@ -29,22 +29,25 @@ interface TextRunProps {
   underline?: boolean
 }
 
-/** Flatten inline span trees into flat formatting runs */
+/** Flatten inline span trees into flat formatting runs. `skipNotes` drops inline
+ *  `[[ ]]` note spans entirely (see the "Skip notes" export option). */
 function flattenSpans(
   spans: InlineSpan[],
-  props: { bold?: boolean; italic?: boolean; underline?: boolean } = {}
+  props: { bold?: boolean; italic?: boolean; underline?: boolean } = {},
+  skipNotes = false,
 ): TextRunProps[] {
   const result: TextRunProps[] = []
   for (const s of spans) {
     if (s.type === 'text') {
       result.push({ text: s.text, ...props })
     } else if (s.type === 'bold') {
-      result.push(...flattenSpans(s.spans, { ...props, bold: true }))
+      result.push(...flattenSpans(s.spans, { ...props, bold: true }, skipNotes))
     } else if (s.type === 'italic') {
-      result.push(...flattenSpans(s.spans, { ...props, italic: true }))
+      result.push(...flattenSpans(s.spans, { ...props, italic: true }, skipNotes))
     } else if (s.type === 'underline') {
-      result.push(...flattenSpans(s.spans, { ...props, underline: true }))
+      result.push(...flattenSpans(s.spans, { ...props, underline: true }, skipNotes))
     } else if (s.type === 'note') {
+      if (skipNotes) continue
       // Matches whole-line note styling (italic, brackets kept visible).
       result.push({ text: `[[ ${s.text} ]]`, ...props, italic: true })
     }
@@ -173,11 +176,13 @@ function estimateBlockHeightTwips(style: ScreenplayStyleDefinition, keys: CoverE
 /** Main exporter function. `styleOverride` picks a style id for this export only
  *  (without touching the document); otherwise the document's frontmatter `style:`
  *  field is used, falling back to the default style. `customStyles` is the list of
- *  user-imported styles loaded from IndexedDB (see file/storage.ts). */
+ *  user-imported styles loaded from IndexedDB (see file/storage.ts). `skipNotes` omits
+ *  both block-level and inline `[[ ]]` notes from the exported document. */
 export async function exportToDocx(
   ast: DocumentNode,
   styleOverride?: string,
   customStyles: ScreenplayStyleDefinition[] = [],
+  skipNotes = false,
 ): Promise<Blob> {
   const frontmatter = ast.frontmatter?.data as Record<string, unknown> | undefined
   const defaultLang = (frontmatter?.['lang'] as string) ?? 'en'
@@ -318,7 +323,7 @@ export async function exportToDocx(
   // Helper to process standard scene content node and return array of docx components
   function processNode(n: ContentNode): (Paragraph | Table)[] {
     if (n.type === 'action') {
-      const runs = runsFor(flattenSpans(n.spans))
+      const runs = runsFor(flattenSpans(n.spans, {}, skipNotes))
       return [
         new Paragraph({
           style: 'CineAction',
@@ -350,7 +355,7 @@ export async function exportToDocx(
             })
           )
         } else {
-          const dialogueRuns = runsFor(flattenSpans(c.spans))
+          const dialogueRuns = runsFor(flattenSpans(c.spans, {}, skipNotes))
           result.push(
             new Paragraph({
               style: 'CineDialogue',
@@ -382,7 +387,7 @@ export async function exportToDocx(
     }
 
     if (n.type === 'lyrics') {
-      const runs = runsFor(flattenSpans(n.spans), true)
+      const runs = runsFor(flattenSpans(n.spans, {}, skipNotes), true)
       return [
         new Paragraph({
           style: 'CineLyrics',
@@ -392,6 +397,7 @@ export async function exportToDocx(
     }
 
     if (n.type === 'note') {
+      if (skipNotes) return []
       const noteText = `[[ ${n.text} ]]`
       return [
         new Paragraph({
@@ -427,7 +433,7 @@ export async function exportToDocx(
           leftParas.push(
             new Paragraph({
               style: 'CineDialogue',
-              children: runsFor(flattenSpans(c.spans)),
+              children: runsFor(flattenSpans(c.spans, {}, skipNotes)),
             })
           )
         }
@@ -444,7 +450,7 @@ export async function exportToDocx(
           rightParas.push(
             new Paragraph({
               style: 'CineDialogue',
-              children: runsFor(flattenSpans(c.spans)),
+              children: runsFor(flattenSpans(c.spans, {}, skipNotes)),
             })
           )
         }
