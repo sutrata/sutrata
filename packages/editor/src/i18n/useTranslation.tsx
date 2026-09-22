@@ -10,8 +10,11 @@ import kn from '../locales/kn.json'
 import bn from '../locales/bn.json'
 import gu from '../locales/gu.json'
 import mr from '../locales/mr.json'
+import pa from '../locales/pa.json'
+import or from '../locales/or.json'
+import si from '../locales/si.json'
 
-const LOCALES: Record<string, Record<string, string>> = { en, hi, ta, te, ml, kn, bn, gu, mr }
+const LOCALES: Record<string, Record<string, string>> = { en, hi, ta, te, ml, kn, bn, gu, mr, pa, or, si }
 
 interface TranslationContextType {
   locale: string

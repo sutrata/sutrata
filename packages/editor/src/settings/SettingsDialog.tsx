@@ -23,6 +23,9 @@ const UI_LANGUAGES = [
   { code: 'bn', label: 'বাংলা' },
   { code: 'gu', label: 'ગુજરાતી' },
   { code: 'mr', label: 'मराठी' },
+  { code: 'pa', label: 'ਪੰਜਾਬੀ' },
+  { code: 'or', label: 'ଓଡ଼ିଆ' },
+  { code: 'si', label: 'සිංහල' },
 ]
 
 interface Props {
