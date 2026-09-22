@@ -504,31 +504,35 @@ html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
 .cs-tb-btn:hover { background: #fff; border-color: #d8d6cc; }
 .cs-tb-active { background: #1a1a18; border-color: #1a1a18; color: #fff; }
 .cs-tb-active:hover { background: #2e2e2a; border-color: #2e2e2a; }
-.cs-tb-tip { pointer-events: none; position: absolute; bottom: calc(100% + 9px); left: 50%; transform: translateX(-50%); background: #1a1a18; color: #f0ede4; padding: 6px 10px; border-radius: 4px; white-space: nowrap; font-size: 12px; display: flex; gap: 8px; align-items: center; opacity: 0; transition: opacity 0.15s 0.25s; z-index: 400; }
+.cs-tb-tip { pointer-events: none; position: absolute; top: calc(100% + 7px); left: 50%; transform: translateX(-50%); background: #1a1a18; color: #f0ede4; padding: 6px 10px; border: 1px solid rgba(255,255,255,0.16); border-radius: 4px; white-space: nowrap; font-size: 12px; display: flex; gap: 8px; align-items: center; opacity: 0; transition: opacity 0.15s 0.25s; z-index: 400; box-shadow: 0 4px 12px rgba(0,0,0,0.45); }
 .cs-tb-btn:hover .cs-tb-tip { opacity: 1; }
 .cs-tb-sigil { font-family: monospace; color: rgba(240,237,228,0.45); font-size: 11px; }
 .cs-tb-key { color: rgba(240,237,228,0.55); font-size: 11px; }
 
 .cs-element-toolbar {
+  position: relative;
+  z-index: 30;
   display: flex;
   align-items: center;
   gap: 2px;
   padding: 4px 12px;
   background: #efede5;
   border-bottom: 1px solid #d8d6cc;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  overflow: visible;
 }
-.cs-element-toolbar::-webkit-scrollbar { display: none; }
 .cs-tb-sep { width: 1px; height: 20px; background: #d8d6cc; margin: 0 4px; flex-shrink: 0; }
 .cs-tb-overflow { display: none; align-items: center; justify-content: center; width: 30px; height: 28px; margin-left: auto; border: 1px solid #d8d6cc; border-radius: 4px; background: #fff; color: #3d3d38; cursor: pointer; }
 @media (max-width: 640px) {
+  .cs-tb-tip { display: none; }
   .cs-element-toolbar {
     padding: 4px 8px;
     gap: 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
+  .cs-element-toolbar::-webkit-scrollbar { display: none; }
   .cs-tb-btn {
     width: 36px;
     height: 34px;
