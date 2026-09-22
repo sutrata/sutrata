@@ -152,6 +152,16 @@ export const CenteredIcon = ({ size }: IconProps) => (
   </svg>
 )
 
+export const LyricsIcon = ({ size }: IconProps) => (
+  <svg {...base(size)} viewBox="0 0 18 18">
+    <circle cx="5" cy="13" r="2" />
+    <circle cx="13" cy="11" r="2" />
+    <line x1="7" y1="13" x2="7" y2="4" />
+    <line x1="15" y1="11" x2="15" y2="2" />
+    <line x1="7" y1="4" x2="15" y2="2" />
+  </svg>
+)
+
 export const NoteIcon = ({ size }: IconProps) => (
   <svg {...base(size)} viewBox="0 0 18 18">
     <rect x="2" y="3" width="11" height="12" rx="1" />

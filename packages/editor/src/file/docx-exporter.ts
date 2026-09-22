@@ -44,6 +44,9 @@ function flattenSpans(
       result.push(...flattenSpans(s.spans, { ...props, italic: true }))
     } else if (s.type === 'underline') {
       result.push(...flattenSpans(s.spans, { ...props, underline: true }))
+    } else if (s.type === 'note') {
+      // Matches whole-line note styling (italic, brackets kept visible).
+      result.push({ text: `[[ ${s.text} ]]`, ...props, italic: true })
     }
   }
   return result

@@ -42,7 +42,6 @@ const nodes: Record<string, NodeSpec> = {
   character: {
     group: 'block',
     content: 'inline*',
-    attrs: { extension: { default: null }, isDual: { default: false } },
     toDOM: () => ['div', { class: 'cs-character' }, 0],
     parseDOM: [{ tag: 'div.cs-character' }],
   },
@@ -144,6 +143,12 @@ const marks: Record<string, MarkSpec> = {
   underline: {
     toDOM: () => ['u', 0],
     parseDOM: [{ tag: 'u' }],
+  },
+  // Named note_mark, not note, since a block-level `note` node already exists
+  // (whole-line [[ ]] notes) and ProseMirror forbids a name being both.
+  note_mark: {
+    toDOM: () => ['span', { class: 'cs-inline-note' }, 0],
+    parseDOM: [{ tag: 'span.cs-inline-note' }],
   },
 }
 

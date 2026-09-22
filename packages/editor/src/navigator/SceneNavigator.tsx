@@ -585,8 +585,8 @@ export function SceneNavigator() {
               type="button"
               className="cs-nav-action-btn"
               onClick={() => setShowNavSynopsis(!showNavSynopsis)}
-              title={showNavSynopsis ? 'Hide Synopses' : 'Show Synopses'}
-              aria-label={showNavSynopsis ? 'Hide Synopses' : 'Show Synopses'}
+              title={showNavSynopsis ? 'Hide Synopsis & Duration' : 'Show Synopsis & Duration'}
+              aria-label={showNavSynopsis ? 'Hide Synopsis & Duration' : 'Show Synopsis & Duration'}
             >
               {showNavSynopsis ? <EyeIcon size={14} /> : <EyeOffIcon size={14} />}
             </button>
@@ -733,7 +733,7 @@ export function SceneNavigator() {
                 </div>
               )}
 
-              {(scene.status || scene.estDuration) && (
+              {(scene.status || (showNavSynopsis && scene.estDuration)) && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center', marginTop: '6px' }}>
                   {scene.status && (
                     <span
@@ -744,7 +744,7 @@ export function SceneNavigator() {
                       {scene.status}
                     </span>
                   )}
-                  {scene.estDuration && (
+                  {showNavSynopsis && scene.estDuration && (
                     <span
                       className="cs-nav-status"
                       title="Estimated Onscreen Duration"

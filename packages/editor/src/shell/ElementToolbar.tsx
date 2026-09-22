@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { ToolbarButton } from './ToolbarButton'
-import { makeSetBlock, makeToggleMark, undo, redo } from './toolbar-actions'
+import { makeSetBlock, makeSetOrToggleNote, makeToggleMark, undo, redo } from './toolbar-actions'
 import { runCommand, activeBlockType, subscribe } from '../editor/editor-bus'
 import { useTranslation } from '../i18n/useTranslation'
 import {
   UndoIcon, RedoIcon, SceneIcon, ActionIcon, CharacterIcon, DialogueIcon, ParentheticalIcon,
-  TransitionIcon, CenteredIcon, NoteIcon, PageBreakIcon, SectionIcon, BoldIcon, ItalicIcon, UnderlineIcon, OverflowIcon,
+  TransitionIcon, CenteredIcon, LyricsIcon, NoteIcon, PageBreakIcon, SectionIcon, BoldIcon, ItalicIcon, UnderlineIcon, OverflowIcon,
   CloseIcon,
 } from './icons'
 
@@ -26,6 +26,7 @@ const ELEMENTS: ElementDef[] = [
   { type: 'parenthetical', label: 'Parenthetical', sigil: '( )',        shortcut: 'Alt+Shift+P', Icon: ParentheticalIcon, translationKey: 'toolbar.parenthetical' },
   { type: 'transition',    label: 'Transition',    sigil: '>>',         shortcut: 'Alt+Shift+X', Icon: TransitionIcon, translationKey: 'toolbar.transition' },
   { type: 'centered',      label: 'Centered',      sigil: '>> <<',      shortcut: '',            Icon: CenteredIcon, translationKey: 'toolbar.centered' },
+  { type: 'lyrics',        label: 'Lyrics',        sigil: '~',          shortcut: 'Alt+Shift+L', Icon: LyricsIcon, translationKey: 'toolbar.lyrics' },
   { type: 'note',          label: 'Note',          sigil: '[[ ]]',      shortcut: 'Alt+Shift+N', Icon: NoteIcon, translationKey: 'toolbar.note' },
   { type: 'page_break',    label: 'Page Break',    sigil: '===',        shortcut: '',            Icon: PageBreakIcon, translationKey: 'toolbar.pageBreak' },
   { type: 'section',       label: 'Section',       sigil: '#',          shortcut: '',            Icon: SectionIcon, translationKey: 'toolbar.section' },
@@ -51,7 +52,7 @@ export function ElementToolbar() {
             sigil={el.sigil}
             shortcut={el.shortcut || undefined}
             active={activeType === el.type}
-            onClick={() => runCommand(makeSetBlock(el.type))}
+            onClick={() => runCommand(el.type === 'note' ? makeSetOrToggleNote() : makeSetBlock(el.type))}
           >
             <el.Icon size={20} />
           </ToolbarButton>
@@ -149,7 +150,7 @@ export function ElementToolbar() {
                   type="button"
                   className={`cs-tb-overflow-list-item${activeType === el.type ? ' cs-tb-overflow-item-active' : ''}`}
                   onClick={() => {
-                    runCommand(makeSetBlock(el.type))
+                    runCommand(el.type === 'note' ? makeSetOrToggleNote() : makeSetBlock(el.type))
                     setOverflowOpen(false)
                   }}
                 >

@@ -1,5 +1,6 @@
 import { tokenize } from './lexer.js'
 import { parseFrontmatter } from './frontmatter.js'
+import { extractComments, type ExtractedComment } from './comments.js'
 import type {
   DocumentNode, ContentNode, SceneHeadingNode, SceneContentNode,
   CharacterNode, DialogueContentNode, DualDialogueNode,
@@ -13,6 +14,14 @@ function parseInline(text: string): InlineSpan[] {
   let i = 0
   let buf = ''
   while (i < text.length) {
+    if (text.startsWith('[[', i)) {
+      const end = text.indexOf(']]', i + 2)
+      if (end !== -1) {
+        if (buf) { spans.push({ type: 'text', text: buf }); buf = '' }
+        spans.push({ type: 'note', text: text.slice(i + 2, end).trim() })
+        i = end + 2; continue
+      }
+    }
     if (text.startsWith('**', i)) {
       if (buf) { spans.push({ type: 'text', text: buf }); buf = '' }
       const end = text.indexOf('**', i + 2)
@@ -43,10 +52,15 @@ function parseInline(text: string): InlineSpan[] {
   return spans
 }
 
-function parseSceneContent(lines: string[]): SceneContentNode[] {
+function parseSceneContent(lines: string[], comments: Map<string, ExtractedComment>): SceneContentNode[] {
   const blocks = lines.join('\n').split(/\n\n+/).filter(b => b.trim())
   const nodes: SceneContentNode[] = []
   for (const block of blocks) {
+    const extracted = comments.get(block.trim())
+    if (extracted) {
+      nodes.push({ type: 'comment', raw: extracted.raw, text: extracted.text } as CommentNode)
+      continue
+    }
     const blockLines = block.split('\n').filter(l => l.trim() !== '')
     const firstLine = blockLines[0]
     if (!firstLine) continue
@@ -64,7 +78,7 @@ function parseSceneContent(lines: string[]): SceneContentNode[] {
         nodes.push(charNode)
       }
     } else {
-      const node = parseBlock(block)
+      const node = parseBlock(block, comments)
       if (node && node.type !== 'scene-heading') {
         nodes.push(node as SceneContentNode)
       }
@@ -73,15 +87,24 @@ function parseSceneContent(lines: string[]): SceneContentNode[] {
   return nodes
 }
 
-function parseCharacterBlock(lines: string[]): CharacterNode {
+// Matches the {#characters} / bare "# Characters" detection already proven
+// at romanize.ts's registry-scoping heuristic — kept in sync deliberately.
+function isCharacterRegistrySection(id: string | null, text: string): boolean {
+  return id === 'characters' || /^characters$/i.test(text.trim())
+}
+
+function parseCharacterBlock(lines: string[], inCharacterRegistry = false): CharacterNode {
   const firstLine = lines[0]!
   const cueToken = tokenize(firstLine)[0]!
   const children: DialogueContentNode[] = []
+  const metadata: SceneMetadataNode[] = []
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i]!
     if (!line.trim()) continue
     const t = tokenize(line)[0]!
-    if (t.type === 'parenthetical') {
+    if (inCharacterRegistry && t.type === 'scene-metadata') {
+      metadata.push({ type: 'scene-metadata', raw: line, key: t.key!, value: t.value ?? '' })
+    } else if (t.type === 'parenthetical') {
       children.push({ type: 'parenthetical', raw: line, text: t.text ?? '' } as ParentheticalNode)
     } else {
       children.push({ type: 'dialogue', raw: line, spans: parseInline(line.trim()) } as DialogueNode)
@@ -93,10 +116,20 @@ function parseCharacterBlock(lines: string[]): CharacterNode {
     extension: cueToken.extension ?? null,
     isDual: cueToken.isDual ?? false,
     children,
+    ...(metadata.length > 0 ? { metadata } : {}),
   }
 }
 
-function parseBlock(block: string): ContentNode | null {
+function parseBlock(
+  block: string,
+  comments: Map<string, ExtractedComment>,
+  inCharacterRegistry = false
+): ContentNode | null {
+  const extracted = comments.get(block.trim())
+  if (extracted) {
+    return { type: 'comment', raw: extracted.raw, text: extracted.text } as CommentNode
+  }
+
   const lines = block.split('\n').filter(l => l.trim() !== '')
   if (lines.length === 0) return null
 
@@ -140,11 +173,11 @@ function parseBlock(block: string): ContentNode | null {
       }
       // raw covers only the heading sigil line + scene synopsis + metadata (not children)
       heading.raw = lines.slice(0, i).join('\n')
-      heading.children = parseSceneContent(lines.slice(i))
+      heading.children = parseSceneContent(lines.slice(i), comments)
       return heading
     }
     case 'character':
-      return parseCharacterBlock(lines)
+      return parseCharacterBlock(lines, inCharacterRegistry)
     default:
       return {
         type: 'action', raw: block,
@@ -156,17 +189,28 @@ function parseBlock(block: string): ContentNode | null {
 export function parse(source: string): DocumentNode {
   const normalized = source.replace(/\r\n/g, '\n')
   const frontmatter = parseFrontmatter(normalized)
-  const body = frontmatter ? normalized.slice(frontmatter.raw.length) : normalized
+  const rawBody = frontmatter ? normalized.slice(frontmatter.raw.length) : normalized
+  // Multi-line <!-- ... --> comments (including ones spanning a blank line)
+  // are extracted before block-splitting so they're never fragmented or
+  // classified by only their first line — see comments.ts.
+  const { body, comments } = extractComments(rawBody)
   // Blank-line count is normalized: serializer emits exactly \n\n between blocks
   const blocks = body.split(/\n\n+/).filter(b => b.trim())
   const children: ContentNode[] = []
   let i = 0
+  // Tracks whether we're currently inside a {#characters}/"# Characters"
+  // registry section, so @cue blocks there parse trailing "& key: value"
+  // lines as metadata instead of dialogue (§8.2) — cleared on the next
+  // section or scene-heading, mirroring the loop below that already stops
+  // collecting a scene's content at those same boundaries.
+  let inCharacterRegistry = false
   while (i < blocks.length) {
     const block = blocks[i]!
     const firstLine = block.split('\n').find(l => l.trim() !== '') ?? ''
     const firstToken = tokenize(firstLine)[0]!
 
     if (firstToken.type === 'scene-heading') {
+      inCharacterRegistry = false
       // Collect this block plus all following non-heading blocks as scene children
       const sceneLines = block.split('\n').filter(l => l.trim() !== '')
       i++
@@ -201,11 +245,14 @@ export function parse(source: string): DocumentNode {
         ...remainingHeadingLines,
         ...contentBlocks.flatMap(b => ['', ...b.split('\n')]),
       ]
-      heading.children = parseSceneContent(allContentLines)
+      heading.children = parseSceneContent(allContentLines, comments)
       children.push(heading)
     } else {
-      const node = parseBlock(block)
+      const node = parseBlock(block, comments, inCharacterRegistry)
       if (node) children.push(node)
+      if (node && node.type === 'section') {
+        inCharacterRegistry = isCharacterRegistrySection(node.id, node.text)
+      }
       i++
     }
   }

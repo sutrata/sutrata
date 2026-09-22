@@ -13,6 +13,7 @@ function inlineToMarkdown(node: PmNode): string {
       if (child.marks.find(m => m.type === schema.marks['bold'])) text = `**${text}**`
       else if (child.marks.find(m => m.type === schema.marks['italic'])) text = `*${text}*`
       else if (child.marks.find(m => m.type === schema.marks['underline'])) text = `_${text}_`
+      else if (child.marks.find(m => m.type === schema.marks['note_mark'])) text = `[[${text}]]`
       result += text
     }
   })
@@ -99,10 +100,11 @@ export function prosemirrorToSutra(doc: PmNode): string {
     const type = node.type.name
 
     if (type === 'character') {
-      // Group: character cue + following dialogue/parenthetical lines (no blank line between them)
-      const ext = node.attrs['extension'] ? ` ${node.attrs['extension'] as string}` : ''
-      const dual = node.attrs['isDual'] ? ' ^' : ''
-      const lines: string[] = [`@${nodeText(node)}${ext}${dual}`]
+      // Group: character cue + following dialogue/parenthetical lines (no blank line between them).
+      // Name, extension and dual-marker are all just typed text now — see
+      // character-decoration-plugin.ts — so the node's own text is the
+      // whole cue line, verbatim.
+      const lines: string[] = [`@${nodeText(node)}`]
       i++
       while (i < pmNodes.length) {
         const next = pmNodes[i]!

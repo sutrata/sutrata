@@ -584,6 +584,7 @@ async function buildScreenplayPrintHtml(
       if (s.type === 'bold') return `<strong>${renderSpans(s.spans)}</strong>`
       if (s.type === 'italic') return `<em>${renderSpans(s.spans)}</em>`
       if (s.type === 'underline') return `<u>${renderSpans(s.spans)}</u>`
+      if (s.type === 'note') return `<span class="print-note">[[ ${textHtml(s.text)} ]]</span>`
       return ''
     }).join('')
   }

@@ -27,7 +27,7 @@ export interface Token {
 
 const SCENE_HEADING  = /^##(?:\s+(.*?))?(?:\s+\{#([^}]+)\})?\s*$/
 const SECTION        = /^#(?:\s+(.*?))?(?:\s+\{#([^}]+)\})?\s*$/
-const CHARACTER      = /^@(.*?)(?:\s+(\(.*?\)))?\s*(\^)?\s*$/
+const CHARACTER      = /^@(.*?)((?:\s+\([^()]*\))+)?\s*(\^)?\s*$/
 const METADATA       = /^&\s+([a-zA-Z0-9_-]+):\s*(.*)$/
 const CENTERED       = /^>>\s+(.+?)\s+<<\s*$/
 const TRANSITION     = /^>>\s+(.+?)\s*$/
@@ -35,7 +35,7 @@ const LYRICS         = /^~\s+(.*)$/
 const NOTE_SINGLE    = /^\[\[\s*(.*?)\s*\]\]\s*$/
 const COMMENT        = /^<!--([\s\S]*?)-->\s*$/
 const PAGE_BREAK     = /^===\s*$/
-const PARENTHETICAL  = /^\(\s*(.*?)\s*\)\s*$/
+const PARENTHETICAL  = /^[(（]\s*(.*?)\s*[)）]\s*$/
 
 /**
  * Tokenizes a single line of Sutra text.
@@ -75,7 +75,7 @@ export function tokenize(line: string): Token[] {
   if (m) return [{
     type: 'character', raw,
     text: (m[1] ?? '').trim(),
-    extension: m[2] ?? null,
+    extension: m[2] ? m[2].trim() : null,
     isDual: m[3] === '^',
   }]
 

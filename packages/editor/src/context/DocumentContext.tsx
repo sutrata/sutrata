@@ -7,7 +7,7 @@ import type { StorageAdapter } from '../extensions/storage-adapter'
 import { importDocx as importDocxToSutra } from '../file/docx-importer'
 import { runCommand, getEditorView } from '../editor/editor-bus'
 import { setFlatFrontmatterField } from '../editor/frontmatter-field'
-import { makeSetBlock } from '../shell/toolbar-actions'
+import { makeSetBlock, makeSetOrToggleNote } from '../shell/toolbar-actions'
 import { resolveStyle } from '../styles/registry'
 import type { ScreenplayStyleDefinition } from '../styles/types'
 
@@ -532,6 +532,11 @@ export function DocumentProvider({ children, storageAdapter }: { children: React
 
       // Block type shortcuts  Alt+Shift+letter
       if (e.altKey && e.shiftKey && !mod) {
+        if (e.code === 'KeyN') {
+          e.preventDefault()
+          runCommand(makeSetOrToggleNote())
+          return
+        }
         const blockMap: Record<string, Parameters<typeof makeSetBlock>> = {
           'KeyH': ['scene_heading', { id: null }],
           'KeyA': ['action'],
@@ -539,7 +544,6 @@ export function DocumentProvider({ children, storageAdapter }: { children: React
           'KeyD': ['dialogue'],
           'KeyP': ['parenthetical'],
           'KeyX': ['transition'],
-          'KeyN': ['note'],
         }
         if (e.code in blockMap) {
           e.preventDefault()

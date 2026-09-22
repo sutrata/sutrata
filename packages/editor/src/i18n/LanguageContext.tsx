@@ -114,6 +114,7 @@ function getBlockText(block: ContentNode): string {
     return blockAny.spans
       .map((span: any) => {
         if (span.type === 'text') return span.text
+        if (span.type === 'note') return span.text
         if (span.spans) return extractTextFromSpans(span.spans)
         return ''
       })
@@ -128,6 +129,7 @@ function extractTextFromSpans(spans: any[]): string {
   return spans
     .map(span => {
       if (span.type === 'text') return span.text
+      if (span.type === 'note') return span.text
       if (span.spans) return extractTextFromSpans(span.spans)
       return ''
     })

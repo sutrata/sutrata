@@ -29,6 +29,11 @@ describe('builtin-styles', () => {
   it('Traditional note text is gray, not the default black', () => {
     expect(TRADITIONAL_STYLE.elements.note.color).toBe('666666')
   })
+
+  it('Traditional gives lyrics a small left margin so they read as distinct from flush-left action', () => {
+    expect(TRADITIONAL_STYLE.elements.lyrics.marginLeftPct).toBeGreaterThan(0)
+    expect(TRADITIONAL_STYLE.elements.action.marginLeftPct ?? 0).toBe(0)
+  })
 })
 
 describe('registry', () => {
@@ -74,6 +79,12 @@ describe('css-adapter', () => {
     expect(vars['--cs-action-text-align']).toBe('left')
     expect(vars['--cs-lyrics-font-style']).toBe('italic')
     expect(vars['--cs-scene-heading-margin-top']).toBe('13pt')
+  })
+
+  it('carries Traditional\'s lyrics left margin through to the CSS var, unlike flush-left action', () => {
+    const vars = styleToCssVars(TRADITIONAL_STYLE)
+    expect(vars['--cs-lyrics-margin-left']).toBe('6%')
+    expect(vars['--cs-action-margin-left']).toBe('0%')
   })
 
   it('never emits margin-bottom / spaceAfterPt-derived vars (editor has no space-after concept)', () => {

@@ -118,7 +118,7 @@ export const TRADITIONAL_STYLE: ScreenplayStyleDefinition = {
     dialogue: { fontSizePt: 10, marginLeftPct: 24, marginRightPct: 17, spaceAfterPt: 9 },
     transition: { fontSizePt: 10, align: 'right', spaceBeforePt: 9, spaceAfterPt: 9 },
     centered: { fontSizePt: 10, align: 'center', italic: true, spaceBeforePt: 9, spaceAfterPt: 9 },
-    lyrics: { fontSizePt: 10, italic: true, spaceAfterPt: 5 },
+    lyrics: { fontSizePt: 10, italic: true, marginLeftPct: 6, spaceAfterPt: 5 },
     section: { fontSizePt: 12, bold: true, spaceBeforePt: 27, spaceAfterPt: 9 },
     note: { fontSizePt: 10, color: '666666', spaceAfterPt: 5 },
     comment: { fontSizePt: 13, italic: true, spaceAfterPt: 5 },

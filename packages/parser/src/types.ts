@@ -65,6 +65,9 @@ export interface CharacterNode extends BaseNode {
   extension: string | null   // "(V.O.)", "(O.S.)", etc.
   isDual: boolean             // true if ^ suffix
   children: DialogueContentNode[]
+  // Populated only for a @cue parsed inside a {#characters} registry section
+  // (§8.2) — "& key: value" lines there are metadata, not dialogue.
+  metadata?: SceneMetadataNode[]
 }
 
 export interface DialogueNode extends BaseNode {
@@ -118,6 +121,7 @@ export type InlineSpan =
   | { type: 'bold'; spans: InlineSpan[] }
   | { type: 'italic'; spans: InlineSpan[] }
   | { type: 'underline'; spans: InlineSpan[] }
+  | { type: 'note'; text: string }
 
 export type ContentNode =
   | SectionNode

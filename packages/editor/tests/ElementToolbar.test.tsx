@@ -18,4 +18,19 @@ describe('ElementToolbar', () => {
     expect(labels.indexOf('Bold')).toBeGreaterThan(labels.indexOf('Scene Heading'))
     expect(labels).toContain('Underline')
   })
+
+  it('renders a button for every screenplay element, including Lyrics', () => {
+    render(
+      <TranslationProvider>
+        <ElementToolbar />
+      </TranslationProvider>
+    )
+    const labels = screen.getAllByRole('button').map(b => b.getAttribute('aria-label'))
+    for (const name of [
+      'Scene Heading', 'Action', 'Character', 'Dialogue', 'Parenthetical',
+      'Transition', 'Centered', 'Lyrics', 'Note', 'Page Break', 'Section',
+    ]) {
+      expect(labels).toContain(name)
+    }
+  })
 })

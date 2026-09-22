@@ -367,6 +367,21 @@ html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
   margin-top: var(--cs-character-margin-top, 0.5em);
 }
 
+/* Trailing "(V.O.)"/"(O.S.)" extension and dual-dialogue "^" marker —
+   detected live from the text by character-decoration-plugin.ts, not a
+   separate control. Styled like .cs-parenthetical: not bold, since the
+   character name around it is. */
+.cs-character-extension {
+  font-weight: normal;
+  font-size: var(--cs-parenthetical-font-size, 13pt);
+  color: var(--cs-parenthetical-color, inherit);
+}
+
+.cs-character-dual-marker {
+  font-weight: normal;
+  opacity: 0.6;
+}
+
 .cs-parenthetical {
   font-size: var(--cs-parenthetical-font-size, 13pt);
   color: var(--cs-parenthetical-color, inherit);
@@ -437,6 +452,15 @@ html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
   color: var(--cs-note-color, inherit);
   margin-left: max(var(--cs-note-margin-left, 10%), 8px);
   margin-right: max(var(--cs-note-margin-right, 8%), 8px);
+}
+
+/* Inline [[ ]] production note (note_mark) — embedded mid-line, so a subtle
+   highlight rather than the block-level .cs-note's background/border. */
+.cs-inline-note {
+  background: var(--cs-note-bg, #fffbeb);
+  color: var(--cs-note-border-color, #d97706);
+  border-radius: 2px;
+  padding: 0 2px;
 }
 
 .cs-comment {
@@ -1103,8 +1127,30 @@ html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
 .cs-editor-mount.cs-force-italic-bn .cs-lang-bn,
 .cs-editor-mount.cs-force-italic-gu .cs-lang-gu,
 .cs-editor-mount.cs-force-italic-pa .cs-lang-pa,
-.cs-editor-mount.cs-force-italic-or .cs-lang-or {
+.cs-editor-mount.cs-force-italic-or .cs-lang-or,
+.cs-editor-mount.cs-force-italic-si .cs-lang-si {
   font-style: italic;
+}
+
+/* On a forced-italic script, normal text is already italic (above), so
+   content that's *actually* meant to stand out as italic — the italic mark
+   (plain <em>, no class — schema.ts) and lyrics lines (.cs-lyrics, italic
+   by default in screenplay.css/builtin-styles.ts) — would be visually
+   indistinguishable from it. Flip those to the upright/regular face instead,
+   so emphasis and lyrics still read as visually distinct from surrounding
+   body text. Higher specificity than both rules above, so this always wins
+   without needing !important. */
+.cs-editor-mount.cs-force-italic-hi .cs-lang-hi em, .cs-editor-mount.cs-force-italic-hi .cs-lang-hi.cs-lyrics,
+.cs-editor-mount.cs-force-italic-ta .cs-lang-ta em, .cs-editor-mount.cs-force-italic-ta .cs-lang-ta.cs-lyrics,
+.cs-editor-mount.cs-force-italic-te .cs-lang-te em, .cs-editor-mount.cs-force-italic-te .cs-lang-te.cs-lyrics,
+.cs-editor-mount.cs-force-italic-kn .cs-lang-kn em, .cs-editor-mount.cs-force-italic-kn .cs-lang-kn.cs-lyrics,
+.cs-editor-mount.cs-force-italic-ml .cs-lang-ml em, .cs-editor-mount.cs-force-italic-ml .cs-lang-ml.cs-lyrics,
+.cs-editor-mount.cs-force-italic-bn .cs-lang-bn em, .cs-editor-mount.cs-force-italic-bn .cs-lang-bn.cs-lyrics,
+.cs-editor-mount.cs-force-italic-gu .cs-lang-gu em, .cs-editor-mount.cs-force-italic-gu .cs-lang-gu.cs-lyrics,
+.cs-editor-mount.cs-force-italic-pa .cs-lang-pa em, .cs-editor-mount.cs-force-italic-pa .cs-lang-pa.cs-lyrics,
+.cs-editor-mount.cs-force-italic-or .cs-lang-or em, .cs-editor-mount.cs-force-italic-or .cs-lang-or.cs-lyrics,
+.cs-editor-mount.cs-force-italic-si .cs-lang-si em, .cs-editor-mount.cs-force-italic-si .cs-lang-si.cs-lyrics {
+  font-style: normal;
 }
 
 /* Status bar */

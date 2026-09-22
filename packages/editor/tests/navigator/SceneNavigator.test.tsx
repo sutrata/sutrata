@@ -123,6 +123,32 @@ describe('SceneNavigator', () => {
     expect(row!.querySelector('.cs-nav-scene-synopsis')).not.toBeNull()
   })
 
+  it('hides estimated duration along with synopsis when "Hide Synopsis & Duration" is toggled', async () => {
+    const text = '## INT. HOUSE - DAY\n& synopsis: A scene.\n& est-duration: 01:15\n'
+    await act(async () => {
+      render(<Wrapper text={text} />)
+    })
+
+    expect(screen.getByText('A scene.')).toBeDefined()
+    expect(screen.getByText('⏱ 01:15')).toBeDefined()
+
+    const toggle = screen.getByLabelText('Hide Synopsis & Duration')
+    await act(async () => {
+      fireEvent.click(toggle)
+    })
+
+    expect(screen.queryByText('A scene.')).toBeNull()
+    expect(screen.queryByText('⏱ 01:15')).toBeNull()
+
+    const showToggle = screen.getByLabelText('Show Synopsis & Duration')
+    await act(async () => {
+      fireEvent.click(showToggle)
+    })
+
+    expect(screen.getByText('A scene.')).toBeDefined()
+    expect(screen.getByText('⏱ 01:15')).toBeDefined()
+  })
+
   it('dispatches to CodeMirror for frontmatter jump in source mode', async () => {
     const mockCmView = {
       dispatch: vi.fn(),
