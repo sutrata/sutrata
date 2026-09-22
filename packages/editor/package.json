@@ -6,7 +6,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc && mkdir -p dist/shell/fonts dist/styles && cp src/shell/fonts/fonts.css dist/shell/fonts/fonts.css && cp src/styles/screenplay.css dist/styles/screenplay.css && cp src/desktop-api.d.ts dist/desktop-api.d.ts",
+    "build": "tsc && node scripts/copy-assets.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
