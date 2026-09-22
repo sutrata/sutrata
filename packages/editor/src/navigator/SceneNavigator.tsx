@@ -7,7 +7,7 @@ import { getEditorView, getSourceView } from '../editor/editor-bus'
 import { schema } from '../editor/schema'
 import { EditorView as CmView } from '@codemirror/view'
 import { StatisticsDialog } from './StatisticsDialog'
-import { EyeIcon, EyeOffIcon, LockIcon, StatsIcon, SparklesIcon, ClockIcon } from '../shell/icons'
+import { EyeIcon, EyeOffIcon, LockIcon, StatsIcon, SparklesIcon, ClockIcon, CloseIcon } from '../shell/icons'
 import { getAIConfig, callAI, getApiKey } from '../ai/ai-client'
 import { SYNOPSIS_GENERATION_PROMPT, DURATION_ESTIMATION_PROMPT } from '../ai/prompts'
 import { prosemirrorToSutra } from '../editor/prosemirror-to-sutra'
@@ -209,7 +209,7 @@ function lockNumbersInText(text: string): string {
 }
 
 export function SceneNavigator() {
-  const { text, setText, setAIOnboardingVisible, showToast } = useDocument()
+  const { text, setText, setAIOnboardingVisible, showToast, setNavVisible } = useDocument()
   const { t } = useTranslation()
   const [scenes, setScenes] = useState<SceneEntry[]>([])
   const [dragIndex, setDragIndex] = useState<number | null>(null)
@@ -467,7 +467,10 @@ export function SceneNavigator() {
     view.dispatch(tr)
     view.focus()
     view.dom.closest('.cs-main')?.scrollTo({ top: 0, behavior: 'smooth' })
-  }, [])
+    if (typeof window !== 'undefined' && window.innerWidth <= 640) {
+      setNavVisible(false)
+    }
+  }, [setNavVisible])
 
   const handleJump = useCallback((scene: SceneEntry) => {
     const view = getEditorView()
@@ -479,6 +482,9 @@ export function SceneNavigator() {
           effects: CmView.scrollIntoView(scene.textOffset, { y: 'start' }),
         })
         cmView.focus()
+        if (typeof window !== 'undefined' && window.innerWidth <= 640) {
+          setNavVisible(false)
+        }
       }
       return
     }
@@ -502,10 +508,13 @@ export function SceneNavigator() {
       const domNode = view.nodeDOM(headingPmPos)
       const el = domNode instanceof Element ? domNode : (domNode as Node | null)?.parentElement
       el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      if (typeof window !== 'undefined' && window.innerWidth <= 640) {
+        setNavVisible(false)
+      }
     } catch {
       /* at doc boundary — ignore */
     }
-  }, [])
+  }, [setNavVisible])
 
   const handleDragStart = useCallback((idx: number) => {
     setDragIndex(idx)
@@ -646,6 +655,17 @@ export function SceneNavigator() {
 
   return (
     <div className="cs-navigator" role="navigation" aria-label="Scene Navigator">
+      <div className="cs-nav-mobile-bar">
+        <span className="cs-nav-mobile-title">{t('navigator.title')}</span>
+        <button
+          type="button"
+          className="cs-nav-mobile-close"
+          aria-label="Close navigator"
+          onClick={() => setNavVisible(false)}
+        >
+          <CloseIcon size={18} />
+        </button>
+      </div>
       <div className="cs-nav-list">
         <button
           type="button"

@@ -20,7 +20,7 @@ import { SelectionMenu } from '../editor/SelectionMenu'
 
 export function AppShell() {
   const {
-    mode, ribbonVisible, navVisible, exportVisible, settingsVisible,
+    mode, ribbonVisible, navVisible, setNavVisible, exportVisible, settingsVisible,
     setSettingsVisible, styleVisible, setStyleVisible, metadataVisible,
     voiceActive, aiOnboardingVisible, setAIOnboardingVisible,
     confirmModal, closeConfirm, toasts, dismissToast,
@@ -40,7 +40,16 @@ export function AppShell() {
       {voiceActive && <VoiceToolbar />}
       {ribbonVisible && <ElementToolbar />}
       <div className="cs-shell-body">
-        {navVisible && <SceneNavigator />}
+        {navVisible && (
+          <>
+            <div
+              className="cs-nav-backdrop"
+              aria-hidden="true"
+              onClick={() => setNavVisible(false)}
+            />
+            <SceneNavigator />
+          </>
+        )}
         <div className="cs-editor-area">
           <main className="cs-main">
             {mode === 'formatted' ? <EditorView /> : <SourceView />}

@@ -70,16 +70,16 @@ export function StatusBar() {
     <>
       <footer className="cs-status-bar" role="contentinfo" aria-label="Status bar">
         <div className="cs-sb-left">
-          <span className="cs-sb-metric" title={t('statusbar.scenesTooltip')}>
-            <strong>{scenes.length}</strong> {scenes.length === 1 ? t('statusbar.scene') : t('statusbar.scenes')}
+          <span className="cs-sb-metric cs-sb-metric-scenes" title={t('statusbar.scenesTooltip')}>
+            <strong>{scenes.length}</strong> <span className="cs-sb-metric-label">{scenes.length === 1 ? t('statusbar.scene') : t('statusbar.scenes')}</span>
           </span>
           <span className="cs-sb-sep">•</span>
-          <span className="cs-sb-metric" title={t('statusbar.pagesTooltip')}>
-            <strong>~{pageEstimate}</strong> {pageEstimate === 1 ? t('statusbar.page') : t('statusbar.pages')}
+          <span className="cs-sb-metric cs-sb-metric-pages" title={t('statusbar.pagesTooltip')}>
+            <strong>~{pageEstimate}</strong> <span className="cs-sb-metric-label">{pageEstimate === 1 ? t('statusbar.page') : t('statusbar.pages')}</span>
           </span>
-          <span className="cs-sb-sep">•</span>
-          <span className="cs-sb-metric" title={t('statusbar.wordsTooltip')}>
-            <strong>{wordCount.toLocaleString()}</strong> {t('statusbar.words')}
+          <span className="cs-sb-sep cs-sb-words-sep">•</span>
+          <span className="cs-sb-metric cs-sb-metric-words" title={t('statusbar.wordsTooltip')}>
+            <strong>{wordCount.toLocaleString()}</strong> <span className="cs-sb-metric-label">{t('statusbar.words')}</span>
           </span>
         </div>
 

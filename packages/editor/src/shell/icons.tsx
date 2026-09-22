@@ -307,3 +307,19 @@ export const ClockIcon = ({ size }: IconProps) => (
     <polyline points="8 4.5 8 8 10.5 9.5" />
   </svg>
 )
+
+export const MenuIcon = ({ size }: IconProps) => (
+  <svg {...base(size)}>
+    <line x1="2.5" y1="4.5" x2="13.5" y2="4.5" />
+    <line x1="2.5" y1="8" x2="13.5" y2="8" />
+    <line x1="2.5" y1="11.5" x2="13.5" y2="11.5" />
+  </svg>
+)
+
+export const CloseIcon = ({ size }: IconProps) => (
+  <svg {...base(size)}>
+    <line x1="3.5" y1="3.5" x2="12.5" y2="12.5" />
+    <line x1="12.5" y1="3.5" x2="3.5" y2="12.5" />
+  </svg>
+)
+
