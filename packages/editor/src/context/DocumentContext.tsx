@@ -124,9 +124,11 @@ export function DocumentProvider({ children, storageAdapter }: { children: React
   const [mode, setMode] = useState<EditorMode>('formatted')
   const [filePath, setFilePath] = useState<string | null>(null)
   const [isDirty, setIsDirty] = useState(false)
-  // Which of the two "clean" states applies once isDirty is false: written to a
-  // real file the user picked, or only backed up in this browser's autosave
-  // store. null = a never-touched, never-saved document (nothing to lose yet).
+  // Where the most recent save attempt went. isDirty tracks "does this differ
+  // from the real file on disk" (VS Code-style) — a local autosave backs the
+  // content up but does NOT clear isDirty, only saveFile()/saveFileAs() does.
+  // lastSaveTarget just tells the UI which kind of save last happened, so it
+  // can show e.g. "backed up locally, not yet saved" while still dirty.
   const [lastSaveTarget, setLastSaveTarget] = useState<'file' | 'local' | null>(null)
   const [ribbonVisible, setRibbonVisible] = useState(true)
   const [navVisible, setNavVisible] = useState(() => window.innerWidth > 640)
@@ -257,9 +259,15 @@ export function DocumentProvider({ children, storageAdapter }: { children: React
     try {
       await storageAdapter.saveDocument(path, textRef.current)
       writeRecoveryPointer(path)
-      setDirty(false)
       setLastSaveTarget('local')
       autosaveFailedRef.current = false
+      // Deliberately NOT setDirty(false) here — this is a local backup, not a
+      // save to the real file, so the document must keep showing as unsaved
+      // (VS Code-style) until saveFile()/saveFileAs() succeeds. Still reset the
+      // ceiling/ref below so a marathon typing session keeps getting backed up
+      // roughly every AUTOSAVE_MAX_WAIT_MS instead of only once.
+      if (maxWaitTimerRef.current) { clearTimeout(maxWaitTimerRef.current); maxWaitTimerRef.current = null }
+      dirtySinceRef.current = null
     } catch {
       if (!autosaveFailedRef.current) {
         autosaveFailedRef.current = true

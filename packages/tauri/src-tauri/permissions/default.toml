@@ -5,5 +5,10 @@ commands.allow = [
   "read_file",
   "write_file",
   "show_open_dialog",
-  "show_save_dialog"
+  "show_save_dialog",
+  "show_save_pdf_dialog",
+  "export_html_to_pdf",
+  "autosave_write",
+  "autosave_read",
+  "close_main_window"
 ]

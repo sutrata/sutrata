@@ -41,18 +41,17 @@ export function StatusBar() {
   const { t } = useTranslation()
   const [statsOpen, setStatsOpen] = useState(false)
 
-  // Three states, not two: "saved" meant different guarantees depending on
-  // whether the content ever reached a real file vs. only this browser's
-  // local autosave backup — say so explicitly instead of a single "saved".
+  // VS Code-style: a local autosave backs the content up but never counts as
+  // "saved" in the main label — only a real write to the file (saveFile/
+  // saveFileAs, which clears isDirty) does. While still dirty, the tooltip
+  // says whether that local backup has caught up with the latest edits yet.
   const saveLabel = isDirty
     ? t('statusbar.unsavedChanges')
     : lastSaveTarget === 'file' ? t('statusbar.savedToFile')
-    : lastSaveTarget === 'local' ? t('statusbar.savedLocally')
     : t('statusbar.allChangesSaved')
   const saveTooltip = isDirty
-    ? undefined
+    ? lastSaveTarget === 'local' ? t('statusbar.savedLocallyTooltip') : undefined
     : lastSaveTarget === 'file' ? t('statusbar.savedToFileTooltip')
-    : lastSaveTarget === 'local' ? t('statusbar.savedLocallyTooltip')
     : undefined
 
   const scenes = useMemo(() => buildSceneList(text), [text])

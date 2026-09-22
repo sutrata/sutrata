@@ -113,6 +113,32 @@ describe('DocumentContext reload recovery (Ctrl-R data loss fix)', () => {
     expect(screen.getByTestId('toasts').textContent).toContain('Recovered unsaved changes')
   })
 
+  it('stays marked dirty after the scheduled autosave re-backs-up a just-recovered draft (regression: reopening must not silently look saved)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      localStorage.setItem(RECOVERY_POINTER_KEY, JSON.stringify({ path: '__autosave__', updatedAt: Date.now() }))
+      const adapter = makeMockStorageAdapter({
+        loadDocument: vi.fn().mockResolvedValue('## Scene 1\n\nRECOVERED CONTENT.\n'),
+      })
+
+      render(<DocumentProvider storageAdapter={adapter}><FullProbe /></DocumentProvider>)
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+      expect(screen.getByTestId('text').textContent).toContain('RECOVERED CONTENT')
+      expect(screen.getByTestId('dirty').textContent).toBe('true')
+
+      // The debounce/ceiling autosave fires on its own (no further edits) and
+      // backs the recovered draft up again — it must not clear isDirty, or the
+      // footer would flip to "saved" for a file that was never actually written.
+      await act(async () => { await vi.advanceTimersByTimeAsync(4000) })
+      expect(adapter.saveDocument).toHaveBeenCalled()
+      expect(screen.getByTestId('dirty').textContent).toBe('true')
+      expect(screen.getByTestId('lastSaveTarget').textContent).toBe('local')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('restores under the real filePath when the pointer names one', async () => {
     localStorage.setItem(RECOVERY_POINTER_KEY, JSON.stringify({ path: 'myscript.sutra', updatedAt: Date.now() }))
     const adapter = makeMockStorageAdapter({
@@ -198,6 +224,26 @@ describe('DocumentContext three-state save status (Phase 2)', () => {
     await act(async () => { fireEvent.click(screen.getByText('autosaveNow')) })
 
     expect(screen.getByTestId('lastSaveTarget').textContent).toBe('local')
+  })
+
+  it('VS Code-style: a local autosave backs content up but does NOT clear isDirty — only saveFile does', async () => {
+    const adapter = makeMockStorageAdapter({
+      saveFile: vi.fn().mockResolvedValue({ savedName: 'myscript.sutra', handle: null }),
+    })
+    render(<DocumentProvider storageAdapter={adapter}><FullProbe /></DocumentProvider>)
+
+    fireEvent.click(screen.getByText('edit'))
+    expect(screen.getByTestId('dirty').textContent).toBe('true')
+
+    await act(async () => { fireEvent.click(screen.getByText('autosaveNow')) })
+    // Backed up locally, but still "unsaved" relative to the real file.
+    expect(adapter.saveDocument).toHaveBeenCalled()
+    expect(screen.getByTestId('lastSaveTarget').textContent).toBe('local')
+    expect(screen.getByTestId('dirty').textContent).toBe('true')
+
+    await act(async () => { fireEvent.click(screen.getByText('save')) })
+    expect(screen.getByTestId('dirty').textContent).toBe('false')
+    expect(screen.getByTestId('lastSaveTarget').textContent).toBe('file')
   })
 
   it('marks lastSaveTarget "file" after saveFile, overriding a prior local autosave', async () => {
