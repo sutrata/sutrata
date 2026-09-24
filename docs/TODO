@@ -25,14 +25,6 @@
    not offering them — need actual pa.json/or.json/si.json translations first.
    (Checked footer LanguageStatus's script-language dropdown too, per report —
    that one already has Punjabi, Odia, and Sinhala; nothing to fix there.)
-6. Extension points: dependency-inject AIProvider, SpeechProvider, and
-   SessionContext (OSS spec §11.5). They are type-only in
-   packages/editor/src/extensions/types.ts; ai-client.ts and voice-service.ts
-   are still imported directly by VoiceToolbar, SettingsDialog, SceneNavigator,
-   StatusBar, VoiceConfirmDialog, and OnboardingDialog. Follow the
-   StorageAdapter pattern (interface + React context + useXAdapter() hook,
-   provider prop on DocumentProvider, concrete default in @sutrata/app).
-   SessionContext must actually drive read-only / comment-only modes.
 7. Extension points: make PanelRegistry, CommandRegistry, and ExportRegistry
    real. AppShell has a fixed panel set and ExportDialog a fixed format list;
    embedders need to add panels, commands/shortcuts, and export formats

@@ -11,9 +11,15 @@ import { useDocument } from '../context/DocumentContext'
 import { SceneHeadingView } from './scene-heading-view'
 import { FrontmatterFieldView } from './frontmatter-field-view'
 import { applyStyleVars } from '../styles/css-adapter'
+import { useCanEdit } from '../extensions/session'
 
 export function EditorView() {
   const { text, setText, resolvedStyle } = useDocument()
+  // Read-only sessions: not editable, and every doc-changing transaction —
+  // typed, or dispatched by a toolbar/navigator/node view — is dropped here.
+  const canEdit = useCanEdit()
+  const canEditRef = useRef(canEdit)
+  canEditRef.current = canEdit
   const mountRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<PmEditorView | null>(null)
   const textRef = useRef(text)
@@ -35,7 +41,9 @@ export function EditorView() {
         scene_heading: (node, view, getPos) => new SceneHeadingView(node, view, getPos),
         frontmatter_field: (node, view, getPos) => new FrontmatterFieldView(node, view, getPos),
       },
+      editable: () => canEditRef.current,
       dispatchTransaction(tr) {
+        if (tr.docChanged && !canEditRef.current) return
         const newState = view.state.apply(tr)
         view.updateState(newState)
         if (tr.docChanged) {
@@ -70,6 +78,11 @@ export function EditorView() {
       view.updateState(state)
     }
   }, [text])
+
+  // Re-evaluate `editable` when the session's permission changes.
+  useEffect(() => {
+    viewRef.current?.setProps({})
+  }, [canEdit])
 
   // Apply the document's resolved style as CSS custom properties on the mount element.
   // Works identically for built-in and user-imported styles — both are plain

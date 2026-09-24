@@ -4,6 +4,7 @@ import { useDocument } from '../context/DocumentContext'
 import { insertSutra } from './insert-helper'
 import { VoiceConfirmDialog } from '../ai/VoiceConfirmDialog'
 import { SparklesIcon } from '../shell/icons'
+import { useAI } from '../extensions/ai-provider'
 
 const VOICE_LANG_MAP: Record<string, string> = {
   en: 'en-US',
@@ -35,6 +36,7 @@ function isSelectionInEditor(sel: Selection): boolean {
 export function SelectionMenu() {
   const { currentLanguage } = useLanguage()
   const { mode } = useDocument()
+  const ai = useAI()
   const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null)
   const [selectedText, setSelectedText] = useState<string>('')
   const [showConfirm, setShowConfirm] = useState<boolean>(false)
@@ -94,7 +96,7 @@ export function SelectionMenu() {
     setMenuPosition(null)
   }
 
-  if (showConfirm) {
+  if (showConfirm && ai) {
     const langCode = VOICE_LANG_MAP[currentLanguage] || 'en-US'
     return (
       <VoiceConfirmDialog
@@ -123,16 +125,20 @@ export function SelectionMenu() {
       role="toolbar"
       aria-label="Text Selection Actions"
     >
-      <button
-        type="button"
-        className="cs-selection-btn cs-selection-btn-format"
-        onClick={handleFormat}
-        title="Format selected text using AI"
-      >
-        <SparklesIcon size={12} />
-        <span>Format</span>
-      </button>
-      <div className="cs-selection-sep" />
+      {ai && (
+        <>
+          <button
+            type="button"
+            className="cs-selection-btn cs-selection-btn-format"
+            onClick={handleFormat}
+            title="Format selected text using AI"
+          >
+            <SparklesIcon size={12} />
+            <span>Format</span>
+          </button>
+          <div className="cs-selection-sep" />
+        </>
+      )}
       <button
         type="button"
         className="cs-selection-btn"

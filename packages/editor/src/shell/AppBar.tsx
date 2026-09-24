@@ -9,6 +9,8 @@ import {
 import { SutrataLogo } from './SutrataLogo'
 import { getTemplate } from '../templates/templates'
 import { openTitlePageForm } from '../titlepage/TitlePageDialog'
+import { useSpeech } from '../extensions/speech-provider'
+import { useCanEdit } from '../extensions/session'
 
 interface AbBtnProps {
   label: string
@@ -46,6 +48,10 @@ export function AppBar() {
     importDocx, styleVisible, setStyleVisible, showConfirm, showToast,
   } = useDocument()
   const { t, locale } = useTranslation()
+  const speech = useSpeech()
+  // Read-only sessions (SessionContext.permission 'read'/'comment') get no
+  // file, title-page, style or voice actions.
+  const canEdit = useCanEdit()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const name = filePath ?? 'untitled.sutra'
   const nextMode = mode === 'formatted' ? 'source' : 'formatted'
@@ -82,11 +88,13 @@ export function AppBar() {
         >
           <NavigatorIcon size={18} />
         </AbBtn>
-        <span className="cs-ab-desktop-only">
-          <AbBtn label={t('appbar.titlePage')} onClick={openTitlePageForm}>
-            <TitlePageIcon size={18} />
-          </AbBtn>
-        </span>
+        {canEdit && (
+          <span className="cs-ab-desktop-only">
+            <AbBtn label={t('appbar.titlePage')} onClick={openTitlePageForm}>
+              <TitlePageIcon size={18} />
+            </AbBtn>
+          </span>
+        )}
         <div className="cs-ab-file-pill" title={filePath ?? 'untitled.sutra'}>
           <span className="cs-ab-file-name">{name}</span>
           {isDirty && <span className="cs-ab-dirty" title="Unsaved edits" />}
@@ -104,22 +112,26 @@ export function AppBar() {
         >
           {mode === 'formatted' ? <SourceIcon size={18} /> : <FormattedIcon size={18} />}
         </AbBtn>
-        <AbBtn
-          label={ribbonVisible ? t('appbar.hideToolbar') : t('appbar.showToolbar')}
-          shortcut="Ctrl+Shift+H"
-          active={ribbonVisible}
-          onClick={() => setRibbonVisible(!ribbonVisible)}
-        >
-          <RibbonIcon size={18} />
-        </AbBtn>
-        <AbBtn
-          label="Voice Dictation"
-          shortcut="Ctrl+Shift+V"
-          active={voiceActive}
-          onClick={() => setVoiceActive(!voiceActive)}
-        >
-          <MicIcon size={18} />
-        </AbBtn>
+        {canEdit && (
+          <AbBtn
+            label={ribbonVisible ? t('appbar.hideToolbar') : t('appbar.showToolbar')}
+            shortcut="Ctrl+Shift+H"
+            active={ribbonVisible}
+            onClick={() => setRibbonVisible(!ribbonVisible)}
+          >
+            <RibbonIcon size={18} />
+          </AbBtn>
+        )}
+        {speech && (
+          <AbBtn
+            label="Voice Dictation"
+            shortcut="Ctrl+Shift+V"
+            active={voiceActive}
+            onClick={() => setVoiceActive(!voiceActive)}
+          >
+            <MicIcon size={18} />
+          </AbBtn>
+        )}
         <AbBtn
           label={metadataVisible ? 'Hide Metadata' : 'Show Metadata'}
           active={metadataVisible}
@@ -133,28 +145,32 @@ export function AppBar() {
 
       {/* Right zone: File Operations, Save, Export, Settings (Desktop only) */}
       <div className="cs-ab-group cs-ab-desktop-group">
-        <AbBtn label={t('appbar.new')} onClick={handleNew}>
-          <NewIcon size={18} />
-        </AbBtn>
-        <AbBtn label={t('appbar.open')} shortcut="Ctrl+O" onClick={() => { void openFile() }}>
-          <OpenIcon size={18} />
-        </AbBtn>
-        <AbBtn label={t('appbar.importDocx')} onClick={() => { void handleImportDocx() }}>
-          <ImportDocxIcon size={18} />
-        </AbBtn>
-        <span className="cs-ab-sep" />
-        <AbBtn
-          label={t('appbar.save')}
-          shortcut="Ctrl+S"
-          variant="primary"
-          onClick={() => { void saveFile() }}
-        >
-          <SaveIcon size={17} />
-        </AbBtn>
-        <AbBtn label={t('appbar.saveAs')} shortcut="Ctrl+Shift+S" onClick={() => { void saveFileAs() }}>
-          <SaveAsIcon size={17} />
-        </AbBtn>
-        <span className="cs-ab-sep" />
+        {canEdit && (
+          <>
+            <AbBtn label={t('appbar.new')} onClick={handleNew}>
+              <NewIcon size={18} />
+            </AbBtn>
+            <AbBtn label={t('appbar.open')} shortcut="Ctrl+O" onClick={() => { void openFile() }}>
+              <OpenIcon size={18} />
+            </AbBtn>
+            <AbBtn label={t('appbar.importDocx')} onClick={() => { void handleImportDocx() }}>
+              <ImportDocxIcon size={18} />
+            </AbBtn>
+            <span className="cs-ab-sep" />
+            <AbBtn
+              label={t('appbar.save')}
+              shortcut="Ctrl+S"
+              variant="primary"
+              onClick={() => { void saveFile() }}
+            >
+              <SaveIcon size={17} />
+            </AbBtn>
+            <AbBtn label={t('appbar.saveAs')} shortcut="Ctrl+Shift+S" onClick={() => { void saveFileAs() }}>
+              <SaveAsIcon size={17} />
+            </AbBtn>
+            <span className="cs-ab-sep" />
+          </>
+        )}
         <AbBtn
           label={t('appbar.export')}
           variant="secondary"
@@ -163,9 +179,11 @@ export function AppBar() {
         >
           <ExportIcon size={18} />
         </AbBtn>
-        <AbBtn label={t('appbar.style')} active={styleVisible} onClick={() => setStyleVisible(!styleVisible)}>
-          <StyleIcon size={18} />
-        </AbBtn>
+        {canEdit && (
+          <AbBtn label={t('appbar.style')} active={styleVisible} onClick={() => setStyleVisible(!styleVisible)}>
+            <StyleIcon size={18} />
+          </AbBtn>
+        )}
         <AbBtn label={t('settings.title')} active={settingsVisible} onClick={() => setSettingsVisible(!settingsVisible)}>
           <SettingsIcon size={18} />
         </AbBtn>
@@ -173,13 +191,15 @@ export function AppBar() {
 
       {/* Mobile controls zone */}
       <div className="cs-ab-group cs-ab-mobile-controls">
-        <AbBtn
-          label={t('appbar.save')}
-          variant={isDirty ? 'primary' : undefined}
-          onClick={() => { void saveFile() }}
-        >
-          <SaveIcon size={17} />
-        </AbBtn>
+        {canEdit && (
+          <AbBtn
+            label={t('appbar.save')}
+            variant={isDirty ? 'primary' : undefined}
+            onClick={() => { void saveFile() }}
+          >
+            <SaveIcon size={17} />
+          </AbBtn>
+        )}
         <AbBtn
           label="Menu"
           active={mobileMenuOpen}
@@ -241,22 +261,22 @@ export function AppBar() {
                 <NavigatorIcon size={18} />
                 <span>{t('appbar.navigator')}</span>
               </button>
-              <button
+              {canEdit && <button
                 type="button"
                 className={`cs-mm-item${ribbonVisible ? ' cs-mm-active' : ''}`}
                 onClick={() => { setRibbonVisible(!ribbonVisible); setMobileMenuOpen(false) }}
               >
                 <RibbonIcon size={18} />
                 <span>{ribbonVisible ? t('appbar.hideToolbar') : t('appbar.showToolbar')}</span>
-              </button>
-              <button
+              </button>}
+              {speech && <button
                 type="button"
                 className={`cs-mm-item${voiceActive ? ' cs-mm-active' : ''}`}
                 onClick={() => { setVoiceActive(!voiceActive); setMobileMenuOpen(false) }}
               >
                 <MicIcon size={18} />
                 <span>Voice Dictation</span>
-              </button>
+              </button>}
               <button
                 type="button"
                 className={`cs-mm-item${metadataVisible ? ' cs-mm-active' : ''}`}
@@ -267,7 +287,7 @@ export function AppBar() {
               </button>
             </div>
 
-            <div className="cs-mm-section">
+            {canEdit && <div className="cs-mm-section">
               <div className="cs-mm-section-title">File Operations</div>
               <button
                 type="button"
@@ -325,18 +345,28 @@ export function AppBar() {
                 <ExportIcon size={18} />
                 <span>{t('appbar.export')}</span>
               </button>
-            </div>
+            </div>}
+            {!canEdit && <div className="cs-mm-section">
+              <button
+                type="button"
+                className="cs-mm-item"
+                onClick={() => { setExportVisible(true); setMobileMenuOpen(false) }}
+              >
+                <ExportIcon size={18} />
+                <span>{t('appbar.export')}</span>
+              </button>
+            </div>}
 
             <div className="cs-mm-section">
               <div className="cs-mm-section-title">Preferences</div>
-              <button
+              {canEdit && <button
                 type="button"
                 className="cs-mm-item"
                 onClick={() => { setStyleVisible(true); setMobileMenuOpen(false) }}
               >
                 <StyleIcon size={18} />
                 <span>{t('appbar.style')}</span>
-              </button>
+              </button>}
               <button
                 type="button"
                 className="cs-mm-item"

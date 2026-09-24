@@ -1,48 +1,28 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { render, screen, act } from '@testing-library/react'
 import React from 'react'
-import { formatActiveCalls, subscribeToAICalls, mockActiveCallsList } from '../src/ai/ai-client'
+import { formatActivity } from '../src/extensions/ai-provider'
 import { AppShell } from '../src/shell/AppShell'
 import { DocumentProvider } from '../src/context/DocumentContext'
 import { LanguageProvider } from '../src/i18n/LanguageContext'
 import { TranslationProvider } from '../src/i18n/useTranslation'
+import { stubAIProvider } from './helpers/stub-providers'
 
 describe('AI Status Bar indicator', () => {
-  it('formats active calls correctly', () => {
-    expect(formatActiveCalls([])).toBe('')
-    expect(formatActiveCalls([{ providerName: 'Gemini', model: 'gemma-31b' }])).toBe('Calling Gemini (gemma-31b)...')
-    expect(formatActiveCalls([
-      { providerName: 'Gemini', model: 'gemma-31b' },
-      { providerName: 'Gemini', model: 'gemma-31b' },
-    ])).toBe('Calling Gemini (gemma-31b) (2 calls)...')
-    expect(formatActiveCalls([
-      { providerName: 'Gemini', model: 'gemma-31b' },
-      { providerName: 'Groq', model: 'llama3' },
-    ])).toBe('Calling Gemini (gemma-31b), Groq (llama3)...')
+  it('formats in-flight calls', () => {
+    expect(formatActivity([])).toBe('')
+    expect(formatActivity([{ label: 'Gemini (gemma-31b)' }])).toBe('Calling Gemini (gemma-31b)...')
+    expect(formatActivity([{ label: 'Gemini (gemma-31b)' }, { label: 'Gemini (gemma-31b)' }]))
+      .toBe('Calling Gemini (gemma-31b) (2 calls)...')
+    expect(formatActivity([{ label: 'Gemini (gemma-31b)' }, { label: 'Groq (llama3)' }]))
+      .toBe('Calling Gemini (gemma-31b), Groq (llama3)...')
   })
 
-  it('subscribes and notifies when calls change', () => {
-    const cb = vi.fn()
-    const unsubscribe = subscribeToAICalls(cb)
-    expect(cb).toHaveBeenCalledWith([])
-
-    act(() => {
-      mockActiveCallsList([{ providerName: 'Groq', model: 'llama3' }])
-    })
-    expect(cb).toHaveBeenLastCalledWith([{ providerName: 'Groq', model: 'llama3' }])
-
-    act(() => {
-      mockActiveCallsList([])
-    })
-    expect(cb).toHaveBeenLastCalledWith([])
-
-    unsubscribe()
-  })
-
-  it('renders status indicator inside AppShell', () => {
+  it("renders the provider's activity inside AppShell", () => {
+    const ai = stubAIProvider()
     render(
       <TranslationProvider>
-        <DocumentProvider>
+        <DocumentProvider aiProvider={ai}>
           <LanguageProvider>
             <AppShell />
           </LanguageProvider>
@@ -50,23 +30,10 @@ describe('AI Status Bar indicator', () => {
       </TranslationProvider>
     )
 
-    // Initially, no indicator is rendered (since calls list is empty)
     expect(screen.queryByText(/Calling/)).toBeNull()
-
-    // Mock active calls
-    act(() => {
-      mockActiveCallsList([{ providerName: 'Google AI Studio', model: 'gemma-31b' }])
-    })
-
-    // Now it should be displayed
+    act(() => { ai.setActivity([{ label: 'Google AI Studio (gemma-31b)' }]) })
     expect(screen.getByText('Calling Google AI Studio (gemma-31b)...')).toBeInTheDocument()
-
-    // Clear calls
-    act(() => {
-      mockActiveCallsList([])
-    })
-
-    // Indicator should be gone
+    act(() => { ai.setActivity([]) })
     expect(screen.queryByText(/Calling/)).toBeNull()
   })
 })

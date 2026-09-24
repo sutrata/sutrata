@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
+import { useCanEdit } from '../extensions/session'
 import { useDocument } from '../context/DocumentContext'
 import { useTranslation } from '../i18n/useTranslation'
 import { findAll, replaceAll } from './find-engine'
@@ -10,6 +11,7 @@ import { setSourceFindHighlights, clearSourceFindHighlights, scrollToSourceMatch
 
 export function FindReplace() {
   const { text, setText, mode, findReplaceVisible, setFindReplaceVisible, findMode, setFindMode } = useDocument()
+  const canEdit = useCanEdit()
   const { t } = useTranslation()
   const [query, setQuery] = useState('')
   const [replacement, setReplacement] = useState('')
@@ -136,7 +138,8 @@ export function FindReplace() {
 
   if (!findReplaceVisible) return null
 
-  const isReplace = findMode === 'replace'
+  // Read-only sessions can search but not replace.
+  const isReplace = findMode === 'replace' && canEdit
   const hasMatches = matches.length > 0
 
   return (
@@ -147,10 +150,10 @@ export function FindReplace() {
             className={`cs-fr-tab${!isReplace ? ' cs-fr-tab-active' : ''}`}
             onClick={() => setFindMode('find')}
           >{t('findreplace.findOnly')}</button>
-          <button
+          {canEdit && <button
             className={`cs-fr-tab${isReplace ? ' cs-fr-tab-active' : ''}`}
             onClick={() => setFindMode('replace')}
-          >{t('findreplace.title')}</button>
+          >{t('findreplace.title')}</button>}
         </div>
         <button
           className="cs-fr-close"

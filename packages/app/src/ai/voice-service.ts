@@ -93,4 +93,3 @@ export class VoiceService {
     }
   }
 }
-export const voiceServiceInstance = new VoiceService();

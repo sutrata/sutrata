@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { EditorState } from '@codemirror/state'
+import { Annotation, Compartment, EditorState } from '@codemirror/state'
 import { EditorView, keymap } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
@@ -8,6 +8,10 @@ import { sutraLanguage } from './sutra-lang'
 import { useDocument } from '../context/DocumentContext'
 import { setSourceView } from '../editor/editor-bus'
 import { sourceFindHighlightExtension } from './find-highlight-source'
+import { useCanEdit } from '../extensions/session'
+
+/** Marks the transaction that mirrors an external text change into the view. */
+const externalSync = Annotation.define<boolean>()
 
 // Light theme matching the app's warm off-white palette.
 // No internal scroll — the editor grows to content height and .cs-main scrolls.
@@ -56,6 +60,12 @@ const sutraHighlight = HighlightStyle.define([
 
 export function SourceView() {
   const { text, setText } = useDocument()
+  // Read-only sessions: the view is not editable and doc changes other than
+  // mirroring external text are filtered out (see the transactionFilter).
+  const canEdit = useCanEdit()
+  const canEditRef = useRef(canEdit)
+  canEditRef.current = canEdit
+  const editableCompartment = useRef(new Compartment())
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   // Track externally-driven text so we don't feed our own updates back
@@ -75,6 +85,9 @@ export function SourceView() {
           syntaxHighlighting(sutraHighlight),
           sourceFindHighlightExtension,
           EditorView.lineWrapping,
+          editableCompartment.current.of([EditorView.editable.of(canEdit), EditorState.readOnly.of(!canEdit)]),
+          EditorState.transactionFilter.of(tr =>
+            tr.docChanged && !canEditRef.current && !tr.annotation(externalSync) ? [] : tr),
           EditorView.updateListener.of(update => {
             if (update.docChanged) {
               const newText = update.state.doc.toString()
@@ -104,8 +117,15 @@ export function SourceView() {
     lastTextRef.current = text
     view.dispatch({
       changes: { from: 0, to: view.state.doc.length, insert: text },
+      annotations: externalSync.of(true),
     })
   }, [text])
+
+  useEffect(() => {
+    viewRef.current?.dispatch({
+      effects: editableCompartment.current.reconfigure([EditorView.editable.of(canEdit), EditorState.readOnly.of(!canEdit)]),
+    })
+  }, [canEdit])
 
   return <div ref={containerRef} className="cs-source-view" />
 }

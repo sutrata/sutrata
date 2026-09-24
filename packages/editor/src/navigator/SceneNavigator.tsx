@@ -8,8 +8,10 @@ import { schema } from '../editor/schema'
 import { EditorView as CmView } from '@codemirror/view'
 import { StatisticsDialog } from './StatisticsDialog'
 import { EyeIcon, EyeOffIcon, LockIcon, StatsIcon, SparklesIcon, CloseIcon } from '../shell/icons'
-import { getAIConfig, callAIStructured, hasConfiguredApiKey } from '../ai/ai-client'
 import { SCENE_METADATA_PROMPT, SCENE_METADATA_SCHEMA } from '../ai/prompts'
+import { useAI } from '../extensions/ai-provider'
+import type { AIProvider } from '../extensions/ai-provider'
+import { useCanEdit } from '../extensions/session'
 import { prosemirrorToSutra } from '../editor/prosemirror-to-sutra'
 
 /** Update the scene synopsis in the raw Sutra text. */
@@ -208,9 +210,35 @@ function lockNumbersInText(text: string): string {
   return result.join('\n')
 }
 
+/** Ask the AI provider for a scene's synopsis + duration (one structured call). */
+function generateSceneMetadata(ai: AIProvider, sceneText: string) {
+  return ai.completeStructured<{ synopsis: string; duration: string }>({
+    system: SCENE_METADATA_PROMPT, prompt: sceneText, schema: SCENE_METADATA_SCHEMA,
+  })
+}
+
+/**
+ * True when the provider can take calls; otherwise points the user at its
+ * setup (if it has one) and returns false.
+ */
+async function ensureAIReady(ai: AIProvider, showToast: (m: string, type?: 'info' | 'warn') => void): Promise<boolean> {
+  if (await ai.isConfigured()) return true
+  if (ai.openSetup) {
+    showToast('AI must be set up to generate synopsis & duration. Opening Setup...', 'info')
+    ai.openSetup()
+  } else {
+    showToast(`${ai.displayName} is not available right now.`, 'warn')
+  }
+  return false
+}
+
 export function SceneNavigator() {
-  const { text, setText, setAIOnboardingVisible, showToast, setNavVisible } = useDocument()
+  const { text, setText, showToast, setNavVisible } = useDocument()
   const { t } = useTranslation()
+  // AI actions appear only with an injected, permitted AIProvider; structural
+  // actions (reorder, synopsis edits, number locking) only in edit sessions.
+  const ai = useAI()
+  const canEdit = useCanEdit()
   const [scenes, setScenes] = useState<SceneEntry[]>([])
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [dropIndex, setDropIndex] = useState<number | null>(null)
@@ -236,12 +264,7 @@ export function SceneNavigator() {
     setIsProcessing(true)
     setProgressText('Generating synopsis & estimating duration...')
     try {
-      const aiConfig = getAIConfig()
-      if (!(await hasConfiguredApiKey(aiConfig))) {
-        showToast('AI keys are required to generate synopsis & duration. Opening Setup...', 'info')
-        setAIOnboardingVisible(true)
-        return
-      }
+      if (!ai || !(await ensureAIReady(ai, showToast))) return
 
       const idx = scenes.findIndex(s => s.index === scene.index)
       if (idx === -1) return
@@ -249,9 +272,7 @@ export function SceneNavigator() {
       const end = idx + 1 < scenes.length ? scenes[idx + 1]!.textOffset : text.length
       const sceneText = text.substring(start, end)
 
-      const { synopsis, duration } = await callAIStructured<{ synopsis: string; duration: string }>(
-        sceneText, SCENE_METADATA_PROMPT, aiConfig, SCENE_METADATA_SCHEMA
-      )
+      const { synopsis, duration } = await generateSceneMetadata(ai, sceneText)
 
       const view = getEditorView()
       if (view) {
@@ -269,18 +290,13 @@ export function SceneNavigator() {
       setIsProcessing(false)
       setProgressText('')
     }
-  }, [scenes, text, setText, setAIOnboardingVisible, showToast])
+  }, [ai, scenes, text, setText, showToast])
 
   const handleGenerateAllSceneMetadata = useCallback(async () => {
     setIsProcessing(true)
     setProgressText('Starting batch synopsis & duration generation...')
     try {
-      const aiConfig = getAIConfig()
-      if (!(await hasConfiguredApiKey(aiConfig))) {
-        showToast('AI keys are required to generate synopsis & duration. Opening Setup...', 'info')
-        setAIOnboardingVisible(true)
-        return
-      }
+      if (!ai || !(await ensureAIReady(ai, showToast))) return
 
       const pmView = getEditorView()
       const cmView = getSourceView()
@@ -310,9 +326,7 @@ export function SceneNavigator() {
         const sceneText = currentText.substring(start, end)
 
         try {
-          const { synopsis, duration } = await callAIStructured<{ synopsis: string; duration: string }>(
-            sceneText, SCENE_METADATA_PROMPT, aiConfig, SCENE_METADATA_SCHEMA
-          )
+          const { synopsis, duration } = await generateSceneMetadata(ai, sceneText)
 
           if (pmView) {
             if (!latestScene.synopsis) updateSceneMetadataInProseMirror(scene.index, 'synopsis', synopsis.trim())
@@ -341,7 +355,7 @@ export function SceneNavigator() {
       setIsProcessing(false)
       setProgressText('')
     }
-  }, [setText, setAIOnboardingVisible, showToast])
+  }, [ai, setText, showToast])
 
   const handleFrontmatter = useCallback(() => {
     const view = getEditorView()
@@ -358,7 +372,7 @@ export function SceneNavigator() {
     }
     let tr = view.state.tr
     const first = view.state.doc.firstChild
-    if (!first || first.type.name !== 'title_page') {
+    if (canEdit && (!first || first.type.name !== 'title_page')) {
       const field = schema.nodes['frontmatter_field']!.create({ fmKey: 'title' })
       tr = tr.insert(0, schema.nodes['title_page']!.create({}, [field]))
     }
@@ -369,7 +383,7 @@ export function SceneNavigator() {
     if (typeof window !== 'undefined' && window.innerWidth <= 640) {
       setNavVisible(false)
     }
-  }, [setNavVisible])
+  }, [canEdit, setNavVisible])
 
   const handleJump = useCallback((scene: SceneEntry) => {
     const view = getEditorView()
@@ -427,7 +441,7 @@ export function SceneNavigator() {
   const handleDrop = useCallback(
     (e: React.DragEvent, targetIdx: number) => {
       e.preventDefault()
-      if (dragIndex === null || dragIndex === targetIdx) {
+      if (!canEdit || dragIndex === null || dragIndex === targetIdx) {
         setDragIndex(null)
         setDropIndex(null)
         return
@@ -438,7 +452,7 @@ export function SceneNavigator() {
       setDragIndex(null)
       setDropIndex(null)
     },
-    [dragIndex, text, scenes, setText]
+    [canEdit, dragIndex, text, scenes, setText]
   )
 
   const commitSynopsis = useCallback((idx: number, scene: SceneEntry) => {
@@ -590,26 +604,30 @@ export function SceneNavigator() {
             >
               {showNavSynopsis ? <EyeIcon size={14} /> : <EyeOffIcon size={14} />}
             </button>
-            <button
-              type="button"
-              className="cs-nav-action-btn"
-              onClick={handleGenerateAllSceneMetadata}
-              disabled={isProcessing}
-              title="Generate synopsis & estimate duration (all scenes)"
-              aria-label="Generate synopsis & estimate duration (all scenes)"
-              style={{ opacity: isProcessing ? 0.5 : 1 }}
-            >
-              <SparklesIcon size={14} />
-            </button>
-            <button
-              type="button"
-              className="cs-nav-action-btn"
-              onClick={handleLockNumbers}
-              title="Lock Scene Numbers"
-              aria-label="Lock Scene Numbers"
-            >
-              <LockIcon size={14} />
-            </button>
+            {ai && (
+              <button
+                type="button"
+                className="cs-nav-action-btn"
+                onClick={handleGenerateAllSceneMetadata}
+                disabled={isProcessing}
+                title="Generate synopsis & estimate duration (all scenes)"
+                aria-label="Generate synopsis & estimate duration (all scenes)"
+                style={{ opacity: isProcessing ? 0.5 : 1 }}
+              >
+                <SparklesIcon size={14} />
+              </button>
+            )}
+            {canEdit && (
+              <button
+                type="button"
+                className="cs-nav-action-btn"
+                onClick={handleLockNumbers}
+                title="Lock Scene Numbers"
+                aria-label="Lock Scene Numbers"
+              >
+                <LockIcon size={14} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -654,7 +672,7 @@ export function SceneNavigator() {
             ]
               .filter(Boolean)
               .join(' ')}
-            draggable
+            draggable={canEdit}
             onClick={() => handleJump(scene)}
             onDragStart={() => handleDragStart(idx)}
             onDragOver={(e) => handleDragOver(e, idx)}
@@ -670,7 +688,9 @@ export function SceneNavigator() {
               {showNavSynopsis && (
                 <div className="cs-nav-synopsis-row" style={{ marginTop: '4px' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    {editingSceneIdx === idx ? (
+                    {!canEdit ? (
+                      scene.synopsis ? <div className="cs-nav-scene-synopsis">{scene.synopsis}</div> : null
+                    ) : editingSceneIdx === idx ? (
                       <input
                         type="text"
                         className="cs-nav-synopsis-input"
@@ -721,7 +741,7 @@ export function SceneNavigator() {
                     )}
                   </div>
 
-                  <button
+                  {ai && <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); void handleSceneMetadata(scene) }}
                     disabled={isProcessing}
@@ -731,7 +751,7 @@ export function SceneNavigator() {
                     style={{ color: 'var(--cs-ui-accent, #c4760a)', ...(isProcessing ? { opacity: 0.5 } : {}) }}
                   >
                     <SparklesIcon size={12} />
-                  </button>
+                  </button>}
                 </div>
               )}
 

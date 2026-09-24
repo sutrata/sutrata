@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useLanguage } from '../i18n/LanguageContext'
 import { useDocument } from '../context/DocumentContext'
 import { getEditorView } from '../editor/editor-bus'
+import { useCanEdit } from '../extensions/session'
 
 const LANG_NAMES: Record<string, string> = {
   en: 'English',
@@ -20,6 +21,7 @@ const LANG_NAMES: Record<string, string> = {
 export function LanguageStatus() {
   const { currentLanguage } = useLanguage()
   const { text, setText } = useDocument()
+  const canEdit = useCanEdit()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -44,6 +46,7 @@ export function LanguageStatus() {
   }, [menuOpen])
 
   const handleSelectLanguage = (code: string) => {
+    if (!canEdit) { setMenuOpen(false); return }
     const view = getEditorView()
     if (view) {
       const { state, dispatch } = view

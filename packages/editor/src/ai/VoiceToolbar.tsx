@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useDocument } from '../context/DocumentContext'
-import { voiceServiceInstance } from './voice-service'
-import { getAIConfig, callAI, hasConfiguredApiKey } from './ai-client'
-import { VOICE_FORMAT_SYSTEM_PROMPT } from './prompts'
+import { formatTranscript } from './format-transcript'
+import { useAI } from '../extensions/ai-provider'
+import { useSpeech } from '../extensions/speech-provider'
+import type { SpeechRecognitionSession } from '../extensions/speech-provider'
 import { insertSutra } from '../editor/insert-helper'
 import { VoiceConfirmDialog } from './VoiceConfirmDialog'
 import { LOCALIZED_COMMANDS } from './commands'
@@ -21,8 +22,12 @@ const VOICE_LANGUAGES = [
   { code: 'mr-IN', label: 'मराठी (Marathi)', base: 'mr' },
 ]
 
+/** Rendered by AppShell only when useSpeech() (which implies useAI()) is non-null. */
 export function VoiceToolbar() {
-  const { mode, setVoiceActive, setAIOnboardingVisible, showToast } = useDocument()
+  const { mode, setVoiceActive, showToast } = useDocument()
+  const ai = useAI()!
+  const speech = useSpeech()!
+  const sessionRef = useRef<SpeechRecognitionSession | null>(null)
   const { locale } = useTranslation()
   const defaultLang = VOICE_LANGUAGES.find(l => l.base === locale)?.code || 'en-US'
   const [langCode, setLangCode] = useState<string>(defaultLang)
@@ -39,7 +44,7 @@ export function VoiceToolbar() {
   }, [locale])
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const isSupported = voiceServiceInstance.isSupported()
+  const isSupported = speech.isSupported()
 
   // Audio waveform animation
   useEffect(() => {
@@ -85,9 +90,7 @@ export function VoiceToolbar() {
     if (alwaysAuto) {
       setIsFormatting(true)
       try {
-        const config = getAIConfig()
-        const prompt = `Raw Voice Transcript (${langCode}):\n"${fullTranscript}"`
-        const result = await callAI(prompt, VOICE_FORMAT_SYSTEM_PROMPT, config, { clean: 'voice' })
+        const result = await formatTranscript(ai, fullTranscript, langCode)
         insertSutra(result.trim(), mode)
         setVoiceActive(false)
         showToast('Voice dictation inserted.', 'success')
@@ -103,10 +106,13 @@ export function VoiceToolbar() {
   }
 
   const handleStart = async () => {
-    const hasKey = await hasConfiguredApiKey(getAIConfig())
-    if (!hasKey) {
-      showToast('AI keys are required to format dictated text. Opening Setup...', 'info')
-      setAIOnboardingVisible(true)
+    if (!(await ai.isConfigured())) {
+      if (ai.openSetup) {
+        showToast('AI must be set up to format dictated text. Opening Setup...', 'info')
+        ai.openSetup()
+      } else {
+        showToast(`${ai.displayName} is not available right now.`, 'warn')
+      }
       return
     }
 
@@ -114,7 +120,7 @@ export function VoiceToolbar() {
     setInterimResult('')
     setIsListening(true)
 
-    voiceServiceInstance.start(langCode, {
+    sessionRef.current = speech.listen(langCode, {
       onResult: (text, isFinal) => {
         if (isFinal) {
           setTranscript(prev => (prev ? prev + ' ' + text : text))
@@ -138,7 +144,7 @@ export function VoiceToolbar() {
   }
 
   const handleStopListening = async () => {
-    voiceServiceInstance.stop()
+    sessionRef.current?.stop()
     setIsListening(false)
 
     const fullTranscript = (transcript + ' ' + interimResult).trim()
@@ -156,7 +162,7 @@ export function VoiceToolbar() {
   }
 
   const handleCancel = () => {
-    voiceServiceInstance.abort()
+    sessionRef.current?.abort()
     setIsListening(false)
     setVoiceActive(false)
   }
@@ -271,7 +277,7 @@ export function VoiceToolbar() {
 
         {!isSupported && (
           <span className="cs-voice-warning">
-            Web Speech API is not supported in this browser.
+            {speech.displayName} is not supported in this browser.
           </span>
         )}
       </div>
