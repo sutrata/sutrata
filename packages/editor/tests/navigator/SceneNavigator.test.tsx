@@ -173,5 +173,57 @@ describe('SceneNavigator', () => {
     )
     expect(mockCmView.focus).toHaveBeenCalled()
   })
-})
 
+  describe('scenes without an ID', () => {
+    const MIXED = '## INT. HOUSE - DAY {#1}\n\nAction.\n\n## EXT. PARK - NIGHT\n\nAction.\n\n## INT. CAR {lang=en}\n'
+
+    function items(container: HTMLElement) {
+      return Array.from(container.querySelectorAll('.cs-nav-item')).map(el => ({
+        heading: el.querySelector('.cs-nav-heading')!.textContent,
+        missing: el.classList.contains('cs-nav-scene-missing-id'),
+      }))
+    }
+
+    it('marks exactly the scenes whose heading has no {#id}', async () => {
+      let container!: HTMLElement
+      await act(async () => {
+        ;({ container } = render(<Wrapper text={MIXED} />))
+      })
+      expect(items(container)).toEqual([
+        { heading: 'INT. HOUSE - DAY', missing: false },
+        { heading: 'EXT. PARK - NIGHT', missing: true },
+        { heading: 'INT. CAR', missing: true },   // attributes without #id do not count
+      ])
+      expect(container.querySelectorAll('.cs-nav-missing-id-icon')).toHaveLength(2)
+      expect(screen.getByRole('button', { name: 'Jump to EXT. PARK - NIGHT (Scene has no ID)' })).toBeDefined()
+    })
+
+    it('drops the marker once an ID is added', async () => {
+      let setText!: (t: string) => void
+      function Grab() {
+        setText = useDocument().setText
+        return null
+      }
+      let container!: HTMLElement
+      await act(async () => {
+        ;({ container } = render(
+          <TranslationProvider>
+            <DocumentProvider>
+              <LanguageProvider>
+                <TextSetter text={MIXED} />
+                <Grab />
+                <SceneNavigator />
+              </LanguageProvider>
+            </DocumentProvider>
+          </TranslationProvider>,
+        ))
+      })
+      expect(container.querySelectorAll('.cs-nav-scene-missing-id')).toHaveLength(2)
+      await act(async () => {
+        setText(MIXED.replace('EXT. PARK - NIGHT', 'EXT. PARK - NIGHT {#2}').replace('{lang=en}', '{#3 lang=en}'))
+      })
+      expect(container.querySelectorAll('.cs-nav-scene-missing-id')).toHaveLength(0)
+      expect(Array.from(container.querySelectorAll('.cs-nav-scene-num')).map(e => e.textContent)).toEqual(['1', '2', '3'])
+    })
+  })
+})

@@ -31,6 +31,7 @@
   "navigator.title": "Scenes",
   "navigator.frontmatter": "Title Page",
   "navigator.empty": "No scenes yet. Start with a scene heading (##).",
+  "navigator.missingId": "Scene has no ID",
   "findreplace.title": "Find & Replace",
   "findreplace.find": "Find…",
   "findreplace.replace": "Replace with…",

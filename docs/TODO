@@ -52,10 +52,12 @@
     to npm; always publish with `pnpm publish` so workspace:* is rewritten).
     Adopt Changesets; the extension API follows semver, with a migration note
     for every breaking change (strict semver from 1.0).
-12. Stable scene IDs: {#id} is optional in the format, but scene-level diff
-    (§3.5), comments, and any production data keyed by scene need every scene
-    to have one. Add a parser/editor helper that assigns IDs to scenes that
-    lack them (a visible, user-confirmed edit), so every tool uses the same
+12. HOLD: Stable scene IDs — automatic assignment. {#id} is optional in the
+    format, but scene-level diff (§3.5), comments, page locking, and any
+    production data keyed by scene need every scene to have one. Done: the
+    scene navigator marks scenes without an ID (cs-nav-scene-missing-id,
+    --cs-ui-warning). On hold: a parser/editor helper (assignSceneIds) that
+    assigns IDs as a visible, user-confirmed edit, so every tool uses the same
     ID-generation rule.
 13. Revision mode (OSS spec §3.6, P2): not implemented (only locale strings
     exist). Needs a format-spec addition first (attribute or & key scheme for

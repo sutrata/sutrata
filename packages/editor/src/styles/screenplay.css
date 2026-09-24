@@ -31,6 +31,10 @@
   --cs-ui-accent-badge: #d97706;
   --cs-ui-accent-border: #fcd34d;
 
+  /* Warnings (e.g. a scene without an {#id}) — distinct from the amber accent */
+  --cs-ui-warning: #c2410c;
+  --cs-ui-warning-subtle: #fff7ed;
+
   /* Screenplay note tokens */
   --cs-note-bg: #fffbeb;
   --cs-note-border-color: #d97706;
@@ -158,6 +162,20 @@ html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
 .cs-nav-drop-target {
   background: #e3f2fd;
   border-bottom-color: #1976d2;
+}
+
+.cs-nav-scene-missing-id {
+  box-shadow: inset 3px 0 0 var(--cs-ui-warning, #c2410c);
+}
+
+.cs-nav-missing-id-icon {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--cs-ui-warning, #c2410c);
+  flex-shrink: 0;
+  align-self: flex-start;
+  padding-left: 8px;
+  cursor: help;
 }
 
 .cs-nav-scene-num {

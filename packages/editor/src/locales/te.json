@@ -30,6 +30,7 @@
   "navigator.title": "దృశ్యాలు",
   "navigator.frontmatter": "శీర్షిక పేజీ",
   "navigator.empty": "ఇంకా దృశ్యాలు లేవు. ## తో ప్రారంభించండి.",
+  "navigator.missingId": "సన్నివేశానికి ID లేదు",
   "findreplace.title": "వెతుకు & భర్తీ చేయి",
   "findreplace.find": "వెతుకు…",
   "findreplace.replace": "భర్తీ చేయి…",

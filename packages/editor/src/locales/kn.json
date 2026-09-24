@@ -30,6 +30,7 @@
   "navigator.title": "ದೃಶ್ಯಗಳು",
   "navigator.frontmatter": "ಶೀರ್ಷಿಕೆ ಪುಟ",
   "navigator.empty": "ಇನ್ನೂ ದೃಶ್ಯಗಳಿಲ್ಲ. ## ನಿಂದ ಪ್ರಾರಂಭಿಸಿ.",
+  "navigator.missingId": "ದೃಶ್ಯಕ್ಕೆ ID ಇಲ್ಲ",
   "findreplace.title": "ಹುಡುಕು & ಬದಲಿಸು",
   "findreplace.find": "ಹುಡುಕು…",
   "findreplace.replace": "ಬದಲಿಸು…",
