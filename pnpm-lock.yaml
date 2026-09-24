@@ -120,12 +120,6 @@ importers:
       prosemirror-view:
         specifier: ^1.33.0
         version: 1.41.8
-      react:
-        specifier: ^18.3.0
-        version: 18.3.1
-      react-dom:
-        specifier: ^18.3.0
-        version: 18.3.1(react@18.3.1)
     devDependencies:
       '@testing-library/jest-dom':
         specifier: ^6.9.1
@@ -148,6 +142,12 @@ importers:
       jsdom:
         specifier: ^29.1.1
         version: 29.1.1(canvas@2.11.2(encoding@0.1.13))
+      react:
+        specifier: ^18.3.0
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.0
+        version: 18.3.1(react@18.3.1)
       typescript:
         specifier: ^5.4.0
         version: 5.9.3
