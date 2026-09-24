@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react'
-import { parse, importFountain, fountainDocToSutra } from '@sutra/parser'
-import type { DocumentNode } from '@sutra/parser'
+import { parse, importFountain, fountainDocToSutra } from '@sutrata/parser'
+import type { DocumentNode } from '@sutrata/parser'
 import type { EditorMode, VersionEntry } from '../types'
 import { StorageAdapterProvider } from '../extensions/storage-adapter'
 import type { StorageAdapter } from '../extensions/storage-adapter'

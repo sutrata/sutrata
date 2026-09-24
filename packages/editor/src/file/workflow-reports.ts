@@ -8,7 +8,7 @@ import {
   TableCell,
   WidthType,
 } from 'docx'
-import type { DocumentNode, SceneHeadingNode, ContentNode } from '@sutra/parser'
+import type { DocumentNode, SceneHeadingNode, ContentNode } from '@sutrata/parser'
 import { resolveStyle } from '../styles/registry'
 import { styleToPrintCss } from '../styles/print-adapter'
 import { embedFontFacesFor } from '../styles/embed-fonts'

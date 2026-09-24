@@ -3,7 +3,7 @@
 
 **Version:** 3.0 Draft
 **Status:** For Review
-**License:** GPL-3.0-or-later (app, desktop shell) · Apache-2.0 (`@sutra/parser`) · CC BY 4.0 (format spec) — see §1.7
+**License:** GPL-3.0-or-later (app, desktop shell) · Apache-2.0 (`@sutrata/parser`) · CC BY 4.0 (format spec) — see §1.7
 **Target Audience:** Engineering, Product, Design Teams, Contributors
 **Companion documents:**
 - [Sutra Format Specification](sutra_format_spec.md) — normative for everything file-format related
@@ -111,7 +111,7 @@ Untagged statements inside a tagged subsection inherit the subsection's tag.
 
 | Component | License | Reason |
 |---|---|---|
-| `@sutra/parser` | Apache-2.0 | Lets any tool adopt Sutra; format adoption is the goal. |
+| `@sutrata/parser` | Apache-2.0 | Lets any tool adopt Sutra; format adoption is the goal. |
 | Sutra format spec | CC BY 4.0 | Same. |
 | `@sutrata/editor`, `@sutrata/app`, `@sutrata/tauri` | GPL-3.0-or-later | Prevents closed forks of the editor. |
 | Bundled fonts | Their own licenses (OFL for Noto, Courier Prime) | Unchanged. |
@@ -673,7 +673,7 @@ letters for voiced and voiceless consonants and so have no such ambiguity.
 
 #### 5.8.3 Implementation
 
-- `@sutra/parser` exports `romanize(text, options)` (string → string) and
+- `@sutrata/parser` exports `romanize(text, options)` (string → string) and
   `romanizeSutra(source, options)`. The second romanizes a whole Sutra source,
   applies the scope, name, and notice rules, and returns valid Sutra. The exporters
   parse that copy and render it like any document, so no exporter needs romanization
@@ -989,7 +989,7 @@ These v2.0 items moved to the Sutrata Cloud roadmap (internal, not published in 
 
 | Package | Role | License |
 |---|---|---|
-| `@sutra/parser` | Sutra reference implementation: text ↔ AST, Fountain import/export, Indic → ISO 15919 romanization, legacy-font conversion. Zero UI deps. Published to npm. | Apache-2.0 |
+| `@sutrata/parser` | Sutra reference implementation: text ↔ AST, Fountain import/export, Indic → ISO 15919 romanization, legacy-font conversion. Zero UI deps. Published to npm. | Apache-2.0 |
 | `@sutrata/editor` **[P1 refactor]** | Reusable React library: `DocumentContext`, ProseMirror editor, panels, exporters, i18n, and the §11.5 extension points. Published to npm. | GPL-3.0-or-later |
 | `@sutrata/app` | Thin standalone shell: wires `@sutrata/editor` with local storage, BYO-key AI, and app chrome. Builds the PWA and the Tauri renderer. | GPL-3.0-or-later |
 | `@sutrata/tauri` | Tauri v2 shell (Rust): native dialogs, keychain, filesystem, print window. | GPL-3.0-or-later |
@@ -1009,7 +1009,7 @@ other products, including Sutrata Cloud, embed the editor without forking it.
 │  │  Editor (ProseMirror) · Navigator · Synopsis · Inspector│  │
 │  │        │ single source of truth: Sutra text          │  │
 │  │  ┌─────▼──────────────────────────────────────────┐    │  │
-│  │  │ @sutra/parser (AST, serializer, romanize) │    │  │
+│  │  │ @sutrata/parser (AST, serializer, romanize) │    │  │
 │  │  └────────────────────────────────────────────────┘    │  │
 │  │  Extension points (§11.5): storage · ai · speech ·     │  │
 │  │  panels · commands · export · session · collab         │  │

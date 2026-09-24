@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useDocument } from '../context/DocumentContext'
-import { exportFountain, parse, romanizeSutra } from '@sutra/parser'
-import type { DocumentNode, RomanizeVariant } from '@sutra/parser'
+import { exportFountain, parse, romanizeSutra } from '@sutrata/parser'
+import type { DocumentNode, RomanizeVariant } from '@sutrata/parser'
 import { useTranslation } from '../i18n/useTranslation'
 import { exportToDocx } from '../file/docx-exporter'
 import {

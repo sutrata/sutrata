@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parse } from '@sutra/parser'
+import { parse } from '@sutrata/parser'
 import { sutraToProsemirror } from '../../src/editor/sutra-to-prosemirror'
 import { prosemirrorToSutra } from '../../src/editor/prosemirror-to-sutra'
 

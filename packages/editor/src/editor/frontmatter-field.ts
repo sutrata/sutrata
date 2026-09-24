@@ -1,5 +1,5 @@
 import type { EditorView } from 'prosemirror-view'
-import { parse } from '@sutra/parser'
+import { parse } from '@sutrata/parser'
 import { schema } from './schema'
 import { sutraToProsemirror } from './sutra-to-prosemirror'
 

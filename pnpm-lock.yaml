@@ -84,7 +84,7 @@ importers:
       '@lezer/highlight':
         specifier: ^1.2.3
         version: 1.2.3
-      '@sutra/parser':
+      '@sutrata/parser':
         specifier: workspace:*
         version: link:../parser
       diff:

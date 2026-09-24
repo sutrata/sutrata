@@ -16,8 +16,8 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with: { node-version: '20', cache: 'pnpm' }
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @sutra/parser test
-      - run: pnpm --filter @sutra/parser build
+      - run: pnpm --filter @sutrata/parser test
+      - run: pnpm --filter @sutrata/parser build
 
   editor:
     name: Editor tests + build
@@ -29,7 +29,7 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with: { node-version: '20', cache: 'pnpm' }
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @sutra/parser build
+      - run: pnpm --filter @sutrata/parser build
       - run: pnpm --filter @sutrata/editor test
       - run: pnpm --filter @sutrata/editor build
 
@@ -43,7 +43,7 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with: { node-version: '20', cache: 'pnpm' }
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @sutra/parser build
+      - run: pnpm --filter @sutrata/parser build
       - run: pnpm --filter @sutrata/editor build
       - run: pnpm --filter @sutrata/app build
 

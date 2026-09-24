@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { EditorState } from 'prosemirror-state'
 import { EditorView as PmEditorView } from 'prosemirror-view'
-import { parse } from '@sutra/parser'
+import { parse } from '@sutrata/parser'
 import { schema } from './schema'
 import { buildPlugins } from './plugins'
 import { sutraToProsemirror } from './sutra-to-prosemirror'

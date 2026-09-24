@@ -15,7 +15,7 @@ import {
   Header,
   PageNumber,
 } from 'docx'
-import type { DocumentNode, ContentNode, InlineSpan } from '@sutra/parser'
+import type { DocumentNode, ContentNode, InlineSpan } from '@sutrata/parser'
 import { resolveStyle } from '../styles/registry'
 import { styleToDocxParagraphStyles } from '../styles/docx-adapter'
 import { SCRIPT_UNICODE_RANGES } from '../styles/script-ranges'

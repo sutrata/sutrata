@@ -173,14 +173,14 @@ packages/
 
 ## Development notes
 
-- `@sutra/parser` compiles with `tsc` before the app can import it. Run `pnpm --filter @sutra/parser build` after changing parser source; `pnpm build` does this in order automatically.
-- Tests: `pnpm --filter @sutrata/app test` (jsdom + vitest), `pnpm --filter @sutra/parser test` (node + vitest), `pnpm --filter @sutrata/app test:e2e` (Playwright).
+- `@sutrata/parser` compiles with `tsc` before the app can import it. Run `pnpm --filter @sutrata/parser build` after changing parser source; `pnpm build` does this in order automatically.
+- Tests: `pnpm --filter @sutrata/app test` (jsdom + vitest), `pnpm --filter @sutrata/parser test` (node + vitest), `pnpm --filter @sutrata/app test:e2e` (Playwright).
 - The CI tofu gate (`node scripts/check-tofu.js`) fails if any required Indic script renders missing glyphs. Font `.woff2` files are not committed — see `packages/app/public/fonts/README.md` for the acquisition list.
 
 ## License
 
 - `@sutrata/app`, `@sutrata/tauri` — [GPL-3.0-or-later](LICENSE)
-- `@sutra/parser` — [Apache-2.0](packages/parser/LICENSE)
+- `@sutrata/parser` — [Apache-2.0](packages/parser/LICENSE)
 - The [Sutra format specification](docs/sutra_format_spec.md) — [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 
 Outside contributions require signing a CLA — see [CONTRIBUTING.md](CONTRIBUTING.md).

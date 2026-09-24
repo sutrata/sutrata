@@ -1,5 +1,5 @@
 import { Fragment, Slice } from 'prosemirror-model'
-import { parse } from '@sutra/parser'
+import { parse } from '@sutrata/parser'
 import { sutraToProsemirror } from './sutra-to-prosemirror'
 import { getEditorView, getSourceView } from './editor-bus'
 

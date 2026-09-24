@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parse, romanizeSutra } from '@sutra/parser'
+import { parse, romanizeSutra } from '@sutrata/parser'
 import { exportToDocx } from '../src/file/docx-exporter'
 import {
   extractWorkflowData,

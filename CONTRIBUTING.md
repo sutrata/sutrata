@@ -9,7 +9,7 @@ it can be merged. A CLA bot will comment on your first pull request with instruc
 you won't be able to sign it in advance.
 
 **Why:** the project is published under GPL-3.0-or-later (app, desktop shell) and
-Apache-2.0 (`@sutra/parser`), but the project owner also needs to be able to license the
+Apache-2.0 (`@sutrata/parser`), but the project owner also needs to be able to license the
 same code commercially to Sutrata Cloud, the paid product built on top of this app (see
 `docs/sutrata_spec.md` §1.7). The CLA keeps copyright with the project owner so that grant
 is possible, while the public continues to receive the code under the open licenses above
@@ -19,7 +19,7 @@ is possible, while the public continues to receive the code under the open licen
 
 | You're changing... | License | Package |
 |---|---|---|
-| The Sutra format grammar/parser, `.sutra` ↔ AST, Fountain import/export, romanization | Apache-2.0 | `@sutra/parser` |
+| The Sutra format grammar/parser, `.sutra` ↔ AST, Fountain import/export, romanization | Apache-2.0 | `@sutrata/parser` |
 | The editor, panels, exporters, i18n | GPL-3.0-or-later | `@sutrata/editor` |
 | The app shell, storage adapter | GPL-3.0-or-later | `@sutrata/app` |
 | The Tauri desktop shell | GPL-3.0-or-later | `@sutrata/tauri` |
@@ -30,7 +30,7 @@ is possible, while the public continues to receive the code under the open licen
 - Read `AGENTS.md` for the build/test commands, architecture notes, and the two
   serialization paths (parser vs. editor) — a change that's correct for one can silently
   regress the other.
-- If you changed `packages/parser`, rebuild it (`pnpm --filter @sutra/parser build`)
+- If you changed `packages/parser`, rebuild it (`pnpm --filter @sutrata/parser build`)
   before testing the app against it.
 - Run the full suite: `pnpm build && pnpm test`.
 - Format-level changes (new sigils, reserved keys, grammar rules) should be proposed

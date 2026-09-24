@@ -1,7 +1,7 @@
 import { EditorState } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
 import { history, undo } from 'prosemirror-history'
-import { parse } from '@sutra/parser'
+import { parse } from '@sutrata/parser'
 import { schema } from '../../src/editor/schema'
 import { sutraToProsemirror } from '../../src/editor/sutra-to-prosemirror'
 import { prosemirrorToSutra } from '../../src/editor/prosemirror-to-sutra'

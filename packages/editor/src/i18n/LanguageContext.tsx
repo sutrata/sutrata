@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react'
-import { parse, DocumentNode, SceneHeadingNode, ContentNode } from '@sutra/parser'
+import { parse, DocumentNode, SceneHeadingNode, ContentNode } from '@sutrata/parser'
 import { detectScript } from './language-detect'
 
 interface LanguageContextType {

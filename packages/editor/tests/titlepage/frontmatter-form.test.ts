@@ -1,4 +1,4 @@
-import { parse } from '@sutra/parser'
+import { parse } from '@sutrata/parser'
 import { readTitlePage, writeTitlePage, splitList } from '../../src/titlepage/frontmatter-form'
 
 const SRC = `---

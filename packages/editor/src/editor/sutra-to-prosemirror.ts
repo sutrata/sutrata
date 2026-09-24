@@ -1,7 +1,7 @@
 import { Node as PmNode } from 'prosemirror-model'
 import { schema } from './schema'
 import type { DocumentNode, SceneHeadingNode, SceneContentNode,
-  InlineSpan } from '@sutra/parser'
+  InlineSpan } from '@sutrata/parser'
 
 function spansToNodes(spans: InlineSpan[]): PmNode[] {
   return spans.flatMap(span => {

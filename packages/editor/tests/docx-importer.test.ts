@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parse } from '@sutra/parser'
+import { parse } from '@sutrata/parser'
 import { exportToDocx } from '../src/file/docx-exporter'
 import { importDocx } from '../src/file/docx-importer'
 import JSZip from 'jszip'

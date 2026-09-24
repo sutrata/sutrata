@@ -4,7 +4,7 @@
 project owner.
 
 The open-source license grants (GPL-3.0-or-later for the app and desktop shell,
-Apache-2.0 for `@sutra/parser`, CC BY 4.0 for the format specification) give you broad
+Apache-2.0 for `@sutrata/parser`, CC BY 4.0 for the format specification) give you broad
 rights to use, modify, and redistribute the code and the format itself, including in a
 fork or a competing tool. They do not grant any right to use the "Sutrata" or "Sutra"
 names, or any confusingly similar name, to describe a fork, a derivative product, or an

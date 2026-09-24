@@ -19,18 +19,18 @@ pnpm dev:web                              # Vite dev server for the web app
 pnpm dev:tauri                            # Tauri dev shell (requires Rust)
 
 # Per-package (use --filter from root, or cd into the package)
-pnpm --filter @sutra/parser test        # vitest run
-pnpm --filter @sutra/parser test:watch
+pnpm --filter @sutrata/parser test        # vitest run
+pnpm --filter @sutrata/parser test:watch
 pnpm --filter @sutrata/editor test        # vitest run (jsdom) — this is where almost all app-level tests live
 pnpm --filter @sutrata/app test           # vitest run (jsdom) — thin shell, few/no tests
 pnpm --filter @sutrata/app test:e2e       # playwright
 
 # Single test file / single test
-pnpm --filter @sutra/parser test -- round-trip         # by filename substring
+pnpm --filter @sutrata/parser test -- round-trip         # by filename substring
 pnpm --filter @sutrata/editor test -- -t "scene heading" # by test name
 ```
 
-`@sutra/parser` and `@sutrata/editor` both build with `tsc` (editor's build also copies its two CSS files into `dist/`), and each downstream package imports the previous one's compiled `dist/`. **If you change parser or editor source, rebuild it (`pnpm --filter @sutra/parser build` / `pnpm --filter @sutrata/editor build`) before the next package picks up the change** — `pnpm build` does this in order, but `dev:web` against a stale `dist/` will not.
+`@sutrata/parser` and `@sutrata/editor` both build with `tsc` (editor's build also copies its two CSS files into `dist/`), and each downstream package imports the previous one's compiled `dist/`. **If you change parser or editor source, rebuild it (`pnpm --filter @sutrata/parser build` / `pnpm --filter @sutrata/editor build`) before the next package picks up the change** — `pnpm build` does this in order, but `dev:web` against a stale `dist/` will not.
 
 CI (`.github/workflows/ci.yml`) runs four independent jobs: parser test+build, editor test+build, app build, and a **tofu gate** (`node scripts/check-tofu.js`, uses `canvas`) that fails if any required script renders missing glyphs (□). The same job runs `python scripts/check-font-coverage.py`, which reads the *bundled* Noto Sans/Serif Latin files and fails if any ISO 15919 letter or combining mark is missing (those files are re-subset from the full fonts; see `packages/app/public/fonts/README.md`).
 
@@ -38,7 +38,7 @@ CI (`.github/workflows/ci.yml`) runs four independent jobs: parser test+build, e
 
 ### Four packages
 
-- **`@sutra/parser`** — the Sutra reference implementation. Text ↔ AST, Fountain import/export, Indic → Latin romanization for export (ISO 15919 and colloquial variants). Zero UI dependencies, published as OSS. This is the contract everything else depends on.
+- **`@sutrata/parser`** — the Sutra reference implementation. Text ↔ AST, Fountain import/export, Indic → Latin romanization for export (ISO 15919 and colloquial variants). Zero UI dependencies, published as OSS. This is the contract everything else depends on.
 - **`@sutrata/editor`** — React 18 + Vite + ProseMirror. The reusable editor library: `DocumentContext`, the ProseMirror editor and all its plugins, every panel (navigator, find/replace, title page, style dialog, settings, statistics), exporters (PDF/DOCX/Fountain/workflow reports), i18n (locales + `useTranslation`), spellcheck, autocomplete, and the extension-point interfaces (`packages/editor/src/extensions/`). This is what Sutrata Cloud will embed — see `packages/editor/src/index.ts` for the public entry point. Almost all of the app-level test suite (286 tests) lives here now, not in `@sutrata/app`.
 - **`@sutrata/app`** — thin standalone shell. Wires `@sutrata/editor` to a local `StorageAdapter` (IndexedDB + File System Access API, `local-storage-adapter.ts`) and mounts it. `App.tsx` and `main.tsx` are the entire composition; `file/storage.ts` and `file/file-access.ts` are the concrete local I/O the adapter wraps. Also builds the PWA and the Tauri renderer.
 - **`@sutrata/tauri`** — thin Tauri v2 shell written in Rust. Replicates the native desktop interface via a custom `initialization_script` injected into the webview window, mapping the global `window.desktopAPI` to custom Rust commands using `rfd` for native dialogs.
