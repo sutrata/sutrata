@@ -368,7 +368,7 @@ following indented `- ` lines are its items.
 | `est-duration` | text | Writer's estimate of screen time (`2m30s`). The language-neutral replacement for the 1-page≈1-minute rule, which does not transfer to non-Latin scripts. |
 | `shots` | list | Planned shot list (§7.3). |
 | `lang` | BCP-47 | Language override for this scene (§9). |
-| `number` | text | Production scene number (§7.4): `12`, `12A`. Renumbered as scenes are added. |
+| `number` | text | Production scene number (§7.4): `12`, `12A`. Changed only when the writer renumbers. |
 
 **Unknown keys are valid** and MUST be preserved on round-trip. This is the
 extension point for downstream workflow data — `& props:`, `& vfx:`,
@@ -385,20 +385,34 @@ actors or scene IDs in prose; no further structure is imposed in 1.0.
 ### 7.4 Scene Numbers and Omitted Scenes
 
 `& number:` records a scene's production number. Numbers are **renumbered,
-not locked**: they stay sequential as scenes are added, and each scene keeps
-its `{#id}`, so anything anchored to a scene survives renumbering.
+not locked**, but only when the writer asks: tools MUST NOT renumber scenes
+automatically. Each scene keeps its `{#id}` throughout, so anything anchored
+to a scene survives renumbering.
 
-- A scene inserted after scene `12` becomes `13`; the old `13` becomes `14`,
-  and every later scene moves up by one.
-- Renumbering changes only the numeric part and keeps letter suffixes, so a
-  run of `20`, `20A`, `20B`, `21` that follows an insertion becomes `21`,
-  `21A`, `21B`, `22`.
-- Tools number scenes that have no `& number:` yet when the writer applies
-  numbering, and MUST NOT change `{#id}` while renumbering.
-- A scene removed from the script can be kept as an **omitted scene**: its
-  heading and `& number:` stay, `& status: omitted` is set, and its body is
-  empty (or kept in a comment). It still takes part in numbering. Renderers
-  print the heading line as `OMITTED` next to the number.
+**Between renumberings** numbers may be missing, duplicated or out of order
+(a new scene has no number yet; a copied scene repeats one). Sutra-aware
+tools SHOULD highlight such scenes (e.g. in the scene navigator) until the
+writer renumbers.
+
+**Renumbering** walks the scenes in order. A scene with no number, or whose
+number repeats or breaks the order of the scenes before it, is treated as
+inserted at its position:
+
+- If the scene after it continues a lettered run of the scene before it, the
+  inserted scene takes the next letter and the rest of that run shifts by
+  one letter: inserted between `20A` and `20B`, it becomes `20B`, the old
+  `20B` becomes `20C`, and so on. (Inserted between `20` and `20A`, it
+  becomes `20A`.)
+- Otherwise it takes the next number, and every later scene's number goes up
+  by one, keeping its letter suffix: inserted after `12`, it becomes `13`
+  and the old `13` becomes `14`; a following run `20`, `20A`, `20B`, `21`
+  becomes `21`, `21A`, `21B`, `22`.
+- `{#id}` never changes.
+
+A scene removed from the script can be kept as an **omitted scene**: its
+heading and `& number:` stay, `& status: omitted` is set, and its body is
+empty (or kept in a comment). It still takes part in numbering. Renderers
+print the heading line as `OMITTED` next to the number.
 
 ---
 
