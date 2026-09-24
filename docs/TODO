@@ -29,11 +29,6 @@
    real. AppShell has a fixed panel set and ExportDialog a fixed format list;
    embedders need to add panels, commands/shortcuts, and export formats
    without forking the editor.
-8. Extension points: revise the DecorationProvider and CollabBinding
-   signatures before they become stable. DecorationProvider
-   (from/to/className per scene) is too thin for comment threads, click
-   handlers, and widgets; CollabBinding.bind() gets no editor state or view,
-   so nothing can bind to it.
 9. @sutrata/extension-testkit (OSS spec §11.1, §11.5): a stub embedder that
    implements every extension point, plus a CI job that builds and tests it
    on every PR. Not present yet.

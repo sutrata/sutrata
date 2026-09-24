@@ -12,6 +12,10 @@ import { SessionProvider, DEFAULT_SESSION } from '../extensions/session'
 import type { SessionContext } from '../extensions/session'
 import { PanelRegistryProvider, createPanelRegistry } from '../extensions/panel-registry'
 import type { PanelRegistry, PanelContribution } from '../extensions/panel-registry'
+import { DecorationProvidersProvider } from '../extensions/decorations'
+import type { DecorationProvider } from '../extensions/decorations'
+import { CollabBindingProvider } from '../extensions/collab'
+import type { CollabBinding } from '../extensions/collab'
 import { importDocx as importDocxToSutra } from '../file/docx-importer'
 import { runCommand, getEditorView } from '../editor/editor-bus'
 import { setFlatFrontmatterField } from '../editor/frontmatter-field'
@@ -133,10 +137,16 @@ export interface DocumentProviderProps {
   session?: SessionContext
   /** Optional embedder panels: a live registry, or a fixed list. */
   panels?: PanelRegistry | PanelContribution[]
+  /** Optional annotation sources (comments, breakdown, revisions). Pass a stable array. */
+  decorationProviders?: DecorationProvider[]
+  /** Optional real-time collaboration binding for the formatted editor. */
+  collabBinding?: CollabBinding
 }
 
+const NO_DECORATIONS: DecorationProvider[] = []
+
 export function DocumentProvider({
-  children, storageAdapter, aiProvider, speechProvider, session, panels,
+  children, storageAdapter, aiProvider, speechProvider, session, panels, decorationProviders, collabBinding,
 }: DocumentProviderProps) {
   const panelRegistry = useMemo(
     () => (Array.isArray(panels) || !panels ? createPanelRegistry(panels ?? []) : panels),
@@ -670,6 +680,8 @@ export function DocumentProvider({
     <AIProviderProvider value={aiProvider ?? null}>
     <SpeechProviderProvider value={speechProvider ?? null}>
     <PanelRegistryProvider value={panelRegistry}>
+    <DecorationProvidersProvider value={decorationProviders ?? NO_DECORATIONS}>
+    <CollabBindingProvider value={collabBinding ?? null}>
       <DocumentContext.Provider value={{
         text, ast, mode, filePath, isDirty, lastSaveTarget, ribbonVisible, navVisible, exportVisible, settingsVisible,
         voiceActive, metadataVisible,
@@ -683,6 +695,8 @@ export function DocumentProvider({
       }}>
         {children}
       </DocumentContext.Provider>
+    </CollabBindingProvider>
+    </DecorationProvidersProvider>
     </PanelRegistryProvider>
     </SpeechProviderProvider>
     </AIProviderProvider>

@@ -12,9 +12,23 @@ import { SceneHeadingView } from './scene-heading-view'
 import { FrontmatterFieldView } from './frontmatter-field-view'
 import { applyStyleVars } from '../styles/css-adapter'
 import { useCanEdit } from '../extensions/session'
+import { useDecorationProviders } from '../extensions/decorations'
+import { useCollabBinding } from '../extensions/collab'
+import { createExternalDecorationsPlugin } from './external-decorations-plugin'
 
 export function EditorView() {
-  const { text, setText, resolvedStyle } = useDocument()
+  const { text, ast, setText, resolvedStyle } = useDocument()
+  const astRef = useRef(ast)
+  astRef.current = ast
+  // Embedder decorations and collab plugins join the built-in ones every time
+  // the state is (re)created. Both are read once per state: pass stable values.
+  const decorationProviders = useDecorationProviders()
+  const collab = useCollabBinding()
+  const plugins = () => [
+    ...buildPlugins(),
+    ...(decorationProviders.length > 0 ? [createExternalDecorationsPlugin(decorationProviders, () => astRef.current)] : []),
+    ...(collab ? collab.plugins(schema) : []),
+  ]
   // Read-only sessions: not editable, and every doc-changing transaction —
   // typed, or dispatched by a toolbar/navigator/node view — is dropped here.
   const canEdit = useCanEdit()
@@ -33,7 +47,7 @@ export function EditorView() {
     if (!mountRef.current) return
 
     const doc = sutraToProsemirror(parse(textRef.current))
-    const state = EditorState.create({ doc, schema, plugins: buildPlugins() })
+    const state = EditorState.create({ doc, schema, plugins: plugins() })
 
     const view = new PmEditorView(mountRef.current, {
       state,
@@ -58,8 +72,9 @@ export function EditorView() {
     })
     viewRef.current = view
     setEditorView(view)
+    const detachCollab = collab?.attach(view)
 
-    return () => { setEditorView(null); view.destroy(); viewRef.current = null }
+    return () => { detachCollab?.(); setEditorView(null); view.destroy(); viewRef.current = null }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync external text changes into ProseMirror (e.g. switching from source mode).
@@ -74,7 +89,7 @@ export function EditorView() {
     const currentText = prosemirrorToSutra(view.state.doc)
     if (currentText !== text) {
       const doc = sutraToProsemirror(parse(text))
-      const state = EditorState.create({ doc, schema, plugins: buildPlugins() })
+      const state = EditorState.create({ doc, schema, plugins: plugins() })
       view.updateState(state)
     }
   }, [text])
