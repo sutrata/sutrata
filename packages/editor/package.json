@@ -1,7 +1,27 @@
 {
   "name": "@sutrata/editor",
   "version": "0.1.2",
+  "description": "React + ProseMirror screenplay editor for Sutra, with first-class support for Indic and other complex scripts.",
   "license": "GPL-3.0-or-later",
+  "keywords": [
+    "sutra",
+    "screenplay",
+    "editor",
+    "prosemirror",
+    "react",
+    "indic",
+    "unicode",
+    "fountain"
+  ],
+  "homepage": "https://github.com/sutrata/sutrata/tree/main/packages/editor#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sutrata/sutrata.git",
+    "directory": "packages/editor"
+  },
+  "bugs": {
+    "url": "https://github.com/sutrata/sutrata/issues"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

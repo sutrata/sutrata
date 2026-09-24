@@ -1,7 +1,27 @@
 {
   "name": "@sutrata/parser",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "description": "Reference parser for Sutra, a plain-text screenplay format for world languages: AST, byte-faithful round-trip, Fountain import/export, Indic romanization.",
   "license": "Apache-2.0",
+  "keywords": [
+    "sutra",
+    "screenplay",
+    "fountain",
+    "parser",
+    "indic",
+    "unicode",
+    "romanization",
+    "iso-15919"
+  ],
+  "homepage": "https://github.com/sutrata/sutrata/tree/main/packages/parser#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sutrata/sutrata.git",
+    "directory": "packages/parser"
+  },
+  "bugs": {
+    "url": "https://github.com/sutrata/sutrata/issues"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
