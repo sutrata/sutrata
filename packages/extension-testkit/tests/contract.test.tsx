@@ -8,6 +8,7 @@ import React from 'react'
 import { render, screen, act, fireEvent, waitFor } from '@testing-library/react'
 import { vi } from 'vitest'
 import { Plugin, TextSelection } from 'prosemirror-state'
+import { undo } from 'prosemirror-history'
 import {
   DocumentProvider, AppShell, useDocument, LanguageProvider, TranslationProvider, createRegistries,
 } from '@sutrata/editor'
@@ -164,5 +165,35 @@ describe('CollabBinding', () => {
     expect(view.state.selection.from).toBe(2)
     unmount()
     expect(collab.detached).toBe(1)
+  })
+})
+
+describe('AI-assisted import', () => {
+  it('formats pasted text through the provider and imports it as one undoable edit', async () => {
+    const ai = createStubAI()
+    ai.reply = req => req.prompt.replace(/^RAJ: /m, '@RAJ\n')
+    const collab = createStubCollab()
+    const { view } = await mount({ aiProvider: ai, collabBinding: collab })
+
+    fireEvent.click(screen.getByLabelText('Import with AI'))
+    fireEvent.change(screen.getByLabelText('…or paste the text'), { target: { value: 'RAJ: Namaste.' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(ai.calls).toHaveLength(0)   // nothing sent before the data policy is accepted
+    fireEvent.click(screen.getByRole('checkbox'))
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Format with AI' })) })
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Append to document' })).toBeInTheDocument())
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Append to document' })) })
+    await waitFor(() => expect(doc.text).toBe(TEXT + '\n@RAJ\nNamaste.\n'))
+
+    act(() => { undo(view.state, view.dispatch) })
+    await waitFor(() => expect(doc.text).toBe(TEXT))
+  })
+
+  it('is not offered without an AI provider or in a read session', async () => {
+    const { unmount } = await mount()
+    expect(screen.queryByLabelText('Import with AI')).toBeNull()
+    unmount()
+    await mount({ aiProvider: createStubAI(), session: createSession('read') })
+    expect(screen.queryByLabelText('Import with AI')).toBeNull()
   })
 })

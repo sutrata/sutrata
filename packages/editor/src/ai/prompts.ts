@@ -60,3 +60,30 @@ export const SCENE_METADATA_SCHEMA = {
   additionalProperties: false,
 } as const;
 
+
+/**
+ * AI-assisted import (import/ai-import.ts): turns a chunk of a screenplay
+ * written elsewhere (Word, plain text, Markdown) into Sutra. The content
+ * check after each call compares words in and out, so the rules below about
+ * never adding, dropping or translating text are enforced, not just asked.
+ */
+export const IMPORT_FORMAT_SYSTEM_PROMPT = `You convert screenplay text into Sutra, a plain-text screenplay format. You receive one chunk of a longer script; format only that chunk.
+
+Sutra syntax (separate blocks with one blank line):
+1. Scene heading: "## " + the heading text as written (e.g. "## INT. COFFEE SHOP - DAY", "## अंदर. रेलवे स्टेशन - रात"). If the source numbers the scene, append the number as "{#12}" at the end of the heading line and drop it from the text.
+2. Action: a plain paragraph with no sigil.
+3. Character cue: "@" + the name exactly as written, alone on a line, optionally followed by an extension like "(V.O.)". Never change the name's case or script.
+4. Dialogue: the lines directly under the cue, no blank line in between.
+5. Parenthetical: "(text)" on its own line inside a dialogue block.
+6. Transition: ">> " + text (e.g. ">> CUT TO:").
+7. Centered text: ">> text <<".
+8. Lyrics: "~ " at the start of every lyric line.
+9. Section/act heading: "# " + text.
+10. Emphasis already marked with *italic*, **bold** or _underline_ must be kept.
+
+Rules:
+- Keep every word of the source, in its original language and script. Never translate, transliterate, summarise, correct, reorder or add text.
+- Do not invent scene headings, character names, metadata ("& key: value") or notes.
+- Page numbers, "CONTINUED", "(MORE)" and "(CONT'D)" page furniture may be dropped.
+- If a line's role is unclear, keep it as action.
+- Output only the Sutra text: no explanations, no code fences, no frontmatter.`

@@ -25,7 +25,10 @@ interface ParsedParagraph {
 }
 
 interface ParsedTable {
+  /** Cells of the first row (a dual-dialogue table has exactly one row of two cells). */
   cells: ParsedParagraph[][]
+  /** Every row's cells, for generic documents. */
+  rows: ParsedParagraph[][][]
 }
 
 type BodyItem = { kind: 'para'; para: ParsedParagraph } | { kind: 'table'; table: ParsedTable }
@@ -82,18 +85,11 @@ function parseParagraph(p: Element): ParsedParagraph {
 }
 
 function parseTable(tbl: Element): ParsedTable {
-  const tr = tbl.getElementsByTagNameNS(W_NS, 'tr')[0]
-  const cells: ParsedParagraph[][] = []
-  if (tr) {
-    for (const tc of Array.from(tr.children)) {
-      if (tc.localName !== 'tc') continue
-      const paras = Array.from(tc.children)
-        .filter(c => c.localName === 'p')
-        .map(p => parseParagraph(p))
-      cells.push(paras)
-    }
-  }
-  return { cells }
+  const rows = Array.from(tbl.getElementsByTagNameNS(W_NS, 'tr')).map(tr =>
+    Array.from(tr.children)
+      .filter(tc => tc.localName === 'tc')
+      .map(tc => Array.from(tc.children).filter(c => c.localName === 'p').map(p => parseParagraph(p))))
+  return { cells: rows[0] ?? [], rows }
 }
 
 /** Rebuilds bold/italic/underline markup from formatting runs, matching the parser's inline syntax.
@@ -238,12 +234,7 @@ function isBodyStart(item: BodyItem): boolean {
   return item.para.style !== null && BODY_STYLES.has(item.para.style)
 }
 
-/** Parses a .docx file (as produced by exportToDocx, possibly re-saved from Word with
- *  corrections and/or font changes) back into Sutra body text. The title page, if any,
- *  is not reimported — only content carrying the CineXxx paragraph styles the exporter
- *  applies to the screenplay body is recognized. */
-export async function importDocx(buffer: ArrayBuffer): Promise<DocxImportResult> {
-  const warnings: string[] = []
+async function readBodyItems(buffer: ArrayBuffer): Promise<BodyItem[]> {
   let zip: JSZip
   try {
     zip = await JSZip.loadAsync(buffer)
@@ -267,6 +258,41 @@ export async function importDocx(buffer: ArrayBuffer): Promise<DocxImportResult>
     if (child.localName === 'p') items.push({ kind: 'para', para: parseParagraph(child) })
     else if (child.localName === 'tbl') items.push({ kind: 'table', table: parseTable(child) })
   }
+  return items
+}
+
+/** True when the document carries the CineXxx paragraph styles exportToDocx applies. */
+export async function isSutrataDocx(buffer: ArrayBuffer): Promise<boolean> {
+  // Only styled paragraphs count: any Word document may contain tables.
+  return (await readBodyItems(buffer)).some(item => item.kind === 'para' && isBodyStart(item))
+}
+
+/**
+ * Plain text of any Word document, one line per paragraph (empty paragraphs
+ * become blank lines), with bold/italic/underline runs as Sutra emphasis
+ * markup. Table cells are read row by row, left to right. Used by the
+ * AI-assisted import for documents Sutrata did not write.
+ */
+export async function readDocxText(buffer: ArrayBuffer): Promise<string> {
+  const lines: string[] = []
+  const addPara = (para: ParsedParagraph) => {
+    if (para.isPageBreak && !para.text.trim()) { lines.push(''); return }
+    lines.push(renderInline(para.runs, { allowBold: true, allowItalic: true, allowUnderline: true }).replace(/\s+$/, ''))
+  }
+  for (const item of await readBodyItems(buffer)) {
+    if (item.kind === 'para') addPara(item.para)
+    else for (const row of item.table.rows) for (const cell of row) { for (const p of cell) addPara(p); lines.push('') }
+  }
+  return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim()
+}
+
+/** Parses a .docx file (as produced by exportToDocx, possibly re-saved from Word with
+ *  corrections and/or font changes) back into Sutra body text. The title page, if any,
+ *  is not reimported — only content carrying the CineXxx paragraph styles the exporter
+ *  applies to the screenplay body is recognized. */
+export async function importDocx(buffer: ArrayBuffer): Promise<DocxImportResult> {
+  const warnings: string[] = []
+  const items = await readBodyItems(buffer)
 
   const startIdx = items.findIndex(isBodyStart)
   if (startIdx === -1) {

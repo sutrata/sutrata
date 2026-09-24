@@ -3061,3 +3061,23 @@ html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
   .cs-tp-row > :first-child { grid-column: 1 / -1; }
   .cs-tp-add { margin-left: 0; }
 }
+
+/* AI-assisted import dialog */
+.cs-ai-import-body { padding: 14px 16px; max-height: 80vh; overflow-y: auto; font-size: 13px; }
+.cs-ai-import-hint { margin: 0 0 10px; color: var(--cs-ui-text-light-secondary, #59574f); display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+.cs-ai-import-error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 8px 10px; border-radius: 4px; margin-bottom: 10px; }
+.cs-ai-import-paste { width: 100%; box-sizing: border-box; font-family: 'Courier New', monospace; font-size: 12px; padding: 8px; border: 1px solid var(--cs-ui-border-light, #e2e0d6); border-radius: 4px; }
+.cs-ai-import-policy { background: var(--cs-ui-bg-panel-subtle, #f4f2ea); border-radius: 4px; padding: 10px; font-size: 12px; margin-bottom: 10px; white-space: pre-wrap; }
+.cs-ai-import-agree { display: flex; gap: 8px; align-items: center; font-size: 12px; }
+.cs-ai-import-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.cs-ai-import-warnings { margin-bottom: 10px; }
+.cs-ai-import-review { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cs-ai-import-col-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--cs-ui-text-light-secondary, #59574f); margin-bottom: 6px; }
+.cs-ai-import-source, .cs-ai-import-block pre { white-space: pre-wrap; word-break: break-word; font-family: 'Courier New', monospace; font-size: 12px; margin: 0; }
+.cs-ai-import-source { max-height: 60vh; overflow: auto; background: var(--cs-ui-bg-panel-subtle, #f4f2ea); padding: 8px; border-radius: 4px; }
+.cs-ai-import-blocks { list-style: none; margin: 0; padding: 0; max-height: 60vh; overflow: auto; }
+.cs-ai-import-block { display: grid; grid-template-columns: 150px 1fr; gap: 8px; align-items: start; padding: 6px 0; border-bottom: 1px solid var(--cs-ui-border-light-subtle, #eeece4); }
+@media (max-width: 640px) {
+  .cs-ai-import-review { grid-template-columns: 1fr; }
+  .cs-ai-import-block { grid-template-columns: 1fr; }
+}
