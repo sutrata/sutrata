@@ -168,6 +168,9 @@ copyright: © 2026 Rangi Parata
 | `lang` | string | Primary language, BCP-47 (`hi`, `ta`, `te`, `en-IN`, …). Default `und`. |
 | `lang-secondary` | list | Additional languages tools should expect (spellcheck, fonts). |
 | `page` | string | Target page size for export: `A4` (default) or `Letter`. |
+| `revision-set` | string | Active production revision color (§10.1), e.g. `blue`. Absent = no revision is active. |
+| `revision-colors` | list | Revision color sequence (§10.1). Default: `white, blue, pink, yellow, green, goldenrod, buff, salmon, cherry, double-blue, double-pink, double-yellow, double-green`. |
+| `locked-pages` | list | Locked page breaks (§10.2). Absent = pages are not locked. |
 
 Custom keys are permitted and MUST be preserved on round-trip. When `title` is
 a map, tools SHOULD display the entry matching `lang` and MAY print others as
@@ -198,12 +201,15 @@ A level-2 Markdown heading. The heading text is free-form.
   normative, language-neutral channel for this data is the scene metadata
   keys `& setting:`, `& location:`, `& time:` (§7). When both are present,
   the metadata keys win.
-- The **scene ID** doubles as the production scene number. `{#12}` or `{#12A}`
-  serves both as the human-readable locked number (shown in the navigator,
-  on the slate, in breakdown sheets) and as the stable anchor for
-  cross-references. IDs MUST be unique within the document. Writers are not
-  required to assign IDs; tools SHOULD offer to generate them and MUST NOT
-  renumber existing ones once assigned.
+- The **scene ID** (`{#sc12}`, `{#12}`) is the stable anchor for
+  cross-references, comments, scene-level diff and page locking. IDs MUST be
+  unique within the document. Writers are not required to assign IDs; tools
+  SHOULD offer to generate them and MUST NOT change existing ones.
+- The **scene number** (shown in the navigator, on the slate, in breakdown
+  sheets) is the `& number:` metadata key when present (§7.4); otherwise
+  tools MAY display the scene ID as the number. Keeping the two separate
+  lets a scene be renumbered for production without breaking anything
+  anchored to its ID.
 
 ### 6.2 Action
 
@@ -362,6 +368,7 @@ following indented `- ` lines are its items.
 | `est-duration` | text | Writer's estimate of screen time (`2m30s`). The language-neutral replacement for the 1-page≈1-minute rule, which does not transfer to non-Latin scripts. |
 | `shots` | list | Planned shot list (§7.3). |
 | `lang` | BCP-47 | Language override for this scene (§9). |
+| `number` | text | Locked production scene number (§7.4): `12`, `12A`. |
 
 **Unknown keys are valid** and MUST be preserved on round-trip. This is the
 extension point for downstream workflow data — `& props:`, `& vfx:`,
@@ -374,6 +381,18 @@ an optional leading `TYPE:` token (`WIDE`, `CU`, `MCU`, `OTS`, `POV`, `INSERT`,
 `AERIAL`, or any production-house term) that tools MAY use to group and label
 shots. Everything after the colon is the shot description. Items may reference
 actors or scene IDs in prose; no further structure is imposed in 1.0.
+
+### 7.4 Scene Numbers and Omitted Scenes
+
+`& number:` records a scene's production number. "Locking scene numbers"
+writes `& number:` to every scene from its current position; after that:
+
+- Locked numbers never change. A scene inserted between `12` and `13` is
+  numbered `12A` (then `12B`, …); one inserted before scene `1` is `A1`.
+- A scene removed from the script is kept as an **omitted scene**: its
+  heading and `& number:` stay, `& status: omitted` is set, and its body is
+  empty (or kept in a comment). Renderers print the heading line as
+  `OMITTED` next to the number; numbering of later scenes is unaffected.
 
 ---
 
@@ -478,13 +497,74 @@ heading, section heading, or character cue. Pandoc-style contents:
 |---|---|---|
 | `#word` | Stable ID | `{#sc12}`, `{#synopsis}` |
 | `key=value` | Property | `{lang=en}`, `{lang=mr}` |
+| `rev=color` | Revision mark (§10.1) | `{rev=blue}` |
 
 Multiple entries are space-separated: `{#sc12 lang=en}`. Unknown attributes
 MUST be preserved. Values containing spaces use quotes: `{key="some value"}`.
 
 For an **action paragraph**, an attribute block at the end of its first line
 applies to the whole paragraph (rarely needed; auto-detection covers most
-cases).
+cases). The same holds for transition, centered-text and lyrics blocks.
+
+### 10.1 Revision Marks
+
+Production revisions follow the standard color sequence, recorded in
+frontmatter:
+
+```yaml
+revision-set: blue          # the revision currently being written
+revision-colors: [white, blue, pink, yellow, green, goldenrod, buff, salmon, cherry]
+```
+
+`revision-colors` is optional; the default sequence is listed in §5. Colors
+are lowercase kebab-case names (`double-blue`). `white` is the unrevised
+first draft and is never written as a mark.
+
+A block changed during a revision carries `rev=<color>` in the attribute
+block on its first line:
+
+```markdown
+## INT. रेलवे स्टेशन - रात {#12 rev=blue}
+
+मीरा घड़ी देखती है। {rev=pink}
+
+@मीरा {rev=blue}
+तुम फिर देर से आए।
+```
+
+- The mark covers the whole block: a heading marks only the heading line
+  (not the scene); a cue marks the cue and its dialogue.
+- A block keeps the color of the **latest** revision that changed it.
+  Tools MUST NOT remove marks when a new revision starts; "clear revision
+  marks" is an explicit user action (typically when a new draft begins).
+- Renderers print a revision asterisk (`*`) in the right margin beside
+  marked lines, and MAY tint marked blocks with the color.
+- Readers that don't know revisions preserve `rev=` like any unknown
+  attribute (§10) and render the text normally.
+
+### 10.2 Page Locking
+
+`locked-pages` records where each page began when pages were locked, so
+exports keep page numbers stable across later edits. It is a flow list of
+page-start anchors, one per page, in order:
+
+```yaml
+locked-pages: [1:0, 1:6, 2:0, 2:3+214, 3:0]
+```
+
+Each anchor is `<scene-id>:<block>[+<chars>]`: the scene's `{#id}`, the
+0-based index of the block within the scene (`0` is the heading, then its
+script blocks in order, excluding `&` metadata), and optionally the number of
+characters into that block's text where the page began. Page *n* begins at
+the *n*th anchor.
+
+- Locking requires every scene to have an ID; tools MUST refuse to lock (and
+  SHOULD point out the scenes that lack one) otherwise.
+- After locking, text that no longer fits on its locked page flows onto
+  **A-pages** (`12A`, `12B`, …) rather than renumbering later pages. A page
+  whose content was entirely removed prints as `12-13` (combined) or keeps
+  its number with "OMITTED" content — the renderer's choice.
+- Anchors whose scene no longer exists are ignored.
 
 ---
 
@@ -559,7 +639,7 @@ size preference); the application spec defines the *presentation*.
 Recommended editor behaviors: fold/unfold `&` metadata; show scene synopses as
 a scene-list panel (the one-liner schedule view); use `& actors:` ∪ `& shots:`
 to generate shot-list and call-sheet exports; treat `& status: omitted` as a
-struck-through scene that keeps its `& number:`.
+struck-through scene that keeps its `& number:` (§7.4).
 
 ---
 

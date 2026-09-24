@@ -372,9 +372,10 @@ of revised pages to a crew is a Cloud feature.
   (`*`) in the margin on export.
 - **Page locking:** once locked, page numbers are stable; insertions produce A-pages
   (12A); omitted scenes print "OMITTED".
-- Revision marks require a format-spec addition (attribute or `&` key scheme). The format
-  change lands first; unknown-attribute preservation guarantees older readers keep the
-  marks intact.
+- Revision marks use the format spec's `{rev=color}` block attribute and the
+  `revision-set` / `revision-colors` / `locked-pages` frontmatter keys (Sutra format spec
+  §10.1–10.2; scene numbers and omitted scenes §7.4). Unknown-attribute preservation
+  guarantees older readers keep the marks intact.
 
 ---
 
