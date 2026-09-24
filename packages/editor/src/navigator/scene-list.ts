@@ -1,3 +1,5 @@
+import { splitAttributeBlock } from '@sutrata/parser'
+
 export interface SceneEntry {
   id: string | null
   heading: string
@@ -29,10 +31,9 @@ export function buildSceneList(text: string): SceneEntry[] {
       const headingRaw = trimmed.slice(3).trim()
       const sceneStart = currentOffset
 
-      // Extract scene id from inline {#...} on the heading line, then strip it
-      const idMatch = /\{#([^}]+)\}/.exec(headingRaw)
-      const sceneId: string | null = idMatch?.[1] ?? null
-      const heading = headingRaw.replace(/\s*\{#[^}]+\}/, '').trim()
+      // Split the trailing attribute block ({#id lang=…}, §10) off the heading
+      const { body, id: sceneId } = splitAttributeBlock(headingRaw)
+      const heading = body.trim()
 
       // Collect metadata (& key: value) until next heading
       let synopsis = ''

@@ -1,4 +1,5 @@
 export * from './types.js'
+export * from './attributes.js'
 export * from './frontmatter.js'
 export * from './lexer.js'
 export * from './parser.js'

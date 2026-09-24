@@ -70,8 +70,10 @@ export function extractWorkflowData(ast: DocumentNode): {
       const status = node.metadata.find(m => m.key === 'status')?.value ?? ''
       const estDuration = node.metadata.find(m => m.key === 'est-duration')?.value ?? ''
 
-      // Collect all shot metadata lines
-      const shotLines = node.metadata.filter(m => m.key === 'shots').map(m => m.value)
+      // Collect shots: `& shots:` list items (§7.3) and repeated `& shots: text` lines
+      const shotLines = node.metadata
+        .filter(m => m.key === 'shots')
+        .flatMap(m => m.items ?? (m.value ? [m.value] : []))
 
       scenes.push({
         number: sceneNum,

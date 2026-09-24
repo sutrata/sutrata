@@ -113,6 +113,11 @@ describe('Exporters', () => {
     expect(xml).toContain('CineAction')
   })
 
+  it('extractWorkflowData reads `& shots:` list items (§7.3)', () => {
+    const data = extractWorkflowData(parse('## INT. X {#4}\n& shots:\n  - WIDE: platform\n  - CU: मीरा\n\nAction.\n'))
+    expect(data.scenes[0]!.shots).toEqual(['WIDE: platform', 'CU: मीरा'])
+  })
+
   it('extractWorkflowData correctly extracts scenes and characters', () => {
     const data = extractWorkflowData(ast)
     

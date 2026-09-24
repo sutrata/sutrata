@@ -1,3 +1,4 @@
+import { formatAttributeBlock } from './attributes.js'
 import type {
   DocumentNode, ContentNode, SceneHeadingNode, SceneContentNode,
   CharacterNode, ActionNode, DialogueNode, ParentheticalNode,
@@ -85,7 +86,7 @@ export function importFountain(source: string): FountainImportResult {
       const heading: SceneHeadingNode = {
         type: 'scene-heading', raw: block,
         text: headingText,
-        id: sceneId, metadata: [], children: [],
+        id: sceneId, attrs: [], metadata: [], children: [],
       }
       children.push(heading)
       currentScene = heading
@@ -151,7 +152,7 @@ export function importFountain(source: string): FountainImportResult {
         type: 'character', raw: block,
         name: extMatch ? extMatch[1]!.trim() : cueStripped,
         extension: extMatch ? extMatch[2]! : null,
-        isDual: isDualCue, children: [],
+        isDual: isDualCue, id: null, attrs: [], children: [],
       }
       for (let i = 1; i < blockLines.length; i++) {
         const dl = blockLines[i]!.trim()
@@ -244,8 +245,7 @@ export function fountainDocToSutra(doc: DocumentNode): string {
 
   for (const node of doc.children) {
     if (node.type === 'scene-heading') {
-      const id = node.id ? ` {#${node.id}}` : ''
-      parts.push(`## ${node.text}${id}`)
+      parts.push(`## ${node.text}${formatAttributeBlock(node.id, node.attrs)}`)
       parts.push('')
       sceneContentToSutra(node.children)
     } else if (node.type === 'action') {
