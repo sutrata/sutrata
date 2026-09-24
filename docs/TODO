@@ -1,18 +1,18 @@
-1. Spellcheck — real Hunspell WASM engine. The plugin is wired into the editor
+1. HOLD: Spellcheck — real Hunspell WASM engine. The plugin is wired into the editor
    (createSpellcheckPlugin), but the checker behind it (SimpleSpellChecker,
    packages/app/src/spellcheck/hunspell.ts) is an in-memory word-set placeholder:
    no .dic/.aff loading, and suggest() always returns []. Need to load real
    Hunspell dictionaries per language.
-2. Language UI (low priority — display-only indicator done; full feature needs design):
+2. HOLD: Language UI (low priority — display-only indicator done; full feature needs design):
    - One-click {lang=} override: right-click context menu, inserts tag at cursor or wraps selection
    - Language tags ({lang=XX}): not yet handled by parser/editor. Need to decide:
      a) AST representation in parser
      b) Editor rendering and preservation of tags
      c) How LanguageContext resolves effective language from tags vs frontmatter
      d) Whether tags apply to inline spans or whole block elements
-3. Navigator color-coding by tags/location/status — not implemented; only a
+3. HOLD: Navigator color-coding by tags/location/status — not implemented; only a
    generic accent color exists for hover/selection, not data-driven coloring.
-4. Watermark for exports — frontmatter watermark: renders on-screen and in
+4. HOLD: Watermark for exports — frontmatter watermark: renders on-screen and in
    print/PDF export (workflow-reports.ts), but is not applied in DOCX export
    (docx-exporter.ts). Also no per-export toggle to opt out when the field is
    set — it's implicitly always-on.
@@ -25,3 +25,51 @@
    not offering them — need actual pa.json/or.json/si.json translations first.
    (Checked footer LanguageStatus's script-language dropdown too, per report —
    that one already has Punjabi, Odia, and Sinhala; nothing to fix there.)
+6. Extension points: dependency-inject AIProvider, SpeechProvider, and
+   SessionContext (OSS spec §11.5). They are type-only in
+   packages/editor/src/extensions/types.ts; ai-client.ts and voice-service.ts
+   are still imported directly by VoiceToolbar, SettingsDialog, SceneNavigator,
+   StatusBar, VoiceConfirmDialog, and OnboardingDialog. Follow the
+   StorageAdapter pattern (interface + React context + useXAdapter() hook,
+   provider prop on DocumentProvider, concrete default in @sutrata/app).
+   SessionContext must actually drive read-only / comment-only modes.
+7. Extension points: make PanelRegistry, CommandRegistry, and ExportRegistry
+   real. AppShell has a fixed panel set and ExportDialog a fixed format list;
+   embedders need to add panels, commands/shortcuts, and export formats
+   without forking the editor.
+8. Extension points: revise the DecorationProvider and CollabBinding
+   signatures before they become stable. DecorationProvider
+   (from/to/className per scene) is too thin for comment threads, click
+   handlers, and widgets; CollabBinding.bind() gets no editor state or view,
+   so nothing can bind to it.
+9. @sutrata/extension-testkit (OSS spec §11.1, §11.5): a stub embedder that
+   implements every extension point, plus a CI job that builds and tests it
+   on every PR. Not present yet.
+10. HOLD: @sutrata/cloud-connector (OSS spec §11.1, P2, optional): an open
+    StorageAdapter for the documented sync API. Not bundled by default; the
+    app must work identically without it.
+11. Publish @sutrata/parser and @sutrata/editor to npm (both at 0.1.0,
+    unpublished). Adopt Changesets; the extension API follows semver, with a
+    migration note for every breaking change (strict semver from 1.0).
+12. Stable scene IDs: {#id} is optional in the format, but scene-level diff
+    (§3.5), comments, and any production data keyed by scene need every scene
+    to have one. Add a parser/editor helper that assigns IDs to scenes that
+    lack them (a visible, user-confirmed edit), so every tool uses the same
+    ID-generation rule.
+13. Revision mode (OSS spec §3.6, P2): not implemented (only locale strings
+    exist). Needs a format-spec addition first (attribute or & key scheme for
+    revision marks), then revision colors, revision stars on export, page
+    locking with A-pages, and OMITTED scenes. Builds on the existing
+    "lock scene numbers" action in SceneNavigator.
+14. Import (OSS spec §5.5, §5.6, P2): legacy-font → Unicode conversion
+    (Krutidev/Shree-Lipi for Hindi, Bamini/TAM/TAB for Tamil, Anu for Telugu
+    first; then Nudi/Baraha, ML-TT) and heuristic Word import of arbitrary
+    scripts. docx-importer.ts currently handles only Sutrata's own DOCX output.
+15. Lossless editor serializer (OSS spec §11.6, P2): prosemirror-to-sutra.ts
+    is best-effort. Carry unknown attributes and metadata as node attrs and
+    add a property test that parse → PM → serialize → parse yields an equal
+    AST over the whole conformance corpus. Required before any real-time
+    collaboration (CollabBinding) is used.
+16. Spec fix: OSS spec §7.2.2, §8.1, and §8.3 describe the scene synopsis as
+    a `=` line, but the format spec (normative) and the code use
+    `& synopsis:`. Update sutrata_spec.md to match.
