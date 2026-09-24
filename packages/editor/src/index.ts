@@ -28,8 +28,10 @@ export type {
 } from './extensions/panel-registry'
 export { createPanelRegistry, usePanelRegistry } from './extensions/panel-registry'
 export type {
+  DecorationProvider, DecorationSpec, DecorationContext, Anchor,
+} from './extensions/decorations'
+export type { CollabBinding } from './extensions/collab'
+export type {
   CommandRegistry,
   ExportRegistry,
-  CollabBinding,
-  DecorationProvider,
 } from './extensions/types'

@@ -54,7 +54,9 @@ The editor takes its dependencies on the outside world through injected interfac
 - **`SpeechProvider`** (`extensions/speech-provider.ts`) — optional `speechProvider` prop; `useSpeech()` is non-null only when AI is available too (dictation is formatted by AI) and `featureFlags.voice !== false`. The app supplies a Web Speech API provider.
 - **`SessionContext`** (`extensions/session.ts`) — optional `session` prop (default: local user, `edit`). `read`/`comment` make the editors read-only: `EditorView.tsx` drops every doc-changing transaction and `SourceView.tsx` filters them, so programmatic edits from toolbars/navigator/node views are blocked too. UI that calls `setText` directly must check `useCanEdit()` itself (find/replace, navigator reorder, statistics actor edits, language tag).
 - **`PanelRegistry`** (`extensions/panel-registry.ts`) — optional `panels` prop (registry or list); `register()` returns an unregister function. Only the `settings` location is rendered so far (the app's AI settings use it).
-- **`CommandRegistry`, `ExportRegistry`, `CollabBinding`, `DecorationProvider`** (`extensions/types.ts`) — type-only stubs, not wired yet.
+- **`DecorationProvider`** (`extensions/decorations.ts`) — optional `decorationProviders` prop. Specs are `inline`/`node`/`widget`, anchored `{ sceneId, from?, to? }` with offsets into the scene's text (`ctx.sceneText(id)`: blocks joined by '\n'). `editor/external-decorations-plugin.ts` maps anchors to positions, recomputes on doc change and on `subscribe`, and routes clicks via a `data-cs-deco` attribute (works in read/comment sessions). Scenes without `{#id}` can't be anchored.
+- **`CollabBinding`** (`extensions/collab.ts`) — optional `collabBinding` prop: `plugins(schema)` join every state `EditorView.tsx` creates, `attach(view)` runs after mount and its return value on unmount.
+- **`CommandRegistry`, `ExportRegistry`** (`extensions/types.ts`) — type-only stubs, not wired yet.
 
 ### Sutra text is the single source of truth
 
