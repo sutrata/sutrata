@@ -1,6 +1,26 @@
 import { Schema } from 'prosemirror-model'
 import type { NodeSpec, MarkSpec } from 'prosemirror-model'
 
+/**
+ * Attributes (format spec §10) other than the id, kept in source order as
+ * `{ key, value }` pairs so unknown ones round-trip. Serialized into the DOM
+ * as JSON so copy/paste inside the editor keeps them.
+ */
+function readAttrs(dom: HTMLElement): unknown[] {
+  try {
+    const parsed: unknown = JSON.parse(dom.dataset['attrs'] ?? '[]')
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+function withAttrs(dom: Record<string, string>, node: { attrs: Record<string, unknown> }): Record<string, string> {
+  const attrs = node.attrs['attrs'] as unknown[]
+  if (attrs.length > 0) dom['data-attrs'] = JSON.stringify(attrs)
+  return dom
+}
+
 const nodes: Record<string, NodeSpec> = {
   doc: { content: 'title_page? block+' },
 
@@ -8,6 +28,10 @@ const nodes: Record<string, NodeSpec> = {
   // Only valid as the first child of doc (not in the block group).
   title_page: {
     content: 'frontmatter_field+',
+    // The frontmatter source this node was built from. prosemirror-to-sutra
+    // re-emits it verbatim (or edits only the changed keys), so comments,
+    // lists, quoting and key order the fields cannot represent survive.
+    attrs: { raw: { default: null } },
     toDOM: () => ['div', { class: 'cs-title-page-block' }, 0],
     parseDOM: [{ tag: 'div.cs-title-page-block' }],
   },
@@ -23,13 +47,16 @@ const nodes: Record<string, NodeSpec> = {
   scene_heading: {
     group: 'block',
     content: 'inline*',
-    attrs: { id: { default: null } },
+    attrs: { id: { default: null }, attrs: { default: [] } },
     toDOM: (node) => {
       const attrs: Record<string, string> = { class: 'cs-scene-heading' }
       if (node.attrs['id']) attrs['data-scene-id'] = node.attrs['id'] as string
-      return ['div', attrs, 0]
+      return ['div', withAttrs(attrs, node), 0]
     },
-    parseDOM: [{ tag: 'div.cs-scene-heading', getAttrs: (dom) => ({ id: (dom as HTMLElement).dataset['sceneId'] ?? null }) }],
+    parseDOM: [{
+      tag: 'div.cs-scene-heading',
+      getAttrs: (dom) => ({ id: (dom as HTMLElement).dataset['sceneId'] ?? null, attrs: readAttrs(dom as HTMLElement) }),
+    }],
   },
 
   action: {
@@ -42,8 +69,16 @@ const nodes: Record<string, NodeSpec> = {
   character: {
     group: 'block',
     content: 'inline*',
-    toDOM: () => ['div', { class: 'cs-character' }, 0],
-    parseDOM: [{ tag: 'div.cs-character' }],
+    attrs: { id: { default: null }, attrs: { default: [] } },
+    toDOM: (node) => {
+      const attrs: Record<string, string> = { class: 'cs-character' }
+      if (node.attrs['id']) attrs['data-id'] = node.attrs['id'] as string
+      return ['div', withAttrs(attrs, node), 0]
+    },
+    parseDOM: [{
+      tag: 'div.cs-character',
+      getAttrs: (dom) => ({ id: (dom as HTMLElement).dataset['id'] ?? null, attrs: readAttrs(dom as HTMLElement) }),
+    }],
   },
 
   dialogue: {
@@ -84,9 +119,20 @@ const nodes: Record<string, NodeSpec> = {
   scene_metadata: {
     group: 'block',
     content: 'inline*',
-    attrs: { metaKey: { default: '' } },
-    toDOM: (node) => ['div', { class: 'cs-scene-metadata', 'data-key': node.attrs['metaKey'] as string }, 0],
-    parseDOM: [{ tag: 'div.cs-scene-metadata', getAttrs: (dom) => ({ metaKey: (dom as HTMLElement).dataset['key'] ?? '' }) }],
+    // list: the value is a `- item` list (§7.1), one item per line of content.
+    attrs: { metaKey: { default: '' }, list: { default: false } },
+    toDOM: (node) => {
+      const attrs: Record<string, string> = { class: 'cs-scene-metadata', 'data-key': node.attrs['metaKey'] as string }
+      if (node.attrs['list']) attrs['data-list'] = 'true'
+      return ['div', attrs, 0]
+    },
+    parseDOM: [{
+      tag: 'div.cs-scene-metadata',
+      getAttrs: (dom) => ({
+        metaKey: (dom as HTMLElement).dataset['key'] ?? '',
+        list: (dom as HTMLElement).dataset['list'] === 'true',
+      }),
+    }],
   },
 
   note: {
@@ -112,11 +158,15 @@ const nodes: Record<string, NodeSpec> = {
   section: {
     group: 'block',
     content: 'inline*',
-    attrs: { level: { default: 1 }, id: { default: null } },
-    toDOM: (node) => [`h${(node.attrs['level'] as number) + 1}`, { class: 'cs-section' }, 0],
+    attrs: { level: { default: 1 }, id: { default: null }, attrs: { default: [] } },
+    toDOM: (node) => {
+      const attrs: Record<string, string> = { class: 'cs-section' }
+      if (node.attrs['id']) attrs['data-id'] = node.attrs['id'] as string
+      return [`h${(node.attrs['level'] as number) + 1}`, withAttrs(attrs, node), 0]
+    },
     parseDOM: [
-      { tag: 'h2.cs-section', getAttrs: () => ({ level: 1 }) },
-      { tag: 'h3.cs-section', getAttrs: () => ({ level: 2 }) },
+      { tag: 'h2.cs-section', getAttrs: (dom) => ({ level: 1, id: (dom as HTMLElement).dataset['id'] ?? null, attrs: readAttrs(dom as HTMLElement) }) },
+      { tag: 'h3.cs-section', getAttrs: (dom) => ({ level: 2, id: (dom as HTMLElement).dataset['id'] ?? null, attrs: readAttrs(dom as HTMLElement) }) },
     ],
   },
 

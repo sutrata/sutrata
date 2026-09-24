@@ -516,7 +516,7 @@ cases).
    is a parenthetical if fully parenthesized, else dialogue.
 
 *Scene-metadata position* means: the blocks between a scene heading and the
-first block that is neither `=` nor `&`. Metadata lines may be grouped in one
+first block that is not `&` metadata. Metadata lines may be grouped in one
 block or separated by blank lines, but all must precede the script body.
 
 ### 11.2 Escaping

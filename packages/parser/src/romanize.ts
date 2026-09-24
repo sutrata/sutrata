@@ -50,6 +50,8 @@
  * the common casual convention.
  */
 
+import { splitAttributeBlock } from './attributes.js'
+
 export type RomanizeVariant = 'strict' | 'readable' | 'colloquial'
 
 export interface RomanizeOptions {
@@ -740,7 +742,10 @@ export function romanizeSutra(source: string, options: RomanizeSutraOptions = {}
     }
     if (atBlockStart) {
       atBlockStart = false
-      if (/^#(\s|$)/.test(l)) inRegistry = /\{#characters\}\s*$/.test(l) || /^#\s+Characters\s*$/i.test(l)
+      if (/^#(\s|$)/.test(l)) {
+        const { id, body } = splitAttributeBlock(l.replace(/^#\s*/, '').trimEnd())
+        inRegistry = id === 'characters' || /^characters$/i.test(body.trim())
+      }
       else if (/^##(\s|$)/.test(l)) inRegistry = false
       blockKind = !inRegistry && (l.startsWith('@') || /^~\s/.test(l)) ? 'dialogue' : 'other'
     }

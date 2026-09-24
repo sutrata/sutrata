@@ -1,0 +1,35 @@
+---
+format: sutra/1.0
+title:
+  hi: आख़िरी ट्रेन
+  en: The Last Train
+lang: hi
+lang-secondary: [en]
+x-studio: Example Films
+---
+
+# पात्र {#characters lang=hi}
+
+@मीरा {lang=hi}
+& actor: दीपिका
+& aliases:
+  - डॉ. मीरा शर्मा
+  - मीरू
+
+## INT. रेलवे स्टेशन - रात {#12A lang=hi x-unit="second unit"}
+& synopsis: मीरा और विक्रम सच जानते हैं।
+& shots:
+  - WIDE: खाली प्लेटफ़ॉर्म
+  - CU: मीरा का चेहरा
+& x-budget-code: B-12
+
+A ***very*** late train, _still_ **not** here.
+
+@VIKRAM (V.O.) ^ {lang=en}
+Where *are* you?
+
+~ चल छैयाँ छैयाँ
+~ **छैयाँ** छैयाँ
+
+>> THE END <<
+>> समाप्त <<

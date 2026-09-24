@@ -24,7 +24,10 @@ function parseInline(text: string): InlineSpan[] {
     }
     if (text.startsWith('**', i)) {
       if (buf) { spans.push({ type: 'text', text: buf }); buf = '' }
-      const end = text.indexOf('**', i + 2)
+      // Skip a closing ** that is immediately followed by another *, so the
+      // bold closes on the *last* two stars: ***x*** is bold(italic(x)).
+      let end = text.indexOf('**', i + 2)
+      while (end !== -1 && text[end + 2] === '*') end = text.indexOf('**', end + 1)
       if (end !== -1) {
         spans.push({ type: 'bold', spans: parseInline(text.slice(i + 2, end)) })
         i = end + 2; continue
@@ -50,6 +53,55 @@ function parseInline(text: string): InlineSpan[] {
   }
   if (buf) spans.push({ type: 'text', text: buf })
   return spans
+}
+
+const LIST_ITEM = /^\s+-(?:\s+(.*))?$/
+
+/**
+ * Collect `& key: value` lines starting at `lines[start]`. A key with an empty
+ * value takes the indented `- item` lines after it as its list (§7.1).
+ * Returns the metadata and the index of the first line not consumed.
+ */
+function collectMetadata(lines: string[], start: number): { metadata: SceneMetadataNode[]; next: number } {
+  const metadata: SceneMetadataNode[] = []
+  let i = start
+  while (i < lines.length) {
+    const line = lines[i]!
+    const t = tokenize(line)[0]!
+    if (t.type !== 'scene-metadata') break
+    const node: SceneMetadataNode = { type: 'scene-metadata', raw: line, key: t.key!, value: t.value ?? '' }
+    i++
+    if (node.value === '') {
+      const items: string[] = []
+      const rawLines = [line]
+      while (i < lines.length) {
+        const m = LIST_ITEM.exec(lines[i]!.trimEnd())
+        if (!m) break
+        items.push((m[1] ?? '').trim())
+        rawLines.push(lines[i]!)
+        i++
+      }
+      if (items.length > 0) {
+        node.items = items
+        node.raw = rawLines.join('\n')
+      }
+    }
+    metadata.push(node)
+  }
+  return { metadata, next: i }
+}
+
+/** True when every non-blank line of `block` is scene metadata (or its list items). */
+function isMetadataBlock(block: string): boolean {
+  const lines = block.split('\n').filter(l => l.trim() !== '')
+  return lines.length > 0 && collectMetadata(lines, 0).next === lines.length
+}
+
+/** Strip a leading `>>` (and, for centered text, a trailing `<<`) from a continuation line. */
+function stripChevrons(line: string, centered: boolean): string {
+  let t = line.trim().replace(/^>>\s*/, '')
+  if (centered) t = t.replace(/\s*<<$/, '')
+  return t
 }
 
 function parseSceneContent(lines: string[], comments: Map<string, ExtractedComment>): SceneContentNode[] {
@@ -103,7 +155,9 @@ function parseCharacterBlock(lines: string[], inCharacterRegistry = false): Char
     if (!line.trim()) continue
     const t = tokenize(line)[0]!
     if (inCharacterRegistry && t.type === 'scene-metadata') {
-      metadata.push({ type: 'scene-metadata', raw: line, key: t.key!, value: t.value ?? '' })
+      const collected = collectMetadata(lines, i)
+      metadata.push(...collected.metadata)
+      i = collected.next - 1
     } else if (t.type === 'parenthetical') {
       children.push({ type: 'parenthetical', raw: line, text: t.text ?? '' } as ParentheticalNode)
     } else {
@@ -115,6 +169,8 @@ function parseCharacterBlock(lines: string[], inCharacterRegistry = false): Char
     name: cueToken.text ?? '',
     extension: cueToken.extension ?? null,
     isDual: cueToken.isDual ?? false,
+    id: cueToken.id ?? null,
+    attrs: cueToken.attrs ?? [],
     children,
     ...(metadata.length > 0 ? { metadata } : {}),
   }
@@ -142,48 +198,59 @@ function parseBlock(
     case 'comment':
       return { type: 'comment', raw: block, text: firstToken.text ?? '' } as CommentNode
     case 'note':
+      // A standalone note is a whole block (§11.1 rule 11); a [[…]] line
+      // followed by more text is an action paragraph with an inline note.
+      if (lines.length > 1) break
       return { type: 'note', raw: block, text: firstToken.text ?? '' } as NoteNode
     case 'centered':
-      return { type: 'centered', raw: block, text: firstToken.text ?? '' } as CenteredNode
+      // Continuation lines of a centered/transition block belong to it; each
+      // may repeat the >> (and << for centered) sigils.
+      return {
+        type: 'centered', raw: block,
+        text: [firstToken.text ?? '', ...lines.slice(1).map(l => stripChevrons(l, true))].join('\n'),
+      } as CenteredNode
     case 'transition':
-      return { type: 'transition', raw: block, text: firstToken.text ?? '' } as TransitionNode
-    case 'lyrics':
-      return { type: 'lyrics', raw: block, spans: parseInline(firstToken.text ?? '') } as LyricsNode
+      return {
+        type: 'transition', raw: block,
+        text: [firstToken.text ?? '', ...lines.slice(1).map(l => stripChevrons(l, false))].join('\n'),
+      } as TransitionNode
+    case 'lyrics': {
+      // One ~ per line (§6.8); lines are joined with a '\n' text span.
+      const spans: InlineSpan[] = []
+      lines.forEach((line, idx) => {
+        if (idx > 0) spans.push({ type: 'text', text: '\n' })
+        const t = tokenize(line)[0]!
+        spans.push(...parseInline(t.type === 'lyrics' ? t.text ?? '' : line.trim()))
+      })
+      return { type: 'lyrics', raw: block, spans } as LyricsNode
+    }
     case 'section':
       return {
         type: 'section', raw: block,
         level: 1, text: firstToken.text ?? '',
-        id: firstToken.id ?? null, children: [],
+        id: firstToken.id ?? null, attrs: firstToken.attrs ?? [], children: [],
       } as SectionNode
     case 'scene-heading': {
+      const { metadata, next: i } = collectMetadata(lines, 1)
       const heading: SceneHeadingNode = {
-        type: 'scene-heading', raw: '',   // will be set after collecting heading lines
+        type: 'scene-heading',
+        // raw covers only the heading sigil line + metadata (not children)
+        raw: lines.slice(0, i).join('\n'),
         text: firstToken.text ?? '',
         id: firstToken.id ?? null,
-        metadata: [], children: [],
+        attrs: firstToken.attrs ?? [],
+        metadata, children: [],
       }
-      let i = 1
-      while (i < lines.length) {
-        const metaLine = lines[i]!
-        const t = tokenize(metaLine)[0]!
-        if (t.type === 'scene-metadata') {
-          heading.metadata.push({ type: 'scene-metadata', raw: metaLine, key: t.key!, value: t.value ?? '' } as SceneMetadataNode)
-          i++
-        } else break
-      }
-      // raw covers only the heading sigil line + scene synopsis + metadata (not children)
-      heading.raw = lines.slice(0, i).join('\n')
       heading.children = parseSceneContent(lines.slice(i), comments)
       return heading
     }
     case 'character':
       return parseCharacterBlock(lines, inCharacterRegistry)
-    default:
-      return {
-        type: 'action', raw: block,
-        spans: parseInline(lines.join('\n')),
-      } as ActionNode
   }
+  return {
+    type: 'action', raw: block,
+    spans: parseInline(lines.join('\n')),
+  } as ActionNode
 }
 
 export function parse(source: string): DocumentNode {
@@ -214,6 +281,18 @@ export function parse(source: string): DocumentNode {
       // Collect this block plus all following non-heading blocks as scene children
       const sceneLines = block.split('\n').filter(l => l.trim() !== '')
       i++
+      // Heading line + metadata; metadata may continue in following blocks
+      // separated by blank lines, as long as the script body has not begun (§11.1).
+      const { metadata, next: li } = collectMetadata(sceneLines, 1)
+      const headingRaw = [sceneLines.slice(0, li).join('\n')]
+      if (li === sceneLines.length) {
+        while (i < blocks.length && isMetadataBlock(blocks[i]!)) {
+          const metaLines = blocks[i]!.split('\n').filter(l => l.trim() !== '')
+          metadata.push(...collectMetadata(metaLines, 0).metadata)
+          headingRaw.push(metaLines.join('\n'))
+          i++
+        }
+      }
       const contentBlocks: string[] = []
       while (i < blocks.length) {
         const nextBlock = blocks[i]!
@@ -223,21 +302,14 @@ export function parse(source: string): DocumentNode {
         contentBlocks.push(nextBlock)
         i++
       }
-      // Parse scene synopsis and metadata from the heading block lines
+      // raw covers only the heading line + metadata; body lines that share
+      // the heading's block are the scene's first child and carry their own raw.
       const heading: SceneHeadingNode = {
-        type: 'scene-heading', raw: block,
+        type: 'scene-heading', raw: headingRaw.join('\n\n'),
         text: firstToken.text ?? '',
         id: firstToken.id ?? null,
-        metadata: [], children: [],
-      }
-      let li = 1
-      while (li < sceneLines.length) {
-        const metaLine = sceneLines[li]!
-        const t = tokenize(metaLine)[0]!
-        if (t.type === 'scene-metadata') {
-          heading.metadata.push({ type: 'scene-metadata', raw: metaLine, key: t.key!, value: t.value ?? '' } as SceneMetadataNode)
-          li++
-        } else break
+        attrs: firstToken.attrs ?? [],
+        metadata, children: [],
       }
       // The remaining lines from the heading block + content blocks become scene children
       const remainingHeadingLines = sceneLines.slice(li)

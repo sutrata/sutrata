@@ -1,3 +1,5 @@
+import { splitAttributeBlock, type Attribute } from './attributes.js'
+
 export type TokenType =
   | 'section'
   | 'scene-heading'
@@ -20,13 +22,14 @@ export interface Token {
   key?: string
   value?: string
   id?: string | null
+  attrs?: Attribute[]
   level?: 1
   extension?: string | null
   isDual?: boolean
 }
 
-const SCENE_HEADING  = /^##(?:\s+(.*?))?(?:\s+\{#([^}]+)\})?\s*$/
-const SECTION        = /^#(?:\s+(.*?))?(?:\s+\{#([^}]+)\})?\s*$/
+const SCENE_HEADING  = /^##(?:\s+(.*?))?\s*$/
+const SECTION        = /^#(?:\s+(.*?))?\s*$/
 const CHARACTER      = /^@(.*?)((?:\s+\([^()]*\))+)?\s*(\^)?\s*$/
 const METADATA       = /^&\s+([a-zA-Z0-9_-]+):\s*(.*)$/
 const CENTERED       = /^>>\s+(.+?)\s+<<\s*$/
@@ -66,18 +69,29 @@ export function tokenize(line: string): Token[] {
   if (m) return [{ type: 'transition', raw, text: m[1]! }]
 
   m = trimmed.match(SCENE_HEADING)
-  if (m) return [{ type: 'scene-heading', raw, text: (m[1] ?? '').trim(), id: m[2] ?? null }]
+  if (m) {
+    const { body, id, attrs } = splitAttributeBlock(m[1] ?? '')
+    return [{ type: 'scene-heading', raw, text: body.trim(), id, attrs }]
+  }
 
   m = trimmed.match(SECTION)
-  if (m) return [{ type: 'section', raw, text: (m[1] ?? '').trim(), id: m[2] ?? null, level: 1 }]
+  if (m) {
+    const { body, id, attrs } = splitAttributeBlock(m[1] ?? '')
+    return [{ type: 'section', raw, text: body.trim(), id, attrs, level: 1 }]
+  }
 
-  m = trimmed.match(CHARACTER)
-  if (m) return [{
-    type: 'character', raw,
-    text: (m[1] ?? '').trim(),
-    extension: m[2] ? m[2].trim() : null,
-    isDual: m[3] === '^',
-  }]
+  if (trimmed.startsWith('@')) {
+    // The attribute block (§10) ends the cue line, after any extension and ^.
+    const { body, id, attrs } = splitAttributeBlock(trimmed.slice(1))
+    m = ('@' + body).match(CHARACTER)
+    if (m) return [{
+      type: 'character', raw,
+      text: (m[1] ?? '').trim(),
+      extension: m[2] ? m[2].trim() : null,
+      isDual: m[3] === '^',
+      id, attrs,
+    }]
+  }
 
   m = trimmed.match(METADATA)
   if (m) return [{ type: 'scene-metadata', raw, key: m[1]!, value: m[2]!.trim() }]

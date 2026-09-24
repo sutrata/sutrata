@@ -1,3 +1,5 @@
+import type { Attribute } from './attributes.js'
+
 export type NodeType =
   | 'document'
   | 'frontmatter'
@@ -37,6 +39,8 @@ export interface SectionNode extends BaseNode {
   level: 1 | 2    // # = level 1; ## is scene-heading syntax, not a section
   text: string
   id: string | null
+  /** Attributes other than the id, in source order (§10); unknown ones preserved. */
+  attrs: Attribute[]
   children: ContentNode[]
 }
 
@@ -44,6 +48,8 @@ export interface SceneHeadingNode extends BaseNode {
   type: 'scene-heading'
   text: string
   id: string | null
+  /** Attributes other than the id, in source order (§10); unknown ones preserved. */
+  attrs: Attribute[]
   metadata: SceneMetadataNode[]
   children: SceneContentNode[]
 }
@@ -52,6 +58,8 @@ export interface SceneMetadataNode extends BaseNode {
   type: 'scene-metadata'
   key: string
   value: string    // raw value string; callers parse further if needed
+  /** List items: the indented `- ` lines under a key with an empty value (§7.1). */
+  items?: string[]
 }
 
 export interface ActionNode extends BaseNode {
@@ -64,6 +72,8 @@ export interface CharacterNode extends BaseNode {
   name: string
   extension: string | null   // "(V.O.)", "(O.S.)", etc.
   isDual: boolean             // true if ^ suffix
+  id: string | null           // from a trailing {#id} attribute block
+  attrs: Attribute[]          // other attributes on the cue line (§10)
   children: DialogueContentNode[]
   // Populated only for a @cue parsed inside a {#characters} registry section
   // (§8.2) — "& key: value" lines there are metadata, not dialogue.

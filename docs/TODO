@@ -66,11 +66,6 @@
     (Krutidev/Shree-Lipi for Hindi, Bamini/TAM/TAB for Tamil, Anu for Telugu
     first; then Nudi/Baraha, ML-TT) and heuristic Word import of arbitrary
     scripts. docx-importer.ts currently handles only Sutrata's own DOCX output.
-15. Lossless editor serializer (OSS spec §11.6, P2): prosemirror-to-sutra.ts
-    is best-effort. Carry unknown attributes and metadata as node attrs and
-    add a property test that parse → PM → serialize → parse yields an equal
-    AST over the whole conformance corpus. Required before any real-time
-    collaboration (CollabBinding) is used.
 16. Spec fix: OSS spec §7.2.2, §8.1, and §8.3 describe the scene synopsis as
     a `=` line, but the format spec (normative) and the code use
     `& synopsis:`. Update sutrata_spec.md to match.
