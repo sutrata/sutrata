@@ -364,7 +364,8 @@ export function cleanVoiceResponse(text: string): string {
     return l;
   }).filter(line => {
     const trimmed = line.toLowerCase();
-    if (!trimmed) return false;
+    // Keep blank lines: they separate Sutra blocks (a blank line ends dialogue).
+    if (!trimmed) return true;
 
     // Discard reasoning/mapping/explanation patterns
     if (
@@ -399,7 +400,8 @@ export function cleanVoiceResponse(text: string): string {
     return true;
   });
 
-  return filteredLines.join('\n').trim();
+  // Collapse runs of blank lines left behind by discarded explanation lines.
+  return filteredLines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 let nextCallId = 0;

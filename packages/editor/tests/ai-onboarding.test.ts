@@ -98,5 +98,10 @@ Rules:
       `;
       expect(cleanVoiceResponse(userGemmaClutter)).toBe('## EXT. ROAD - EVENING {#7}');
     });
+
+    it('keeps the blank lines that separate Sutra blocks', () => {
+      const input = '## INT. HOUSE - NIGHT\n\n@RAJ\nHello.\n\n\n\n>> CUT TO:'
+      expect(cleanVoiceResponse(input)).toBe('## INT. HOUSE - NIGHT\n\n@RAJ\nHello.\n\n>> CUT TO:')
+    });
   });
 });

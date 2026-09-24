@@ -71,6 +71,3 @@
     add a property test that parse → PM → serialize → parse yields an equal
     AST over the whole conformance corpus. Required before any real-time
     collaboration (CollabBinding) is used.
-16. Spec fix: OSS spec §7.2.2, §8.1, and §8.3 describe the scene synopsis as
-    a `=` line, but the format spec (normative) and the code use
-    `& synopsis:`. Update sutrata_spec.md to match.
