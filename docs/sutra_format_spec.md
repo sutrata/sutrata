@@ -208,8 +208,8 @@ A level-2 Markdown heading. The heading text is free-form.
 - The **scene number** (shown in the navigator, on the slate, in breakdown
   sheets) is the `& number:` metadata key when present (§7.4); otherwise
   tools MAY display the scene ID as the number. Keeping the two separate
-  lets a scene be renumbered for production without breaking anything
-  anchored to its ID.
+  lets scenes be renumbered as the script changes without breaking anything
+  anchored to their IDs.
 
 ### 6.2 Action
 
@@ -368,7 +368,7 @@ following indented `- ` lines are its items.
 | `est-duration` | text | Writer's estimate of screen time (`2m30s`). The language-neutral replacement for the 1-page≈1-minute rule, which does not transfer to non-Latin scripts. |
 | `shots` | list | Planned shot list (§7.3). |
 | `lang` | BCP-47 | Language override for this scene (§9). |
-| `number` | text | Locked production scene number (§7.4): `12`, `12A`. |
+| `number` | text | Production scene number (§7.4): `12`, `12A`. Renumbered as scenes are added. |
 
 **Unknown keys are valid** and MUST be preserved on round-trip. This is the
 extension point for downstream workflow data — `& props:`, `& vfx:`,
@@ -384,15 +384,21 @@ actors or scene IDs in prose; no further structure is imposed in 1.0.
 
 ### 7.4 Scene Numbers and Omitted Scenes
 
-`& number:` records a scene's production number. "Locking scene numbers"
-writes `& number:` to every scene from its current position; after that:
+`& number:` records a scene's production number. Numbers are **renumbered,
+not locked**: they stay sequential as scenes are added, and each scene keeps
+its `{#id}`, so anything anchored to a scene survives renumbering.
 
-- Locked numbers never change. A scene inserted between `12` and `13` is
-  numbered `12A` (then `12B`, …); one inserted before scene `1` is `A1`.
-- A scene removed from the script is kept as an **omitted scene**: its
+- A scene inserted after scene `12` becomes `13`; the old `13` becomes `14`,
+  and every later scene moves up by one.
+- Renumbering changes only the numeric part and keeps letter suffixes, so a
+  run of `20`, `20A`, `20B`, `21` that follows an insertion becomes `21`,
+  `21A`, `21B`, `22`.
+- Tools number scenes that have no `& number:` yet when the writer applies
+  numbering, and MUST NOT change `{#id}` while renumbering.
+- A scene removed from the script can be kept as an **omitted scene**: its
   heading and `& number:` stay, `& status: omitted` is set, and its body is
-  empty (or kept in a comment). Renderers print the heading line as
-  `OMITTED` next to the number; numbering of later scenes is unaffected.
+  empty (or kept in a comment). It still takes part in numbering. Renderers
+  print the heading line as `OMITTED` next to the number.
 
 ---
 
