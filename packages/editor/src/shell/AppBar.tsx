@@ -4,8 +4,10 @@ import { useTranslation } from '../i18n/useTranslation'
 import {
   NavigatorIcon, TitlePageIcon, NewIcon, OpenIcon, SaveIcon, SaveAsIcon,
   SourceIcon, FormattedIcon, RibbonIcon, ExportIcon, SettingsIcon, ImportDocxIcon, StyleIcon,
-  MicIcon, MenuIcon, CloseIcon,
+  MicIcon, MenuIcon, CloseIcon, SparklesIcon,
 } from './icons'
+import { useAI } from '../extensions/ai-provider'
+import { AIImportDialog } from '../import/AIImportDialog'
 import { SutrataLogo } from './SutrataLogo'
 import { getTemplate } from '../templates/templates'
 import { openTitlePageForm } from '../titlepage/TitlePageDialog'
@@ -52,6 +54,9 @@ export function AppBar() {
   } = useDocument()
   const { t, locale } = useTranslation()
   const speech = useSpeech()
+  // AI-assisted import needs a provider and an edit session (useAI covers both).
+  const ai = useAI()
+  const [aiImportOpen, setAiImportOpen] = useState(false)
   // Read-only sessions (SessionContext.permission 'read'/'comment') get no
   // file, title-page, style or voice actions.
   const canEdit = useCanEdit()
@@ -164,6 +169,11 @@ export function AppBar() {
             <AbBtn label={t('appbar.importDocx')} onClick={() => { void handleImportDocx() }}>
               <ImportDocxIcon size={18} />
             </AbBtn>
+            {ai && (
+              <AbBtn label="Import with AI" onClick={() => setAiImportOpen(true)}>
+                <SparklesIcon size={18} />
+              </AbBtn>
+            )}
             <span className="cs-ab-sep" />
             <AbBtn
               label={t('appbar.save')}
@@ -338,6 +348,14 @@ export function AppBar() {
                 <ImportDocxIcon size={18} />
                 <span>{t('appbar.importDocx')}</span>
               </button>
+              {ai && <button
+                type="button"
+                className="cs-mm-item"
+                onClick={() => { setAiImportOpen(true); setMobileMenuOpen(false) }}
+              >
+                <SparklesIcon size={18} />
+                <span>Import with AI</span>
+              </button>}
               <button
                 type="button"
                 className="cs-mm-item cs-mm-primary"
@@ -410,6 +428,7 @@ export function AppBar() {
           </div>
         </>
       )}
+      {aiImportOpen && <AIImportDialog onClose={() => setAiImportOpen(false)} />}
     </header>
   )
 }

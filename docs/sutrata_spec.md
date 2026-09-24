@@ -547,15 +547,21 @@ sheets are Cloud features.
 - **Export:** save a Fountain copy, with explicit lossy-export warnings (metadata, language
   tags, registry → `[[notes]]` or dropped, per format spec §13).
 
-### 5.5 Word Import **[P2]**
+### 5.5 Word and Text Import (AI-assisted) **[P2]**
 
-- Round-trip import of DOCX files exported by Sutrata (by style name). Already partly
-  implemented.
-- **Heuristic import of arbitrary Word screenplays:** element types inferred from
-  paragraph styles, indentation, and position; the writer reviews a side-by-side preview
-  and corrects element types before import.
+- Round-trip import of DOCX files exported by Sutrata (by style name), without AI.
+- **AI-assisted import of arbitrary screenplays** (`.docx` from any source, `.txt`, `.md`,
+  or pasted text): text is extracted with paragraph boundaries and bold/italic/underline,
+  split into chunks at likely scene boundaries, and formatted as Sutra by the injected
+  `AIProvider` with a prompt that forbids translating, summarising, or adding text.
+- Every chunk is checked: its output must parse, and its words (NFC, sigils ignored)
+  must match the source; a failing chunk is retried once and otherwise flagged.
+- The provider's data-policy text is shown and must be accepted before anything is sent.
+  Unavailable without an `AIProvider` or in a read-only session.
+- The writer reviews a side-by-side preview, corrects element types per block, and
+  imports by replacing the script (title page kept) or appending — one undoable edit.
 
-### 5.6 Legacy Font Encoding Conversion **[P2]**
+### 5.6 Legacy Font Encoding Conversion **[P2, on hold]**
 
 Many Indian film scripts are typed in pre-Unicode fonts that map native glyphs onto Latin
 code points. Opening them without conversion shows Latin gibberish.

@@ -16,7 +16,8 @@
     "@sutrata/parser": "workspace:*",
     "prosemirror-model": "^1.21.0",
     "prosemirror-state": "^1.4.3",
-    "prosemirror-view": "^1.33.0"
+    "prosemirror-view": "^1.33.0",
+    "prosemirror-history": "^1.4.0"
   },
   "peerDependencies": {
     "react": "^18.3.0",
