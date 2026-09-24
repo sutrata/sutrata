@@ -161,6 +161,55 @@ importers:
         specifier: ^1.6.0
         version: 1.6.1(@types/node@25.9.2)(jsdom@29.1.1(canvas@2.11.2(encoding@0.1.13)))(terser@5.48.0)
 
+  packages/extension-testkit:
+    dependencies:
+      '@sutrata/editor':
+        specifier: workspace:*
+        version: link:../editor
+      '@sutrata/parser':
+        specifier: workspace:*
+        version: link:../parser
+      prosemirror-model:
+        specifier: ^1.21.0
+        version: 1.25.7
+      prosemirror-state:
+        specifier: ^1.4.3
+        version: 1.4.4
+      prosemirror-view:
+        specifier: ^1.33.0
+        version: 1.41.8
+    devDependencies:
+      '@testing-library/jest-dom':
+        specifier: ^6.9.1
+        version: 6.9.1
+      '@testing-library/react':
+        specifier: ^16.3.2
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@types/react':
+        specifier: ^18.3.0
+        version: 18.3.31
+      '@types/react-dom':
+        specifier: ^18.3.0
+        version: 18.3.7(@types/react@18.3.31)
+      '@vitejs/plugin-react':
+        specifier: ^4.3.0
+        version: 4.7.0(vite@5.4.21(@types/node@25.9.2)(terser@5.48.0))
+      jsdom:
+        specifier: ^29.1.1
+        version: 29.1.1(canvas@2.11.2(encoding@0.1.13))
+      react:
+        specifier: ^18.3.0
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.0
+        version: 18.3.1(react@18.3.1)
+      typescript:
+        specifier: ^5.4.0
+        version: 5.9.3
+      vitest:
+        specifier: ^1.6.0
+        version: 1.6.1(@types/node@25.9.2)(jsdom@29.1.1(canvas@2.11.2(encoding@0.1.13)))(terser@5.48.0)
+
   packages/parser:
     devDependencies:
       typescript:

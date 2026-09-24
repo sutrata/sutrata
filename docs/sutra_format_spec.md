@@ -198,12 +198,15 @@ A level-2 Markdown heading. The heading text is free-form.
   normative, language-neutral channel for this data is the scene metadata
   keys `& setting:`, `& location:`, `& time:` (§7). When both are present,
   the metadata keys win.
-- The **scene ID** doubles as the production scene number. `{#12}` or `{#12A}`
-  serves both as the human-readable locked number (shown in the navigator,
-  on the slate, in breakdown sheets) and as the stable anchor for
-  cross-references. IDs MUST be unique within the document. Writers are not
-  required to assign IDs; tools SHOULD offer to generate them and MUST NOT
-  renumber existing ones once assigned.
+- The **scene ID** (`{#sc12}`, `{#12}`) is the stable anchor for
+  cross-references, comments and scene-level diff. IDs MUST be
+  unique within the document. Writers are not required to assign IDs; tools
+  SHOULD offer to generate them and MUST NOT change existing ones.
+- The **scene number** (shown in the navigator, on the slate, in breakdown
+  sheets) is the `& number:` metadata key when present (§7.4); otherwise
+  tools MAY display the scene ID as the number. Keeping the two separate
+  lets scenes be renumbered as the script changes without breaking anything
+  anchored to their IDs.
 
 ### 6.2 Action
 
@@ -362,6 +365,7 @@ following indented `- ` lines are its items.
 | `est-duration` | text | Writer's estimate of screen time (`2m30s`). The language-neutral replacement for the 1-page≈1-minute rule, which does not transfer to non-Latin scripts. |
 | `shots` | list | Planned shot list (§7.3). |
 | `lang` | BCP-47 | Language override for this scene (§9). |
+| `number` | text | Production scene number (§7.4): `12`, `12A`. Changed only when the writer renumbers. |
 
 **Unknown keys are valid** and MUST be preserved on round-trip. This is the
 extension point for downstream workflow data — `& props:`, `& vfx:`,
@@ -374,6 +378,38 @@ an optional leading `TYPE:` token (`WIDE`, `CU`, `MCU`, `OTS`, `POV`, `INSERT`,
 `AERIAL`, or any production-house term) that tools MAY use to group and label
 shots. Everything after the colon is the shot description. Items may reference
 actors or scene IDs in prose; no further structure is imposed in 1.0.
+
+### 7.4 Scene Numbers and Omitted Scenes
+
+`& number:` records a scene's production number. Numbers are **renumbered,
+not locked**, but only when the writer asks: tools MUST NOT renumber scenes
+automatically. Each scene keeps its `{#id}` throughout, so anything anchored
+to a scene survives renumbering.
+
+**Between renumberings** numbers may be missing, duplicated or out of order
+(a new scene has no number yet; a copied scene repeats one). Sutra-aware
+tools SHOULD highlight such scenes (e.g. in the scene navigator) until the
+writer renumbers.
+
+**Renumbering** walks the scenes in order. A scene with no number, or whose
+number repeats or breaks the order of the scenes before it, is treated as
+inserted at its position:
+
+- If the scene after it continues a lettered run of the scene before it, the
+  inserted scene takes the next letter and the rest of that run shifts by
+  one letter: inserted between `20A` and `20B`, it becomes `20B`, the old
+  `20B` becomes `20C`, and so on. (Inserted between `20` and `20A`, it
+  becomes `20A`.)
+- Otherwise it takes the next number, and every later scene's number goes up
+  by one, keeping its letter suffix: inserted after `12`, it becomes `13`
+  and the old `13` becomes `14`; a following run `20`, `20A`, `20B`, `21`
+  becomes `21`, `21A`, `21B`, `22`.
+- `{#id}` never changes.
+
+A scene removed from the script can be kept as an **omitted scene**: its
+heading and `& number:` stay, `& status: omitted` is set, and its body is
+empty (or kept in a comment). It still takes part in numbering. Renderers
+print the heading line as `OMITTED` next to the number.
 
 ---
 
@@ -559,7 +595,7 @@ size preference); the application spec defines the *presentation*.
 Recommended editor behaviors: fold/unfold `&` metadata; show scene synopses as
 a scene-list panel (the one-liner schedule view); use `& actors:` ∪ `& shots:`
 to generate shot-list and call-sheet exports; treat `& status: omitted` as a
-struck-through scene that keeps its `& number:`.
+struck-through scene that keeps its `& number:` (§7.4).
 
 ---
 

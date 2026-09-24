@@ -25,9 +25,6 @@
    not offering them — need actual pa.json/or.json/si.json translations first.
    (Checked footer LanguageStatus's script-language dropdown too, per report —
    that one already has Punjabi, Odia, and Sinhala; nothing to fix there.)
-9. @sutrata/extension-testkit (OSS spec §11.1, §11.5): a stub embedder that
-   implements every extension point, plus a CI job that builds and tests it
-   on every PR. Not present yet.
 10. HOLD: @sutrata/cloud-connector (OSS spec §11.1, P2, optional): an open
     StorageAdapter for the documented sync API. Not bundled by default; the
     app must work identically without it.
@@ -42,11 +39,13 @@
     --cs-ui-warning). On hold: a parser/editor helper (assignSceneIds) that
     assigns IDs as a visible, user-confirmed edit, so every tool uses the same
     ID-generation rule.
-13. Revision mode (OSS spec §3.6, P2): not implemented (only locale strings
-    exist). Needs a format-spec addition first (attribute or & key scheme for
-    revision marks), then revision colors, revision stars on export, page
-    locking with A-pages, and OMITTED scenes. Builds on the existing
-    "lock scene numbers" action in SceneNavigator.
+13. Scene numbering (OSS spec §3.6, P2; format spec §6.1, §7.4 done).
+    Implement: a user-requested "Renumber scenes" action (replacing
+    SceneNavigator's "lock scene numbers"), highlighting of missing /
+    duplicate / out-of-order numbers in the navigator, an "Omit scene"
+    action, and OMITTED rendering in the editor and exports. Revision mode
+    (colors, marks, stars, page locking) is a Sutrata Cloud feature with
+    data kept outside the file — not part of this repo.
 14. Import (OSS spec §5.5, §5.6, P2): legacy-font → Unicode conversion
     (Krutidev/Shree-Lipi for Hindi, Bamini/TAM/TAB for Tamil, Anu for Telugu
     first; then Nudi/Baraha, ML-TT) and heuristic Word import of arbitrary
