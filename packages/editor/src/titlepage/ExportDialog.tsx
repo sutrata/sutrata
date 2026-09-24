@@ -1,39 +1,34 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useDocument } from '../context/DocumentContext'
-import { exportFountain, parse, romanizeSutra } from '@sutrata/parser'
-import type { DocumentNode, RomanizeVariant } from '@sutrata/parser'
+import { parse, romanizeSutra } from '@sutrata/parser'
+import type { RomanizeVariant } from '@sutrata/parser'
 import { useTranslation } from '../i18n/useTranslation'
-import { exportToDocx } from '../file/docx-exporter'
-import {
-  extractWorkflowData,
-  exportOneLinerCsv,
-  exportShotListCsv,
-  exportCastReportCsv,
-  exportOneLinerDocx,
-  exportShotListDocx,
-  exportCastReportDocx,
-  openPrintPreview,
-  openScreenplayPrintPreview,
-} from '../file/workflow-reports'
 import { allStyles } from '../styles/registry'
+import { useExportRegistry } from '../extensions/export-registry'
+import type { ExportContribution, ExportContext } from '../extensions/export-registry'
+import { useRegistryList, withBuiltins } from '../extensions/registry-store'
+import { builtinExporters } from '../file/builtin-exporters'
 
-type ExportFormat =
-  | 'fountain'
-  | 'docx'
-  | 'pdf'
-  | 'oneliner-print'
-  | 'oneliner-docx'
-  | 'oneliner-csv'
-  | 'shotlist-docx'
-  | 'shotlist-csv'
-  | 'cast-docx'
-  | 'cast-csv'
-
+/**
+ * Renders every export format from one list: the editor's built-ins
+ * (file/builtin-exporters.ts) plus the embedder's ExportRegistry entries.
+ * Screenplay formats are cards; reports are grouped by `family` with chips.
+ */
 export function ExportDialog() {
   const { ast, text, filePath, setExportVisible, resolvedStyle, customStyles, showToast } = useDocument()
   const { t } = useTranslation()
+  const registered = useRegistryList(useExportRegistry())
+  const exporters = useMemo(() => withBuiltins(builtinExporters(t), registered), [t, registered])
+  const screenplayFormats = exporters.filter(e => e.group === 'screenplay')
+  const reportFormats = exporters.filter(e => e.group === 'report')
+  const reportFamilies = useMemo(() => {
+    const families = new Map<string, ExportContribution[]>()
+    for (const e of reportFormats) families.set(e.family ?? e.label, [...(families.get(e.family ?? e.label) ?? []), e])
+    return [...families]
+  }, [reportFormats])
+
   const [tab, setTab] = useState<'screenplay' | 'reports'>('screenplay')
-  const [format, setFormat] = useState<ExportFormat>('pdf')
+  const [formatId, setFormatId] = useState<string>(screenplayFormats[0]?.id ?? '')
   const [warnings, setWarnings] = useState<string[]>([])
   const [isExporting, setIsExporting] = useState(false)
   const [styleOverride, setStyleOverride] = useState('')
@@ -43,7 +38,11 @@ export function ExportDialog() {
   const [skipNotes, setSkipNotes] = useState(false)
   const hasIndicText = /[\u0900-\u0DFF]/.test(text)
   const styleChoices = allStyles(customStyles)
-  const showStylePicker = tab === 'screenplay' && (format === 'docx' || format === 'pdf')
+  const selected = exporters.find(e => e.id === formatId) ?? screenplayFormats[0]
+  const showStylePicker = tab === 'screenplay' && !!selected?.supports?.style
+  const showSkipNotes = tab === 'screenplay' && !!selected?.supports?.skipNotes
+  const showRomanize = tab === 'screenplay' && hasIndicText && !!selected?.supports?.romanize
+  const showReportRomanize = hasIndicText && reportFormats.some(e => e.supports?.romanize)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -55,79 +54,35 @@ export function ExportDialog() {
 
   const baseName = (filePath ?? 'screenplay').replace(/\.[^.]+$/, '')
 
-  /** The AST handed to the PDF/DOCX exporters: the document itself, or a romanized copy
+  /** The context an exporter runs with: the document, or a romanized copy
    *  (Indic → ISO 15919, export only; the .sutra text is never changed). */
-  function screenplayAst(): { doc: DocumentNode; suffix: string } {
-    if (romanizeScope === 'off' || !hasIndicText) return { doc: ast, suffix: '' }
-    const romanized = romanizeSutra(text, { scope: romanizeScope, variant: romanizeVariant })
-    return { doc: parse(romanized), suffix: '_romanized' }
-  }
-
-  /** Workflow-report data, from a fully romanized copy when that option is on. */
-  function reportData(): { data: ReturnType<typeof extractWorkflowData>; suffix: string } {
-    if (!romanizeReports || !hasIndicText) return { data: extractWorkflowData(ast), suffix: '' }
-    const romanized = romanizeSutra(text, { scope: 'all', variant: romanizeVariant, notice: false })
-    return { data: extractWorkflowData(parse(romanized)), suffix: '_romanized' }
+  function exportContext(exporter: ExportContribution): ExportContext {
+    const romanizeScopeFor = !exporter.supports?.romanize || !hasIndicText ? null
+      : exporter.group === 'report' ? (romanizeReports ? 'all' as const : null)
+      : romanizeScope === 'off' ? null : romanizeScope
+    const options = {
+      styleId: exporter.group === 'screenplay' ? styleOverride || undefined : undefined,
+      skipNotes: exporter.group === 'screenplay' && skipNotes,
+      romanized: romanizeScopeFor ? { scope: romanizeScopeFor, variant: romanizeVariant } : null,
+    }
+    if (!romanizeScopeFor) return { text, ast, style: resolvedStyle, customStyles, options, baseName }
+    const romanized = romanizeSutra(text, {
+      scope: romanizeScopeFor, variant: romanizeVariant, ...(exporter.group === 'report' ? { notice: false } : {}),
+    })
+    return { text: romanized, ast: parse(romanized), style: resolvedStyle, customStyles, options, baseName }
   }
 
   async function doExport() {
+    if (!selected) return
     setIsExporting(true)
     try {
-      const { data, suffix: reportSuffix } = reportData()
-      const reportTitleSuffix = reportSuffix ? ' (ROMANIZED)' : ''
-
-      if (format === 'fountain') {
-        const result = exportFountain(ast)
-        setWarnings(result.warnings)
-        download(`${baseName}.fountain`, result.text, 'text/plain')
-        showToast('Exported Fountain screenplay', 'success')
-      } else if (format === 'docx') {
-        setWarnings([])
-        const { doc, suffix } = screenplayAst()
-        const blob = await exportToDocx(doc, styleOverride || undefined, customStyles, skipNotes)
-        downloadBlob(`${baseName}${suffix}.docx`, blob)
-        showToast('Exported Word document (.docx)', 'success')
-      } else if (format === 'pdf') {
-        setWarnings([])
-        const { doc, suffix } = screenplayAst()
-        const title = `${baseName.toUpperCase()} - SCREENPLAY${suffix ? ' (ROMANIZED)' : ''}`
-        await openScreenplayPrintPreview(doc, title, styleOverride || undefined, customStyles, skipNotes)
-        showToast('Opened Screenplay Print Preview', 'info')
-      } else if (format === 'oneliner-print') {
-        setWarnings([])
-        await openPrintPreview(data.scenes, `${baseName.toUpperCase()} - ONE-LINER SCHEDULE${reportTitleSuffix}`)
-        showToast('Opened One-Liner Schedule', 'info')
-      } else if (format === 'oneliner-docx') {
-        setWarnings([])
-        const blob = await exportOneLinerDocx(data.scenes)
-        downloadBlob(`${baseName}_one_liner${reportSuffix}.docx`, blob)
-        showToast('Exported One-Liner DOCX', 'success')
-      } else if (format === 'oneliner-csv') {
-        setWarnings([])
-        const csv = exportOneLinerCsv(data.scenes)
-        download(`${baseName}_one_liner${reportSuffix}.csv`, csv, 'text/csv')
-        showToast('Exported One-Liner CSV', 'success')
-      } else if (format === 'shotlist-docx') {
-        setWarnings([])
-        const blob = await exportShotListDocx(data.scenes)
-        downloadBlob(`${baseName}_shot_list${reportSuffix}.docx`, blob)
-        showToast('Exported Shot List DOCX', 'success')
-      } else if (format === 'shotlist-csv') {
-        setWarnings([])
-        const csv = exportShotListCsv(data.scenes)
-        download(`${baseName}_shot_list${reportSuffix}.csv`, csv, 'text/csv')
-        showToast('Exported Shot List CSV', 'success')
-      } else if (format === 'cast-docx') {
-        setWarnings([])
-        const blob = await exportCastReportDocx(data.characters)
-        downloadBlob(`${baseName}_cast_report${reportSuffix}.docx`, blob)
-        showToast('Exported Cast Report DOCX', 'success')
-      } else if (format === 'cast-csv') {
-        setWarnings([])
-        const csv = exportCastReportCsv(data.characters)
-        download(`${baseName}_cast_report${reportSuffix}.csv`, csv, 'text/csv')
-        showToast('Exported Cast Report CSV', 'success')
-      }
+      const ctx = exportContext(selected)
+      // Called before any await: print previews must open inside the click.
+      const output = await selected.run(ctx)
+      const blob = output instanceof Blob ? output : output?.blob
+      setWarnings(output && !(output instanceof Blob) ? output.warnings ?? [] : [])
+      if (blob) downloadBlob(selected.fileName(ctx), blob)
+      showToast(selected.successMessage ?? `Exported ${selected.label}`, blob ? 'success' : 'info')
     } catch (err) {
       console.error('Export failed', err)
       setWarnings(['An error occurred during export. Please check the console.'])
@@ -135,12 +90,6 @@ export function ExportDialog() {
     } finally {
       setIsExporting(false)
     }
-  }
-
-  function download(filename: string, content: string, mimeType: string) {
-    const data = mimeType === 'text/csv' ? ['\uFEFF', content] : [content]
-    const blob = new Blob(data, { type: `${mimeType};charset=utf-8` })
-    downloadBlob(filename, blob)
   }
 
   function downloadBlob(filename: string, blob: Blob) {
@@ -178,108 +127,58 @@ export function ExportDialog() {
               className={`cs-export-seg-btn${tab === 'screenplay' ? ' cs-export-seg-btn-active' : ''}`}
               onClick={() => {
                 setTab('screenplay')
-                if (!['fountain', 'docx', 'pdf'].includes(format)) setFormat('pdf')
+                if (selected?.group !== 'screenplay') setFormatId(screenplayFormats[0]?.id ?? '')
               }}
             >
               Screenplay Formats
             </button>
-            <button
+            {reportFormats.length > 0 && <button
               type="button"
               role="tab"
               aria-selected={tab === 'reports'}
               className={`cs-export-seg-btn${tab === 'reports' ? ' cs-export-seg-btn-active' : ''}`}
               onClick={() => {
                 setTab('reports')
-                if (['fountain', 'docx', 'pdf'].includes(format)) setFormat('oneliner-print')
+                if (selected?.group !== 'report') setFormatId(reportFormats[0]?.id ?? '')
               }}
             >
               Production Reports
-            </button>
+            </button>}
           </div>
 
           {tab === 'screenplay' ? (
             <div>
               <div className="cs-export-card-grid">
-                {/* PDF / Print */}
-                <div
-                  className={`cs-export-format-card${format === 'pdf' ? ' cs-export-format-card-selected' : ''}`}
-                  onClick={() => setFormat('pdf')}
-                  role="radio"
-                  aria-checked={format === 'pdf'}
-                  tabIndex={0}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setFormat('pdf') }}
-                >
-                  <input
-                    type="radio"
-                    name="format"
-                    value="pdf"
-                    checked={format === 'pdf'}
-                    onChange={() => setFormat('pdf')}
-                    style={{ marginTop: '2px' }}
-                  />
-                  <div>
-                    <strong style={{ fontSize: '13px', display: 'block', color: 'var(--cs-ui-text-light-primary, #1c1b18)' }}>
-                      PDF / Print Preview
-                    </strong>
-                    <span style={{ fontSize: '11px', color: 'var(--cs-ui-text-light-secondary, #59574f)' }}>
-                      Print-ready industry screenplay layout styled according to your active visual template.
-                    </span>
+                {screenplayFormats.map(f => (
+                  <div
+                    key={f.id}
+                    className={`cs-export-format-card${selected?.id === f.id ? ' cs-export-format-card-selected' : ''}`}
+                    onClick={() => setFormatId(f.id)}
+                    role="radio"
+                    aria-checked={selected?.id === f.id}
+                    tabIndex={0}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setFormatId(f.id) }}
+                  >
+                    <input
+                      type="radio"
+                      name="format"
+                      value={f.id}
+                      checked={selected?.id === f.id}
+                      onChange={() => setFormatId(f.id)}
+                      style={{ marginTop: '2px' }}
+                    />
+                    <div>
+                      <strong style={{ fontSize: '13px', display: 'block', color: 'var(--cs-ui-text-light-primary, #1c1b18)' }}>
+                        {f.label}
+                      </strong>
+                      {f.description && (
+                        <span style={{ fontSize: '11px', color: 'var(--cs-ui-text-light-secondary, #59574f)' }}>
+                          {f.description}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-
-                {/* Microsoft Word */}
-                <div
-                  className={`cs-export-format-card${format === 'docx' ? ' cs-export-format-card-selected' : ''}`}
-                  onClick={() => setFormat('docx')}
-                  role="radio"
-                  aria-checked={format === 'docx'}
-                  tabIndex={0}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setFormat('docx') }}
-                >
-                  <input
-                    type="radio"
-                    name="format"
-                    value="docx"
-                    checked={format === 'docx'}
-                    onChange={() => setFormat('docx')}
-                    style={{ marginTop: '2px' }}
-                  />
-                  <div>
-                    <strong style={{ fontSize: '13px', display: 'block', color: 'var(--cs-ui-text-light-primary, #1c1b18)' }}>
-                      Microsoft Word (.docx)
-                    </strong>
-                    <span style={{ fontSize: '11px', color: 'var(--cs-ui-text-light-secondary, #59574f)' }}>
-                      {t('export.docxDesc')}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Fountain */}
-                <div
-                  className={`cs-export-format-card${format === 'fountain' ? ' cs-export-format-card-selected' : ''}`}
-                  onClick={() => setFormat('fountain')}
-                  role="radio"
-                  aria-checked={format === 'fountain'}
-                  tabIndex={0}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setFormat('fountain') }}
-                >
-                  <input
-                    type="radio"
-                    name="format"
-                    value="fountain"
-                    checked={format === 'fountain'}
-                    onChange={() => setFormat('fountain')}
-                    style={{ marginTop: '2px' }}
-                  />
-                  <div>
-                    <strong style={{ fontSize: '13px', display: 'block', color: 'var(--cs-ui-text-light-primary, #1c1b18)' }}>
-                      Fountain (.fountain)
-                    </strong>
-                    <span style={{ fontSize: '11px', color: 'var(--cs-ui-text-light-secondary, #59574f)' }}>
-                      {t('export.fountainDesc')}
-                    </span>
-                  </div>
-                </div>
+                ))}
               </div>
 
               {showStylePicker && (
@@ -301,7 +200,7 @@ export function ExportDialog() {
                 </div>
               )}
 
-              {showStylePicker && (
+              {showSkipNotes && (
                 <div className="cs-settings-row" style={{ marginTop: '8px', padding: '10px', background: 'var(--cs-ui-bg-panel-subtle, #f4f2ea)', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <input
                     id="cs-export-skip-notes"
@@ -315,7 +214,7 @@ export function ExportDialog() {
                 </div>
               )}
 
-              {showStylePicker && hasIndicText && (
+              {showRomanize && (
                 <div className="cs-settings-row" style={{ marginTop: '8px', padding: '10px', background: 'var(--cs-ui-bg-panel-subtle, #f4f2ea)', borderRadius: '6px', flexWrap: 'wrap', gap: '8px' }}>
                   <label className="cs-settings-label" htmlFor="cs-export-romanize-select" style={{ fontSize: '12px' }}>
                     Romanized copy (ISO 15919)
@@ -351,92 +250,32 @@ export function ExportDialog() {
             </div>
           ) : (
             <div>
-              {/* One-Liner Box */}
-              <div className="cs-export-report-box">
-                <div className="cs-export-report-header">
-                  <span className="cs-export-report-title">One-Liner Schedule</span>
-                  <div className="cs-export-chips">
-                    <button
-                      type="button"
-                      className={`cs-export-chip${format === 'oneliner-print' ? ' cs-export-chip-active' : ''}`}
-                      onClick={() => setFormat('oneliner-print')}
-                    >
-                      Print View
-                    </button>
-                    <button
-                      type="button"
-                      className={`cs-export-chip${format === 'oneliner-docx' ? ' cs-export-chip-active' : ''}`}
-                      onClick={() => setFormat('oneliner-docx')}
-                    >
-                      Word (.docx)
-                    </button>
-                    <button
-                      type="button"
-                      className={`cs-export-chip${format === 'oneliner-csv' ? ' cs-export-chip-active' : ''}`}
-                      onClick={() => setFormat('oneliner-csv')}
-                    >
-                      Spreadsheet (.csv)
-                    </button>
+              {reportFamilies.map(([family, formats]) => (
+                <div key={family} className="cs-export-report-box">
+                  <div className="cs-export-report-header">
+                    <span className="cs-export-report-title">{family}</span>
+                    <div className="cs-export-chips">
+                      {formats.map(f => (
+                        <button
+                          key={f.id}
+                          type="button"
+                          className={`cs-export-chip${selected?.id === f.id ? ' cs-export-chip-active' : ''}`}
+                          onClick={() => setFormatId(f.id)}
+                        >
+                          {f.formatLabel ?? f.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
+                  {formats[0]!.description && (
+                    <div style={{ fontSize: '11px', color: 'var(--cs-ui-text-light-secondary, #59574f)' }}>
+                      {formats[0]!.description}
+                    </div>
+                  )}
                 </div>
-                <div style={{ fontSize: '11px', color: 'var(--cs-ui-text-light-secondary, #59574f)' }}>
-                  A scene-by-scene production stripboard breakdown with locations, cast, and timings.
-                </div>
-              </div>
+              ))}
 
-              {/* Shot List Box */}
-              <div className="cs-export-report-box">
-                <div className="cs-export-report-header">
-                  <span className="cs-export-report-title">Shot List</span>
-                  <div className="cs-export-chips">
-                    <button
-                      type="button"
-                      className={`cs-export-chip${format === 'shotlist-docx' ? ' cs-export-chip-active' : ''}`}
-                      onClick={() => setFormat('shotlist-docx')}
-                    >
-                      Word (.docx)
-                    </button>
-                    <button
-                      type="button"
-                      className={`cs-export-chip${format === 'shotlist-csv' ? ' cs-export-chip-active' : ''}`}
-                      onClick={() => setFormat('shotlist-csv')}
-                    >
-                      Spreadsheet (.csv)
-                    </button>
-                  </div>
-                </div>
-                <div style={{ fontSize: '11px', color: 'var(--cs-ui-text-light-secondary, #59574f)' }}>
-                  Camera shot specifications extracted from scene headings and production notes.
-                </div>
-              </div>
-
-              {/* Cast Breakdown Box */}
-              <div className="cs-export-report-box">
-                <div className="cs-export-report-header">
-                  <span className="cs-export-report-title">Cast Breakdown</span>
-                  <div className="cs-export-chips">
-                    <button
-                      type="button"
-                      className={`cs-export-chip${format === 'cast-docx' ? ' cs-export-chip-active' : ''}`}
-                      onClick={() => setFormat('cast-docx')}
-                    >
-                      Word (.docx)
-                    </button>
-                    <button
-                      type="button"
-                      className={`cs-export-chip${format === 'cast-csv' ? ' cs-export-chip-active' : ''}`}
-                      onClick={() => setFormat('cast-csv')}
-                    >
-                      Spreadsheet (.csv)
-                    </button>
-                  </div>
-                </div>
-                <div style={{ fontSize: '11px', color: 'var(--cs-ui-text-light-secondary, #59574f)' }}>
-                  Character occurrences, dialogue counts, and assigned actors list.
-                </div>
-              </div>
-
-              {hasIndicText && (
+              {showReportRomanize && (
                 <div className="cs-settings-row" style={{ marginTop: '8px', padding: '10px', background: 'var(--cs-ui-bg-panel-subtle, #f4f2ea)', borderRadius: '6px', flexWrap: 'wrap', gap: '8px' }}>
                   <label className="cs-settings-label" htmlFor="cs-export-romanize-reports" style={{ fontSize: '12px' }}>
                     Romanized copy (ISO 15919)
@@ -484,7 +323,7 @@ export function ExportDialog() {
           <button type="button" className="cs-confirm-btn-cancel" onClick={() => setExportVisible(false)}>
             {t('export.cancel')}
           </button>
-          <button type="button" className="cs-confirm-btn-primary" onClick={doExport} disabled={isExporting}>
+          <button type="button" className="cs-confirm-btn-primary" onClick={doExport} disabled={isExporting || !selected}>
             {isExporting ? 'Exporting...' : t('export.download')}
           </button>
         </div>

@@ -25,10 +25,6 @@
    not offering them — need actual pa.json/or.json/si.json translations first.
    (Checked footer LanguageStatus's script-language dropdown too, per report —
    that one already has Punjabi, Odia, and Sinhala; nothing to fix there.)
-7. Extension points: make PanelRegistry, CommandRegistry, and ExportRegistry
-   real. AppShell has a fixed panel set and ExportDialog a fixed format list;
-   embedders need to add panels, commands/shortcuts, and export formats
-   without forking the editor.
 9. @sutrata/extension-testkit (OSS spec §11.1, §11.5): a stub embedder that
    implements every extension point, plus a CI job that builds and tests it
    on every PR. Not present yet.

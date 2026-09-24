@@ -1,14 +1,26 @@
-import { createContext, useContext, useSyncExternalStore } from 'react'
+import { createContext, useContext, useMemo } from 'react'
 import type { ReactNode } from 'react'
 import type { DocumentNode } from '@sutrata/parser'
+import { createRegistryStore, useRegistryList } from './registry-store'
+import type { RegistryStore } from './registry-store'
 
-export type PanelLocation = 'settings'
+/**
+ * - `sidebar`: tabs beside the scene navigator (the built-in first tab).
+ * - `inspector`: sections in a panel on the right of the editor.
+ * - `appbar`: small items in the app bar, before Settings.
+ * - `settings`: sections in the Settings dialog.
+ */
+export type PanelLocation = 'sidebar' | 'inspector' | 'appbar' | 'settings'
 
 export interface PanelRenderContext {
   ast: DocumentNode
+  /** Ids of scenes that have one, in document order. */
+  sceneIds: string[]
+  /** Id of the scene containing the caret, if it has one. */
+  activeSceneId: string | null
 }
 
-/** A section contributed by the embedder. */
+/** A panel contributed by the embedder (OSS spec §11.5). */
 export interface PanelContribution {
   id: string
   title: string
@@ -16,46 +28,10 @@ export interface PanelContribution {
   render(ctx: PanelRenderContext): ReactNode
 }
 
-/**
- * Embedder-contributed panels (OSS spec §11.5). `register` returns an
- * unregister function; registrations can change at runtime.
- */
-export interface PanelRegistry {
-  register(panel: PanelContribution): () => void
-  list(location: PanelLocation): PanelContribution[]
-  subscribe(listener: () => void): () => void
-}
+export type PanelRegistry = RegistryStore<PanelContribution>
 
 export function createPanelRegistry(initial: PanelContribution[] = []): PanelRegistry {
-  let panels = [...initial]
-  const listeners = new Set<() => void>()
-  const notify = () => { for (const l of listeners) l() }
-  const cache = new Map<PanelLocation, PanelContribution[]>()
-  return {
-    register(panel) {
-      panels = [...panels.filter(p => p.id !== panel.id), panel]
-      cache.clear()
-      notify()
-      return () => {
-        panels = panels.filter(p => p !== panel)
-        cache.clear()
-        notify()
-      }
-    },
-    list(location) {
-      // Stable array identity between changes, for useSyncExternalStore.
-      let list = cache.get(location)
-      if (!list) {
-        list = panels.filter(p => p.location === location)
-        cache.set(location, list)
-      }
-      return list
-    },
-    subscribe(listener) {
-      listeners.add(listener)
-      return () => { listeners.delete(listener) }
-    },
-  }
+  return createRegistryStore(initial)
 }
 
 const EMPTY_REGISTRY = createPanelRegistry()
@@ -67,8 +43,8 @@ export function usePanelRegistry(): PanelRegistry {
   return useContext(PanelRegistryContext)
 }
 
-/** Panels registered for `location`, re-rendering when registrations change. */
+/** Registered panels for `location`, re-rendering when registrations change. */
 export function usePanels(location: PanelLocation): PanelContribution[] {
-  const registry = usePanelRegistry()
-  return useSyncExternalStore(registry.subscribe, () => registry.list(location), () => registry.list(location))
+  const all = useRegistryList(usePanelRegistry())
+  return useMemo(() => all.filter(p => p.location === location), [all, location])
 }

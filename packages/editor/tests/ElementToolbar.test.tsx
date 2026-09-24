@@ -3,12 +3,15 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { ElementToolbar } from '../src/shell/ElementToolbar'
 import { TranslationProvider } from '../src/i18n/useTranslation'
+import { DocumentProvider } from '../src/context/DocumentContext'
 
 describe('ElementToolbar', () => {
   it('renders element buttons and B/I/U at the end', () => {
     render(
       <TranslationProvider>
-        <ElementToolbar />
+        <DocumentProvider>
+          <ElementToolbar />
+        </DocumentProvider>
       </TranslationProvider>
     )
     expect(screen.getByRole('button', { name: /scene heading/i })).toBeInTheDocument()
@@ -22,7 +25,9 @@ describe('ElementToolbar', () => {
   it('renders a button for every screenplay element, including Lyrics', () => {
     render(
       <TranslationProvider>
-        <ElementToolbar />
+        <DocumentProvider>
+          <ElementToolbar />
+        </DocumentProvider>
       </TranslationProvider>
     )
     const labels = screen.getAllByRole('button').map(b => b.getAttribute('aria-label'))

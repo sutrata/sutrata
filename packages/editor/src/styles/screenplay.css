@@ -95,6 +95,45 @@ html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
   flex-shrink: 0;
 }
 
+/* Sidebar with embedder tabs (only when PanelRegistry has 'sidebar' panels) */
+.cs-sidebar {
+  width: min(33%,400px);
+  min-width: 180px;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+  border-right: 1px solid #ddd;
+  background: #f8f8f6;
+}
+.cs-sidebar > .cs-navigator { width: auto; min-width: 0; max-width: none; flex: 1; border-right: none; }
+.cs-sidebar-tabs { display: flex; gap: 2px; padding: 4px 6px 0; border-bottom: 1px solid var(--cs-ui-border-light, #e2e0d6); }
+.cs-sidebar-tab {
+  background: none; border: none; border-bottom: 2px solid transparent; padding: 6px 8px;
+  font-size: 12px; font-weight: 600; color: var(--cs-ui-text-light-secondary, #59574f); cursor: pointer;
+}
+.cs-sidebar-tab-active { color: var(--cs-ui-text-light-primary, #1c1b18); border-bottom-color: var(--cs-ui-accent, #c4760a); }
+.cs-sidebar-panel { flex: 1; overflow: auto; padding: 8px 12px; font-size: 12px; }
+
+/* Inspector (only when PanelRegistry has 'inspector' panels) */
+.cs-inspector {
+  width: min(28%, 320px);
+  min-width: 200px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  border-left: 1px solid var(--cs-ui-border-light, #e2e0d6);
+  background: var(--cs-ui-bg-panel, #fcfbfa);
+  font-size: 12px;
+}
+.cs-inspector-section { padding: 10px 12px; border-bottom: 1px solid var(--cs-ui-border-light-subtle, #eeece4); }
+.cs-inspector-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--cs-ui-text-light-secondary, #59574f); margin-bottom: 6px; }
+@media (max-width: 640px) {
+  .cs-inspector { display: none; }
+}
+.cs-ab-text-label, .cs-tb-text-label { font-size: 12px; font-weight: 600; }
+.cs-ab-panel { display: inline-flex; align-items: center; }
+
 .cs-nav-count {
   background: #e0e0dd;
   border-radius: 10px;

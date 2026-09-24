@@ -11,6 +11,9 @@ import { getTemplate } from '../templates/templates'
 import { openTitlePageForm } from '../titlepage/TitlePageDialog'
 import { useSpeech } from '../extensions/speech-provider'
 import { useCanEdit } from '../extensions/session'
+import { usePanels } from '../extensions/panel-registry'
+import { usePanelContext } from './use-panel-context'
+import { useCommands, useCommandContext, displayShortcut } from './use-commands'
 
 interface AbBtnProps {
   label: string
@@ -52,6 +55,11 @@ export function AppBar() {
   // Read-only sessions (SessionContext.permission 'read'/'comment') get no
   // file, title-page, style or voice actions.
   const canEdit = useCanEdit()
+  // Embedder contributions: `appbar` panels and `menu: 'appbar'` commands.
+  const appbarPanels = usePanels('appbar')
+  const appbarCommands = useCommands().filter(c => c.menu === 'appbar')
+  const commandContext = useCommandContext()
+  const panelContext = usePanelContext()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const name = filePath ?? 'untitled.sutra'
   const nextMode = mode === 'formatted' ? 'source' : 'formatted'
@@ -184,6 +192,15 @@ export function AppBar() {
             <StyleIcon size={18} />
           </AbBtn>
         )}
+        {(appbarCommands.length > 0 || appbarPanels.length > 0) && <span className="cs-ab-sep" />}
+        {appbarCommands.map(c => (
+          <AbBtn key={c.id} label={c.label} shortcut={displayShortcut(c.shortcut ?? c.shortcutHint)} onClick={() => c.run(commandContext())}>
+            {c.icon ? c.icon(18) : <span className="cs-ab-text-label">{c.label}</span>}
+          </AbBtn>
+        ))}
+        {appbarPanels.map(p => (
+          <span key={p.id} className="cs-ab-panel" aria-label={p.title}>{p.render(panelContext)}</span>
+        ))}
         <AbBtn label={t('settings.title')} active={settingsVisible} onClick={() => setSettingsVisible(!settingsVisible)}>
           <SettingsIcon size={18} />
         </AbBtn>
@@ -355,6 +372,20 @@ export function AppBar() {
                 <ExportIcon size={18} />
                 <span>{t('appbar.export')}</span>
               </button>
+            </div>}
+
+            {appbarCommands.length > 0 && <div className="cs-mm-section">
+              {appbarCommands.map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className="cs-mm-item"
+                  onClick={() => { c.run(commandContext()); setMobileMenuOpen(false) }}
+                >
+                  {c.icon?.(18)}
+                  <span>{c.label}</span>
+                </button>
+              ))}
             </div>}
 
             <div className="cs-mm-section">

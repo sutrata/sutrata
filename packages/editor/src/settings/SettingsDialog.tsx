@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { useTranslation } from '../i18n/useTranslation'
-import { useDocument } from '../context/DocumentContext'
 import { usePanels } from '../extensions/panel-registry'
+import { usePanelContext } from '../shell/use-panel-context'
 
 const UI_LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -24,7 +24,7 @@ interface Props {
 
 export function SettingsDialog({ onClose }: Props) {
   const { t, locale, setLocale } = useTranslation()
-  const { ast } = useDocument()
+  const panelContext = usePanelContext()
   // Embedder sections (e.g. the OSS app's AI provider & key settings) — the
   // editor itself has no provider-specific settings.
   const sections = usePanels('settings')
@@ -83,7 +83,7 @@ export function SettingsDialog({ onClose }: Props) {
               >
                 {section.title}
               </div>
-              {section.render({ ast })}
+              {section.render(panelContext)}
             </section>
           ))}
         </div>
