@@ -1,66 +1,64 @@
 import React, { useEffect, useState } from 'react'
 import { ToolbarButton } from './ToolbarButton'
-import { makeSetBlock, makeSetOrToggleNote, makeToggleMark, undo, redo } from './toolbar-actions'
-import { runCommand, activeBlockType, subscribe } from '../editor/editor-bus'
-import { useTranslation } from '../i18n/useTranslation'
-import {
-  UndoIcon, RedoIcon, SceneIcon, ActionIcon, CharacterIcon, DialogueIcon, ParentheticalIcon,
-  TransitionIcon, CenteredIcon, LyricsIcon, NoteIcon, PageBreakIcon, SectionIcon, BoldIcon, ItalicIcon, UnderlineIcon, OverflowIcon,
-  CloseIcon,
-} from './icons'
+import { subscribe } from '../editor/editor-bus'
+import { OverflowIcon, CloseIcon } from './icons'
+import { useCommands, useCommandContext, displayShortcut } from './use-commands'
+import type { CommandContribution } from '../extensions/command-registry'
 
-interface ElementDef {
-  type: string
-  label: string
-  sigil: string
-  shortcut: string
-  Icon: React.FC<{ size?: number }>
-  translationKey: string
+/** Toolbar groups in display order; embedder groups follow. */
+const GROUP_ORDER = ['history', 'elements', 'marks']
+
+function groupsOf(commands: CommandContribution[]): CommandContribution[][] {
+  const groups = new Map<string, CommandContribution[]>()
+  for (const c of commands) {
+    const g = c.group ?? 'extensions'
+    groups.set(g, [...(groups.get(g) ?? []), c])
+  }
+  const names = [...GROUP_ORDER.filter(g => groups.has(g)), ...[...groups.keys()].filter(g => !GROUP_ORDER.includes(g))]
+  return names.map(g => groups.get(g)!)
 }
 
-const ELEMENTS: ElementDef[] = [
-  { type: 'scene_heading', label: 'Scene Heading', sigil: '##',         shortcut: 'Alt+Shift+H', Icon: SceneIcon, translationKey: 'toolbar.scene' },
-  { type: 'action',        label: 'Action',        sigil: '(plain)',    shortcut: 'Alt+Shift+A', Icon: ActionIcon, translationKey: 'toolbar.action' },
-  { type: 'character',     label: 'Character',     sigil: '@',          shortcut: 'Alt+Shift+C', Icon: CharacterIcon, translationKey: 'toolbar.character' },
-  { type: 'dialogue',      label: 'Dialogue',      sigil: '(after @)',  shortcut: 'Alt+Shift+D', Icon: DialogueIcon, translationKey: 'toolbar.dialogue' },
-  { type: 'parenthetical', label: 'Parenthetical', sigil: '( )',        shortcut: 'Alt+Shift+P', Icon: ParentheticalIcon, translationKey: 'toolbar.parenthetical' },
-  { type: 'transition',    label: 'Transition',    sigil: '>>',         shortcut: 'Alt+Shift+X', Icon: TransitionIcon, translationKey: 'toolbar.transition' },
-  { type: 'centered',      label: 'Centered',      sigil: '>> <<',      shortcut: '',            Icon: CenteredIcon, translationKey: 'toolbar.centered' },
-  { type: 'lyrics',        label: 'Lyrics',        sigil: '~',          shortcut: 'Alt+Shift+L', Icon: LyricsIcon, translationKey: 'toolbar.lyrics' },
-  { type: 'note',          label: 'Note',          sigil: '[[ ]]',      shortcut: 'Alt+Shift+N', Icon: NoteIcon, translationKey: 'toolbar.note' },
-  { type: 'page_break',    label: 'Page Break',    sigil: '===',        shortcut: '',            Icon: PageBreakIcon, translationKey: 'toolbar.pageBreak' },
-  { type: 'section',       label: 'Section',       sigil: '#',          shortcut: '',            Icon: SectionIcon, translationKey: 'toolbar.section' },
-]
-
+/**
+ * Renders every command registered with `menu: 'toolbar'` — the editor's
+ * built-ins (shell/builtin-commands.tsx) and the embedder's — grouped, with a
+ * separator between groups.
+ */
 export function ElementToolbar() {
-  const [activeType, setActiveType] = useState<string | null>(null)
+  const [, setTick] = useState(0)
   const [overflowOpen, setOverflowOpen] = useState(false)
-  const { t } = useTranslation()
+  const commands = useCommands().filter(c => c.menu === 'toolbar')
+  const context = useCommandContext()
 
-  useEffect(() => subscribe(() => setActiveType(activeBlockType())), [])
+  // Re-render on selection changes so isActive() stays current.
+  useEffect(() => subscribe(() => setTick(n => n + 1)), [])
+
+  const ctx = context()
+  const groups = groupsOf(commands)
+  const inline = commands.filter(c => c.group === 'marks' || c.group === 'history')
+  const elements = commands.filter(c => c.group === 'elements')
+  const others = commands.filter(c => !['marks', 'history', 'elements'].includes(c.group ?? ''))
+  const run = (c: CommandContribution) => { c.run(context()); setOverflowOpen(false) }
 
   return (
     <>
       <div className="cs-element-toolbar" role="toolbar" aria-label="Editing toolbar">
-        <ToolbarButton label={t('toolbar.undo')} shortcut="Mod-Z" onClick={() => runCommand(undo)}><UndoIcon size={20} /></ToolbarButton>
-        <ToolbarButton label={t('toolbar.redo')} shortcut="Mod-Shift-Z" onClick={() => runCommand(redo)}><RedoIcon size={20} /></ToolbarButton>
-        <span className="cs-tb-sep" />
-        {ELEMENTS.map(el => (
-          <ToolbarButton
-            key={el.type}
-            label={t(el.translationKey)}
-            sigil={el.sigil}
-            shortcut={el.shortcut || undefined}
-            active={activeType === el.type}
-            onClick={() => runCommand(el.type === 'note' ? makeSetOrToggleNote() : makeSetBlock(el.type))}
-          >
-            <el.Icon size={20} />
-          </ToolbarButton>
+        {groups.map((group, gi) => (
+          <React.Fragment key={group[0]!.group ?? `g${gi}`}>
+            {gi > 0 && <span className="cs-tb-sep" />}
+            {group.map(c => (
+              <ToolbarButton
+                key={c.id}
+                label={c.label}
+                sigil={c.sigil}
+                shortcut={displayShortcut(c.shortcut ?? c.shortcutHint)}
+                active={c.isActive?.(ctx) ?? false}
+                onClick={() => c.run(context())}
+              >
+                {c.icon ? c.icon(20) : <span className="cs-tb-text-label">{c.label}</span>}
+              </ToolbarButton>
+            ))}
+          </React.Fragment>
         ))}
-        <span className="cs-tb-sep" />
-        <ToolbarButton label={t('toolbar.bold')} shortcut="Mod-B" onClick={() => runCommand(makeToggleMark('bold'))}><BoldIcon size={20} /></ToolbarButton>
-        <ToolbarButton label={t('toolbar.italic')} shortcut="Mod-I" onClick={() => runCommand(makeToggleMark('italic'))}><ItalicIcon size={20} /></ToolbarButton>
-        <ToolbarButton label={t('toolbar.underline')} shortcut="Mod-U" onClick={() => runCommand(makeToggleMark('underline'))}><UnderlineIcon size={20} /></ToolbarButton>
         <button
           type="button"
           className={`cs-tb-overflow${overflowOpen ? ' cs-tb-overflow-active' : ''}`}
@@ -100,72 +98,34 @@ export function ElementToolbar() {
 
             <div className="cs-tb-overflow-section-label">Inline Formatting</div>
             <div className="cs-tb-overflow-inline-grid">
-              <button
-                type="button"
-                className="cs-tb-overflow-item"
-                onClick={() => { runCommand(makeToggleMark('bold')); setOverflowOpen(false) }}
-              >
-                <BoldIcon size={18} />
-                <span>{t('toolbar.bold')}</span>
-              </button>
-              <button
-                type="button"
-                className="cs-tb-overflow-item"
-                onClick={() => { runCommand(makeToggleMark('italic')); setOverflowOpen(false) }}
-              >
-                <ItalicIcon size={18} />
-                <span>{t('toolbar.italic')}</span>
-              </button>
-              <button
-                type="button"
-                className="cs-tb-overflow-item"
-                onClick={() => { runCommand(makeToggleMark('underline')); setOverflowOpen(false) }}
-              >
-                <UnderlineIcon size={18} />
-                <span>{t('toolbar.underline')}</span>
-              </button>
-              <button
-                type="button"
-                className="cs-tb-overflow-item"
-                onClick={() => { runCommand(undo); setOverflowOpen(false) }}
-              >
-                <UndoIcon size={18} />
-                <span>{t('toolbar.undo')}</span>
-              </button>
-              <button
-                type="button"
-                className="cs-tb-overflow-item"
-                onClick={() => { runCommand(redo); setOverflowOpen(false) }}
-              >
-                <RedoIcon size={18} />
-                <span>{t('toolbar.redo')}</span>
-              </button>
+              {inline.map(c => (
+                <button key={c.id} type="button" className="cs-tb-overflow-item" onClick={() => run(c)}>
+                  {c.icon?.(18)}
+                  <span>{c.label}</span>
+                </button>
+              ))}
             </div>
 
             <div className="cs-tb-overflow-section-label">Screenplay Elements</div>
             <div className="cs-tb-overflow-list">
-              {ELEMENTS.map(el => (
-                <button
-                  key={el.type}
-                  type="button"
-                  className={`cs-tb-overflow-list-item${activeType === el.type ? ' cs-tb-overflow-item-active' : ''}`}
-                  onClick={() => {
-                    runCommand(el.type === 'note' ? makeSetOrToggleNote() : makeSetBlock(el.type))
-                    setOverflowOpen(false)
-                  }}
-                >
-                  <div className="cs-tb-overflow-list-icon">
-                    <el.Icon size={18} />
-                  </div>
-                  <div className="cs-tb-overflow-list-text">
-                    <span className="cs-tb-overflow-list-name">{t(el.translationKey)}</span>
-                    <span className="cs-tb-overflow-list-sigil">{el.sigil}</span>
-                  </div>
-                  {activeType === el.type && (
-                    <span className="cs-tb-overflow-current-badge">Active</span>
-                  )}
-                </button>
-              ))}
+              {[...elements, ...others].map(c => {
+                const active = c.isActive?.(ctx) ?? false
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={`cs-tb-overflow-list-item${active ? ' cs-tb-overflow-item-active' : ''}`}
+                    onClick={() => run(c)}
+                  >
+                    <div className="cs-tb-overflow-list-icon">{c.icon?.(18)}</div>
+                    <div className="cs-tb-overflow-list-text">
+                      <span className="cs-tb-overflow-list-name">{c.label}</span>
+                      {c.sigil && <span className="cs-tb-overflow-list-sigil">{c.sigil}</span>}
+                    </div>
+                    {active && <span className="cs-tb-overflow-current-badge">Active</span>}
+                  </button>
+                )
+              })}
             </div>
           </div>
         </>

@@ -17,6 +17,9 @@ import { ToastContainer } from './Toast'
 import { VoiceToolbar } from '../ai/VoiceToolbar'
 import { useSpeech } from '../extensions/speech-provider'
 import { useCanEdit } from '../extensions/session'
+import { usePanels } from '../extensions/panel-registry'
+import { usePanelContext } from './use-panel-context'
+import { useTranslation } from '../i18n/useTranslation'
 import { SelectionMenu } from '../editor/SelectionMenu'
 
 export function AppShell() {
@@ -29,6 +32,14 @@ export function AppShell() {
   const [titlePageVisible, setTitlePageVisible] = useState(false)
   const speech = useSpeech()
   const canEdit = useCanEdit()
+  const { t } = useTranslation()
+  const panelContext = usePanelContext()
+  // The scene navigator is the built-in first sidebar tab; embedder sidebar
+  // panels become further tabs. Inspector panels stack on the right.
+  const sidebarPanels = usePanels('sidebar')
+  const inspectorPanels = usePanels('inspector')
+  const [sidebarTab, setSidebarTab] = useState('navigator')
+  const activeSidebar = sidebarPanels.find(p => p.id === sidebarTab)
 
   useEffect(() => {
     const open = () => setTitlePageVisible(true)
@@ -50,7 +61,33 @@ export function AppShell() {
               aria-hidden="true"
               onClick={() => setNavVisible(false)}
             />
-            <SceneNavigator />
+            {sidebarPanels.length === 0 ? (
+              <SceneNavigator />
+            ) : (
+              <div className="cs-sidebar">
+                <div className="cs-sidebar-tabs" role="tablist" aria-label="Sidebar">
+                  {[{ id: 'navigator', title: t('navigator.title') }, ...sidebarPanels].map(p => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={(activeSidebar?.id ?? 'navigator') === p.id}
+                      className={`cs-sidebar-tab${(activeSidebar?.id ?? 'navigator') === p.id ? ' cs-sidebar-tab-active' : ''}`}
+                      onClick={() => setSidebarTab(p.id)}
+                    >
+                      {p.title}
+                    </button>
+                  ))}
+                </div>
+                {activeSidebar ? (
+                  <div className="cs-sidebar-panel" role="tabpanel" aria-label={activeSidebar.title}>
+                    {activeSidebar.render(panelContext)}
+                  </div>
+                ) : (
+                  <SceneNavigator />
+                )}
+              </div>
+            )}
           </>
         )}
         <div className="cs-editor-area">
@@ -58,6 +95,16 @@ export function AppShell() {
             {mode === 'formatted' ? <EditorView /> : <SourceView />}
           </main>
         </div>
+        {inspectorPanels.length > 0 && (
+          <aside className="cs-inspector" aria-label="Inspector">
+            {inspectorPanels.map(p => (
+              <section key={p.id} className="cs-inspector-section" aria-label={p.title}>
+                <div className="cs-inspector-title">{p.title}</div>
+                {p.render(panelContext)}
+              </section>
+            ))}
+          </aside>
+        )}
       </div>
       <StatusBar />
       <FindReplace />

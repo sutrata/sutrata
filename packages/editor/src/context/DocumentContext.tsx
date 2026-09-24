@@ -12,14 +12,20 @@ import { SessionProvider, DEFAULT_SESSION } from '../extensions/session'
 import type { SessionContext } from '../extensions/session'
 import { PanelRegistryProvider, createPanelRegistry } from '../extensions/panel-registry'
 import type { PanelRegistry, PanelContribution } from '../extensions/panel-registry'
+import { CommandRegistryProvider, createCommandRegistry, matchesShortcut } from '../extensions/command-registry'
+import type { CommandRegistry, CommandContribution } from '../extensions/command-registry'
+import { ExportRegistryProvider, createExportRegistry } from '../extensions/export-registry'
+import type { ExportRegistry, ExportContribution } from '../extensions/export-registry'
+import { withBuiltins } from '../extensions/registry-store'
+import type { RegistryStore } from '../extensions/registry-store'
 import { DecorationProvidersProvider } from '../extensions/decorations'
 import type { DecorationProvider } from '../extensions/decorations'
 import { CollabBindingProvider } from '../extensions/collab'
 import type { CollabBinding } from '../extensions/collab'
 import { importDocx as importDocxToSutra } from '../file/docx-importer'
-import { runCommand, getEditorView } from '../editor/editor-bus'
+import { getEditorView, getSourceView } from '../editor/editor-bus'
 import { setFlatFrontmatterField } from '../editor/frontmatter-field'
-import { makeSetBlock, makeSetOrToggleNote } from '../shell/toolbar-actions'
+import { builtinCommands } from '../shell/builtin-commands'
 import { resolveStyle } from '../styles/registry'
 import type { ScreenplayStyleDefinition } from '../styles/types'
 
@@ -137,6 +143,10 @@ export interface DocumentProviderProps {
   session?: SessionContext
   /** Optional embedder panels: a live registry, or a fixed list. */
   panels?: PanelRegistry | PanelContribution[]
+  /** Optional embedder commands (toolbar/app-bar entries, shortcuts): a live registry, or a fixed list. */
+  commands?: CommandRegistry | CommandContribution[]
+  /** Optional embedder export formats and reports: a live registry, or a fixed list. */
+  exporters?: ExportRegistry | ExportContribution[]
   /** Optional annotation sources (comments, breakdown, revisions). Pass a stable array. */
   decorationProviders?: DecorationProvider[]
   /** Optional real-time collaboration binding for the formatted editor. */
@@ -145,13 +155,21 @@ export interface DocumentProviderProps {
 
 const NO_DECORATIONS: DecorationProvider[] = []
 
+/** A registry prop as a registry: a fixed list becomes a registry of its own. */
+function useRegistryProp<T extends { id: string }>(
+  value: RegistryStore<T> | T[] | undefined,
+  create: (initial: T[]) => RegistryStore<T>,
+): RegistryStore<T> {
+  return useMemo(() => (Array.isArray(value) || !value ? create(value ?? []) : value), [value]) // eslint-disable-line react-hooks/exhaustive-deps
+}
+
 export function DocumentProvider({
-  children, storageAdapter, aiProvider, speechProvider, session, panels, decorationProviders, collabBinding,
+  children, storageAdapter, aiProvider, speechProvider, session, panels, commands, exporters,
+  decorationProviders, collabBinding,
 }: DocumentProviderProps) {
-  const panelRegistry = useMemo(
-    () => (Array.isArray(panels) || !panels ? createPanelRegistry(panels ?? []) : panels),
-    [panels],
-  )
+  const panelRegistry = useRegistryProp(panels, createPanelRegistry)
+  const commandRegistry = useRegistryProp(commands, createCommandRegistry)
+  const exportRegistry = useRegistryProp(exporters, createExportRegistry)
   const [text, setTextState] = useState(EMPTY_DOC)
   const [ast, setAst] = useState<DocumentNode>(() => parse(EMPTY_DOC))
   const [mode, setMode] = useState<EditorMode>('formatted')
@@ -276,6 +294,8 @@ export function DocumentProvider({
   // on every keystroke.
   const textRef = useRef(text)
   useEffect(() => { textRef.current = text }, [text])
+  const modeRef = useRef(mode)
+  modeRef.current = mode
   const filePathRef = useRef(filePath)
   useEffect(() => { filePathRef.current = filePath }, [filePath])
   const autosaveFailedRef = useRef(false)
@@ -558,6 +578,12 @@ export function DocumentProvider({
           e.preventDefault(); setMode(m => m === 'formatted' ? 'source' : 'formatted')
         } else if (cs && !e.altKey && e.code === 'KeyB') {
           e.preventDefault(); setNavVisible(v => !v)
+        } else {
+          const cmd = commandRegistry.list().find(c => c.readOnly && c.shortcut && matchesShortcut(c.shortcut, e))
+          if (cmd) {
+            e.preventDefault()
+            cmd.run({ view: getEditorView(), sourceView: getSourceView(), mode: modeRef.current, text: textRef.current, setText })
+          }
         }
         return
       }
@@ -582,27 +608,13 @@ export function DocumentProvider({
         return
       }
 
-      // Block type shortcuts  Alt+Shift+letter
-      if (e.altKey && e.shiftKey && !mod) {
-        if (e.code === 'KeyN') {
-          e.preventDefault()
-          runCommand(makeSetOrToggleNote())
-          return
-        }
-        const blockMap: Record<string, Parameters<typeof makeSetBlock>> = {
-          'KeyH': ['scene_heading', { id: null }],
-          'KeyA': ['action'],
-          'KeyC': ['character', { extension: null, isDual: false }],
-          'KeyD': ['dialogue'],
-          'KeyP': ['parenthetical'],
-          'KeyX': ['transition'],
-        }
-        if (e.code in blockMap) {
-          e.preventDefault()
-          const [type, attrs] = blockMap[e.code]!
-          runCommand(makeSetBlock(type, attrs ?? {}))
-          return
-        }
+      // Command shortcuts (built-in element types, embedder commands)
+      const cmd = withBuiltins(builtinCommands(k => k), commandRegistry.list())
+        .find(c => c.shortcut && matchesShortcut(c.shortcut, e))
+      if (cmd) {
+        e.preventDefault()
+        cmd.run({ view: getEditorView(), sourceView: getSourceView(), mode: modeRef.current, text: textRef.current, setText })
+        return
       }
 
       // UI toggles  Ctrl+Shift+letter
@@ -614,7 +626,7 @@ export function DocumentProvider({
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [saveFile, openFile])
+  }, [saveFile, openFile, commandRegistry, setText])
 
   // Native menu IPC (Desktop wrapper only) — receives commands from the main process menu
   useEffect(() => {
@@ -680,6 +692,8 @@ export function DocumentProvider({
     <AIProviderProvider value={aiProvider ?? null}>
     <SpeechProviderProvider value={speechProvider ?? null}>
     <PanelRegistryProvider value={panelRegistry}>
+    <CommandRegistryProvider value={commandRegistry}>
+    <ExportRegistryProvider value={exportRegistry}>
     <DecorationProvidersProvider value={decorationProviders ?? NO_DECORATIONS}>
     <CollabBindingProvider value={collabBinding ?? null}>
       <DocumentContext.Provider value={{
@@ -697,6 +711,8 @@ export function DocumentProvider({
       </DocumentContext.Provider>
     </CollabBindingProvider>
     </DecorationProvidersProvider>
+    </ExportRegistryProvider>
+    </CommandRegistryProvider>
     </PanelRegistryProvider>
     </SpeechProviderProvider>
     </AIProviderProvider>

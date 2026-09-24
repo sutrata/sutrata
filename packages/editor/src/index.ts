@@ -32,6 +32,12 @@ export type {
 } from './extensions/decorations'
 export type { CollabBinding } from './extensions/collab'
 export type {
-  CommandRegistry,
-  ExportRegistry,
-} from './extensions/types'
+  CommandRegistry, CommandContribution, CommandContext,
+} from './extensions/command-registry'
+export { createCommandRegistry, useCommandRegistry } from './extensions/command-registry'
+export type {
+  ExportRegistry, ExportContribution, ExportContext, ExportOptions, ExportOutput,
+} from './extensions/export-registry'
+export { createExportRegistry, useExportRegistry } from './extensions/export-registry'
+export type { Registries } from './extensions/registries'
+export { createRegistries } from './extensions/registries'
