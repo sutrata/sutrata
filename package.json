@@ -1,6 +1,7 @@
 {
   "name": "sutrata",
   "private": true,
+  "packageManager": "pnpm@11.20.0",
   "license": "GPL-3.0-or-later",
   "scripts": {
     "test": "pnpm -r test",
