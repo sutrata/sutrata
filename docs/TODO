@@ -48,9 +48,10 @@
 10. HOLD: @sutrata/cloud-connector (OSS spec §11.1, P2, optional): an open
     StorageAdapter for the documented sync API. Not bundled by default; the
     app must work identically without it.
-11. Publish @sutrata/parser and @sutrata/editor to npm (both at 0.1.0,
-    unpublished). Adopt Changesets; the extension API follows semver, with a
-    migration note for every breaking change (strict semver from 1.0).
+11. Release process for @sutrata/parser and @sutrata/editor (both published
+    to npm; always publish with `pnpm publish` so workspace:* is rewritten).
+    Adopt Changesets; the extension API follows semver, with a migration note
+    for every breaking change (strict semver from 1.0).
 12. Stable scene IDs: {#id} is optional in the format, but scene-level diff
     (§3.5), comments, and any production data keyed by scene need every scene
     to have one. Add a parser/editor helper that assigns IDs to scenes that
