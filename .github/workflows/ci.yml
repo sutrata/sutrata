@@ -44,7 +44,21 @@ jobs:
       - run: pnpm --filter @sutrata/editor build
       - run: pnpm --filter @sutrata/app build
 
-
+  changeset:
+    name: Changeset present
+    if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'changeset-release/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with: { fetch-depth: 0 }
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4 (version from packageManager)
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with: { node-version: '22', cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+      # Fails when packages/parser/src or packages/editor/src changed without
+      # a changeset (.changeset/config.json: changedFilePatterns). Changes that
+      # need no release: `pnpm changeset --empty`.
+      - run: pnpm exec changeset status --since=origin/${{ github.base_ref }}
 
   tofu-gate:
     name: Font coverage (tofu gate)

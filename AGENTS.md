@@ -30,9 +30,11 @@ pnpm --filter @sutrata/parser test -- round-trip         # by filename substring
 pnpm --filter @sutrata/editor test -- -t "scene heading" # by test name
 ```
 
+**Changesets:** any change to `packages/parser/src` or `packages/editor/src` needs a changeset (`pnpm changeset`, or `pnpm changeset --empty` for no-release changes); CI enforces it. Breaking changes need a `### Migration` note — see CONTRIBUTING.md. `.github/workflows/release.yml` versions and publishes on `main`.
+
 `@sutrata/parser` and `@sutrata/editor` both build with `tsc` (editor's build also copies its two CSS files into `dist/`), and each downstream package imports the previous one's compiled `dist/`. **If you change parser or editor source, rebuild it (`pnpm --filter @sutrata/parser build` / `pnpm --filter @sutrata/editor build`) before the next package picks up the change** — `pnpm build` does this in order, but `dev:web` against a stale `dist/` will not.
 
-CI (`.github/workflows/ci.yml`) runs four independent jobs: parser test+build, editor test+build, app build, and a **tofu gate** (`node scripts/check-tofu.js`, uses `canvas`) that fails if any required script renders missing glyphs (□). The same job runs `python scripts/check-font-coverage.py`, which reads the *bundled* Noto Sans/Serif Latin files and fails if any ISO 15919 letter or combining mark is missing (those files are re-subset from the full fonts; see `packages/app/public/fonts/README.md`).
+CI (`.github/workflows/ci.yml`) runs five independent jobs: parser test+build, editor test+build, app build, a changeset check (PRs only), and a **tofu gate** (`node scripts/check-tofu.js`, uses `canvas`) that fails if any required script renders missing glyphs (□). The same job runs `python scripts/check-font-coverage.py`, which reads the *bundled* Noto Sans/Serif Latin files and fails if any ISO 15919 letter or combining mark is missing (those files are re-subset from the full fonts; see `packages/app/public/fonts/README.md`).
 
 ## Architecture
 

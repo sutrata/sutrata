@@ -6,11 +6,16 @@
   "scripts": {
     "test": "pnpm -r test",
     "build": "pnpm --filter @sutrata/parser build && pnpm --filter @sutrata/editor build && pnpm --filter @sutrata/app build",
+    "build:packages": "pnpm --filter @sutrata/parser build && pnpm --filter @sutrata/editor build",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm build:packages && changeset publish",
     "build:tauri": "pnpm --filter @sutrata/tauri build",
     "dev:web": "pnpm --filter @sutrata/app dev",
     "dev:tauri": "pnpm --filter @sutrata/tauri dev"
   },
   "devDependencies": {
+    "@changesets/cli": "^3.0.3",
     "canvas": "^2.11.0",
     "typescript": "^5.4.0"
   }
