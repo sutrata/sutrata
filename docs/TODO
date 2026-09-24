@@ -16,15 +16,6 @@
    print/PDF export (workflow-reports.ts), but is not applied in DOCX export
    (docx-exporter.ts). Also no per-export toggle to opt out when the field is
    set — it's implicitly always-on.
-5. Settings → UI Language dropdown (SettingsDialog.tsx's UI_LANGUAGES) has only
-   the 9 languages with real locale files (en/hi/ta/te/ml/kn/bn/gu/mr) — matches
-   product spec §10.5's P1 UI-language list exactly, so not a bug, but Punjabi,
-   Odia, and Sinhala have no locale/*.json translations yet, which is why
-   they're absent here. Adding them to the dropdown without real translations
-   would silently fall back to English for ~100 UI strings, which is worse than
-   not offering them — need actual pa.json/or.json/si.json translations first.
-   (Checked footer LanguageStatus's script-language dropdown too, per report —
-   that one already has Punjabi, Odia, and Sinhala; nothing to fix there.)
 6. Extension points: dependency-inject AIProvider, SpeechProvider, and
    SessionContext (OSS spec §11.5). They are type-only in
    packages/editor/src/extensions/types.ts; ai-client.ts and voice-service.ts
