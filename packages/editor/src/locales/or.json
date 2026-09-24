@@ -31,6 +31,7 @@
   "navigator.title": "ଦୃଶ୍ୟ",
   "navigator.frontmatter": "ଶୀର୍ଷକ ପୃଷ୍ଠା",
   "navigator.empty": "ଏପର୍ଯ୍ୟନ୍ତ କୌଣସି ଦୃଶ୍ୟ ନାହିଁ। ## ସହିତ ଆରମ୍ଭ କରନ୍ତୁ।",
+  "navigator.missingId": "ଦୃଶ୍ୟର କୌଣସି ID ନାହିଁ",
   "findreplace.title": "ଖୋଜନ୍ତୁ ଏବଂ ବଦଳାନ୍ତୁ",
   "findreplace.find": "ଖୋଜନ୍ତୁ…",
   "findreplace.replace": "ଏଥିରେ ବଦଳାନ୍ତୁ…",

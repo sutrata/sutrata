@@ -30,6 +30,7 @@
   "navigator.title": "दृश्ये",
   "navigator.frontmatter": "शीर्षक पृष्ठ",
   "navigator.empty": "अजून कोणतेही दृश्य नाही. ## ने सुरू करा.",
+  "navigator.missingId": "दृश्याला ID नाही",
   "findreplace.title": "शोधा आणि बदला",
   "findreplace.find": "शोधा…",
   "findreplace.replace": "बदला…",

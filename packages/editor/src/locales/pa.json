@@ -31,6 +31,7 @@
   "navigator.title": "ਦ੍ਰਿਸ਼",
   "navigator.frontmatter": "ਸਿਰਲੇਖ ਸਫ਼ਾ",
   "navigator.empty": "ਅਜੇ ਕੋਈ ਦ੍ਰਿਸ਼ ਨਹੀਂ। ## ਨਾਲ ਸ਼ੁਰੂ ਕਰੋ।",
+  "navigator.missingId": "ਦ੍ਰਿਸ਼ ਦੀ ਕੋਈ ID ਨਹੀਂ ਹੈ",
   "findreplace.title": "ਖੋਜੋ ਅਤੇ ਬਦਲੋ",
   "findreplace.find": "ਖੋਜੋ…",
   "findreplace.replace": "ਨਾਲ ਬਦਲੋ…",

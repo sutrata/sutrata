@@ -638,7 +638,7 @@ export function SceneNavigator() {
             key={scene.id ?? `scene-${idx}`}
             role="button"
             tabIndex={0}
-            aria-label={`Jump to ${scene.heading}`}
+            aria-label={scene.id ? `Jump to ${scene.heading}` : `Jump to ${scene.heading} (${t('navigator.missingId')})`}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
@@ -647,6 +647,8 @@ export function SceneNavigator() {
             }}
             className={[
               'cs-nav-item',
+              // No {#id}: comments, scene-level diff, and page locking can't anchor to it.
+              scene.id ? '' : 'cs-nav-scene-missing-id',
               dragIndex === idx ? 'cs-nav-dragging' : '',
               dropIndex === idx ? 'cs-nav-drop-target' : '',
             ]
@@ -761,7 +763,11 @@ export function SceneNavigator() {
                 </div>
               )}
             </div>
-            {scene.id && <div className="cs-nav-scene-num">{scene.id}</div>}
+            {scene.id ? (
+              <div className="cs-nav-scene-num">{scene.id}</div>
+            ) : (
+              <div className="cs-nav-missing-id-icon" title={t('navigator.missingId')} aria-hidden="true">⚠</div>
+            )}
           </div>
         ))}
 

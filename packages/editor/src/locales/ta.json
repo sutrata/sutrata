@@ -30,6 +30,7 @@
   "navigator.title": "காட்சிகள்",
   "navigator.frontmatter": "தலைப்பு பக்கம்",
   "navigator.empty": "இன்னும் காட்சி இல்லை. ## என தொடங்கவும்.",
+  "navigator.missingId": "காட்சிக்கு ID இல்லை",
   "findreplace.title": "கண்டுபிடி & மாற்று",
   "findreplace.find": "கண்டுபிடி…",
   "findreplace.replace": "மாற்றவும்…",

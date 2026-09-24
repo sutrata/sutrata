@@ -30,6 +30,7 @@
   "navigator.title": "দৃশ্যগুলি",
   "navigator.frontmatter": "শিরোনাম পৃষ্ঠা",
   "navigator.empty": "এখনো কোনো দৃশ্য নেই। ## দিয়ে শুরু করুন।",
+  "navigator.missingId": "দৃশ্যের কোনো ID নেই",
   "findreplace.title": "খুঁজুন ও প্রতিস্থাপন করুন",
   "findreplace.find": "খুঁজুন…",
   "findreplace.replace": "প্রতিস্থাপন করুন…",

@@ -30,6 +30,7 @@
   "navigator.title": "દ્રશ્યો",
   "navigator.frontmatter": "શીર્ષક પૃષ્ઠ",
   "navigator.empty": "હજુ સુધી કોઈ દ્રશ્ય નથી. ## થી શરૂ કરો.",
+  "navigator.missingId": "દૃશ્યનો કોઈ ID નથી",
   "findreplace.title": "શોધો અને બદલો",
   "findreplace.find": "શોધો…",
   "findreplace.replace": "બદલો…",

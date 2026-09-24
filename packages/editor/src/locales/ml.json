@@ -30,6 +30,7 @@
   "navigator.title": "രംഗങ്ങൾ",
   "navigator.frontmatter": "ശീർഷക പേജ്",
   "navigator.empty": "ഇതുവരെ രംഗങ്ങളൊന്നുമില്ല. ## ഉപയോഗിച്ച് തുടങ്ങുക.",
+  "navigator.missingId": "രംഗത്തിന് ID ഇല്ല",
   "findreplace.title": "കണ്ടെത്തുക & മാറ്റിസ്ഥാപിക്കുക",
   "findreplace.find": "കണ്ടെത്തുക…",
   "findreplace.replace": "മാറ്റിസ്ഥാപിക്കുക…",

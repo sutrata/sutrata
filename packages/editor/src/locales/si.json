@@ -31,6 +31,7 @@
   "navigator.title": "දර්ශන",
   "navigator.frontmatter": "මුල් පිටුව",
   "navigator.empty": "තවමත් දර්ශන නැත. ## යොදා ආරම්භ කරන්න.",
+  "navigator.missingId": "දර්ශනයට ID එකක් නැත",
   "findreplace.title": "සොයන්න සහ ප්‍රතිස්ථාපනය කරන්න",
   "findreplace.find": "සොයන්න…",
   "findreplace.replace": "ප්‍රතිස්ථාපනය කරන්න…",
