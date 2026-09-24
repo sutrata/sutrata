@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "node scripts/generate-providers.mjs && tsc && vite build",
+    "generate:providers": "node scripts/generate-providers.mjs",
     "test": "vitest run --passWithNoTests",
     "test:e2e": "playwright test"
   },

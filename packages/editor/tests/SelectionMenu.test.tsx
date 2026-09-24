@@ -5,6 +5,7 @@ import { SelectionMenu } from '../src/editor/SelectionMenu';
 import { DocumentProvider } from '../src/context/DocumentContext';
 import { LanguageProvider } from '../src/i18n/LanguageContext';
 import { TranslationProvider } from '../src/i18n/useTranslation';
+import { stubAIProvider } from './helpers/stub-providers';
 
 describe('SelectionMenu floating toolbar', () => {
   beforeEach(() => {
@@ -48,7 +49,7 @@ describe('SelectionMenu floating toolbar', () => {
 
     render(
       <TranslationProvider>
-        <DocumentProvider>
+        <DocumentProvider aiProvider={stubAIProvider({ complete: vi.fn(() => new Promise<string>(() => {})) })}>
           <LanguageProvider>
             <SelectionMenu />
           </LanguageProvider>
@@ -67,5 +68,33 @@ describe('SelectionMenu floating toolbar', () => {
     // Clicking Format should open the confirm dialog
     fireEvent.click(screen.getByText('Format'));
     expect(screen.getByText('Formatting speech into Sutra screenplay format...')).toBeInTheDocument();
+  });
+
+  it('hides the AI Format action without an AI provider', () => {
+    const editorDiv = document.createElement('div');
+    editorDiv.className = 'ProseMirror';
+    vi.spyOn(window, 'getSelection').mockImplementation(() => ({
+      isCollapsed: false,
+      rangeCount: 1,
+      toString: () => 'some text',
+      getRangeAt: () => ({
+        commonAncestorContainer: editorDiv,
+        getBoundingClientRect: () => ({ left: 0, width: 10, top: 0, height: 10 }),
+      }),
+    }) as any);
+    render(
+      <TranslationProvider>
+        <DocumentProvider>
+          <LanguageProvider>
+            <SelectionMenu />
+          </LanguageProvider>
+        </DocumentProvider>
+      </TranslationProvider>
+    );
+    act(() => {
+      document.dispatchEvent(new Event('selectionchange'));
+    });
+    expect(screen.getByText('Copy')).toBeInTheDocument();
+    expect(screen.queryByText('Format')).toBeNull();
   });
 });

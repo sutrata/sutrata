@@ -41,6 +41,7 @@ export class SceneHeadingView implements NodeView {
     this.input.value = (node.attrs['id'] as string | null) ?? ''
     this.input.setAttribute('aria-label', 'Scene number')
     this.input.spellcheck = false
+    this.input.readOnly = !view.editable
 
     this.input.addEventListener('keydown', this.onInputKeydown)
     this.input.addEventListener('blur', this.onInputBlur)
@@ -124,6 +125,7 @@ export class SceneHeadingView implements NodeView {
     // Keep DOM attr in sync
     if (id) this.dom.dataset['sceneId'] = id
     else delete this.dom.dataset['sceneId']
+    this.input.readOnly = !this.pmView.editable
     // Only update input if it doesn't have focus (avoid clobbering in-progress edits)
     if (document.activeElement !== this.input) {
       this.input.value = id

@@ -3,6 +3,7 @@ import { useDocument } from '../context/DocumentContext'
 import { extractWorkflowData } from '../file/workflow-reports'
 import { getEditorView } from '../editor/editor-bus'
 import { schema } from '../editor/schema'
+import { useCanEdit } from '../extensions/session'
 
 interface Props {
   onClose: () => void
@@ -10,9 +11,11 @@ interface Props {
 
 export function StatisticsDialog({ onClose }: Props) {
   const { ast, text, setText } = useDocument()
+  const canEdit = useCanEdit()
   const { scenes, characters } = extractWorkflowData(ast)
 
   const handleUpdateActor = (charName: string, actorName: string) => {
+    if (!canEdit) return
     const cleanChar = charName.trim().toUpperCase()
     if (!cleanChar) return
 
@@ -156,6 +159,7 @@ export function StatisticsDialog({ onClose }: Props) {
                         className="cs-stats-actor-input"
                         value={c.actor}
                         onChange={(e) => handleUpdateActor(c.name, e.target.value)}
+                        readOnly={!canEdit}
                         placeholder="Assign actor..."
                         aria-label={`Actor for ${c.name}`}
                       />

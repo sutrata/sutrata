@@ -3,7 +3,7 @@ import {
   getApiKey, setApiKey, deleteApiKey, getAIConfig, saveAIConfig,
   fetchProviders, testConnection, listModels, AIConfig, ProviderConfig
 } from './ai-client'
-import { SparklesIcon } from '../shell/icons'
+import { SparklesIcon } from './SparklesIcon'
 
 interface Props {
   onClose: () => void

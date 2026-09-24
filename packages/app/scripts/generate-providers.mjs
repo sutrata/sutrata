@@ -1,5 +1,5 @@
 // Generates src/ai/generated-providers.json (and a copy at
-// packages/app/public/models-config.json) from the community-maintained
+// public/models-config.json) from the community-maintained
 // all-llm-provider-list registry, at build time.
 //
 // Only providers Sutrata can actually drive are kept: ones with a real
@@ -17,13 +17,13 @@
 // provider catalog stays current without a rebuild — intentionally not done
 // here to keep this change scoped.
 
-import { writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const editorOutPath = join(root, 'src/ai/generated-providers.json');
-const appOutPath = join(root, '../app/public/models-config.json');
+const generatedPath = join(root, 'src/ai/generated-providers.json');
+const publicConfigPath = join(root, 'public/models-config.json');
 
 const SOURCE_URL = 'https://raw.githubusercontent.com/foisalislambd/all-llm-provider-list/main/data/providers.json';
 
@@ -92,7 +92,7 @@ async function main() {
     source = await res.json();
   } catch (e) {
     console.warn(`[generate-providers] Failed to fetch ${SOURCE_URL}: ${e}. Leaving existing generated files untouched.`);
-    if (!existsSync(editorOutPath)) {
+    if (!existsSync(generatedPath)) {
       console.error('[generate-providers] No existing generated-providers.json to fall back to — build will use the compiled-in defaults only.');
     }
     return;
@@ -109,6 +109,20 @@ async function main() {
     providers.push(config);
   }
 
+  // Leave the tracked files alone when the provider list is unchanged, so a
+  // build doesn't dirty the working tree just to bump generatedAt.
+  if (existsSync(generatedPath)) {
+    try {
+      const previous = JSON.parse(readFileSync(generatedPath, 'utf-8'));
+      if (JSON.stringify(previous.providers) === JSON.stringify(providers)) {
+        console.log(`[generate-providers] ${providers.length} providers, unchanged.`);
+        return;
+      }
+    } catch {
+      // unreadable previous file: regenerate
+    }
+  }
+
   const output = {
     generatedAt: new Date().toISOString(),
     source: 'https://github.com/foisalislambd/all-llm-provider-list',
@@ -116,12 +130,12 @@ async function main() {
   };
 
   const json = JSON.stringify(output, null, 2) + '\n';
-  writeFileSync(editorOutPath, json);
+  writeFileSync(generatedPath, json);
 
   const appConfig = { providers: output.providers };
-  writeFileSync(appOutPath, JSON.stringify(appConfig, null, 2) + '\n');
+  writeFileSync(publicConfigPath, JSON.stringify(appConfig, null, 2) + '\n');
 
-  console.log(`[generate-providers] Wrote ${providers.length} providers to ${editorOutPath} and ${appOutPath}.`);
+  console.log(`[generate-providers] Wrote ${providers.length} providers to ${generatedPath} and ${publicConfigPath}.`);
 }
 
 await main();

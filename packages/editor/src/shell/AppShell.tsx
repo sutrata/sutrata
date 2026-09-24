@@ -15,17 +15,20 @@ import { Watermark } from './Watermark'
 import { ConfirmDialog } from './ConfirmDialog'
 import { ToastContainer } from './Toast'
 import { VoiceToolbar } from '../ai/VoiceToolbar'
-import { OnboardingDialog } from '../ai/OnboardingDialog'
+import { useSpeech } from '../extensions/speech-provider'
+import { useCanEdit } from '../extensions/session'
 import { SelectionMenu } from '../editor/SelectionMenu'
 
 export function AppShell() {
   const {
     mode, ribbonVisible, navVisible, setNavVisible, exportVisible, settingsVisible,
     setSettingsVisible, styleVisible, setStyleVisible, metadataVisible,
-    voiceActive, aiOnboardingVisible, setAIOnboardingVisible,
+    voiceActive,
     confirmModal, closeConfirm, toasts, dismissToast,
   } = useDocument()
   const [titlePageVisible, setTitlePageVisible] = useState(false)
+  const speech = useSpeech()
+  const canEdit = useCanEdit()
 
   useEffect(() => {
     const open = () => setTitlePageVisible(true)
@@ -37,8 +40,8 @@ export function AppShell() {
     <div className={`cs-shell ${metadataVisible ? '' : 'cs-hide-metadata'}`}>
       <Watermark />
       <AppBar />
-      {voiceActive && <VoiceToolbar />}
-      {ribbonVisible && <ElementToolbar />}
+      {voiceActive && speech && <VoiceToolbar />}
+      {ribbonVisible && canEdit && <ElementToolbar />}
       <div className="cs-shell-body">
         {navVisible && (
           <>
@@ -59,13 +62,12 @@ export function AppShell() {
       <StatusBar />
       <FindReplace />
       {exportVisible && <ExportDialog />}
-      {titlePageVisible && <TitlePageDialog onClose={() => setTitlePageVisible(false)} />}
+      {titlePageVisible && canEdit && <TitlePageDialog onClose={() => setTitlePageVisible(false)} />}
       {settingsVisible && <SettingsDialog onClose={() => setSettingsVisible(false)} />}
-      {styleVisible && <StyleDialog onClose={() => setStyleVisible(false)} />}
-      {aiOnboardingVisible && <OnboardingDialog onClose={() => setAIOnboardingVisible(false)} />}
+      {styleVisible && canEdit && <StyleDialog onClose={() => setStyleVisible(false)} />}
       {confirmModal && <ConfirmDialog options={confirmModal} onClose={closeConfirm} />}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-      <SelectionMenu />
+      {canEdit && <SelectionMenu />}
     </div>
   )
 }

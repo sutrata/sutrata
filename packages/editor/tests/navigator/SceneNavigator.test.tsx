@@ -6,6 +6,9 @@ import { DocumentProvider, useDocument } from '../../src/context/DocumentContext
 import { LanguageProvider } from '../../src/i18n/LanguageContext'
 import { TranslationProvider } from '../../src/i18n/useTranslation'
 import { setSourceView } from '../../src/editor/editor-bus'
+import { stubAIProvider } from '../helpers/stub-providers'
+import type { AIProvider } from '../../src/extensions/ai-provider'
+import type { SessionContext } from '../../src/extensions/session'
 
 const SAMPLE_TEXT =
   '## INT. HOUSE - DAY\n& synopsis: A scene.\n\n## EXT. PARK - NIGHT\n& synopsis: Another scene.\n'
@@ -24,10 +27,10 @@ function TextSetter({ text }: { text: string }) {
   return null
 }
 
-function Wrapper({ text = SAMPLE_TEXT }: { text?: string }) {
+function Wrapper({ text = SAMPLE_TEXT, aiProvider, session }: { text?: string; aiProvider?: AIProvider; session?: SessionContext }) {
   return (
     <TranslationProvider>
-      <DocumentProvider>
+      <DocumentProvider aiProvider={aiProvider} session={session}>
         <LanguageProvider>
           <TextSetter text={text} />
           <SceneNavigator />
@@ -108,7 +111,7 @@ describe('SceneNavigator', () => {
   it('shows a single merged synopsis+duration AI action as an icon-only button beside the synopsis field, not as labeled buttons in a separate row', async () => {
     let container!: HTMLElement
     await act(async () => {
-      ;({ container } = render(<Wrapper />))
+      ;({ container } = render(<Wrapper aiProvider={stubAIProvider()} />))
     })
 
     // No visible text labels — icon-only per-scene action now.

@@ -5,7 +5,7 @@
 export type * from './desktop-api'
 
 export { DocumentProvider, useDocument } from './context/DocumentContext'
-export type { FindMode } from './context/DocumentContext'
+export type { FindMode, DocumentProviderProps } from './context/DocumentContext'
 export { AppShell } from './shell/AppShell'
 export { LanguageProvider, useLanguage } from './i18n/LanguageContext'
 export { TranslationProvider, useTranslation } from './i18n/useTranslation'
@@ -15,11 +15,19 @@ export type { ScreenplayStyleDefinition } from './styles/types'
 
 export type { StorageAdapter } from './extensions/storage-adapter'
 export { useStorageAdapter } from './extensions/storage-adapter'
+export type { AIProvider, AIRequest, AIActivity, JsonSchema } from './extensions/ai-provider'
+export { useAI } from './extensions/ai-provider'
 export type {
-  AIProvider,
-  SpeechProvider,
-  SessionContext,
-  PanelRegistry,
+  SpeechProvider, SpeechRecognitionCallbacks, SpeechRecognitionSession,
+} from './extensions/speech-provider'
+export { useSpeech } from './extensions/speech-provider'
+export type { SessionContext } from './extensions/session'
+export { DEFAULT_SESSION, useSession, useCanEdit } from './extensions/session'
+export type {
+  PanelRegistry, PanelContribution, PanelLocation, PanelRenderContext,
+} from './extensions/panel-registry'
+export { createPanelRegistry, usePanelRegistry } from './extensions/panel-registry'
+export type {
   CommandRegistry,
   ExportRegistry,
   CollabBinding,

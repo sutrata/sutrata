@@ -5,17 +5,21 @@ import { buildSceneList } from '../navigator/scene-list'
 import { StatisticsDialog } from '../navigator/StatisticsDialog'
 import { VersionHistory } from './VersionHistory'
 import { StatsIcon, HistoryIcon } from './icons'
-import { subscribeToAICalls, formatActiveCalls } from '../ai/ai-client'
 import { useTranslation } from '../i18n/useTranslation'
+import { useAI, formatActivity } from '../extensions/ai-provider'
+import { useCanEdit } from '../extensions/session'
+import type { AIActivity } from '../extensions/ai-provider'
 
 function AIStatusBarStatus() {
-  const [activeCalls, setActiveCalls] = useState<{ providerName: string; model: string }[]>([])
+  const ai = useAI()
+  const [activeCalls, setActiveCalls] = useState<AIActivity[]>([])
 
   useEffect(() => {
-    return subscribeToAICalls(setActiveCalls)
-  }, [])
+    if (!ai?.subscribeActivity) return
+    return ai.subscribeActivity(setActiveCalls)
+  }, [ai])
 
-  if (activeCalls.length === 0) return null
+  if (!ai || activeCalls.length === 0) return null
 
   return (
     <div
@@ -31,7 +35,7 @@ function AIStatusBarStatus() {
       }}
     >
       <span className="cs-spinner" style={{ width: '10px', height: '10px', borderWidth: '1.5px' }} />
-      <span>{formatActiveCalls(activeCalls)}</span>
+      <span>{formatActivity(activeCalls)}</span>
     </div>
   )
 }
@@ -39,6 +43,7 @@ function AIStatusBarStatus() {
 export function StatusBar() {
   const { text, isDirty, lastSaveTarget, filePath, versions, versionHistoryVisible, setVersionHistoryVisible, restoreVersion, clearVersionHistory } = useDocument()
   const { t } = useTranslation()
+  const canEdit = useCanEdit()
   const [statsOpen, setStatsOpen] = useState(false)
 
   // VS Code-style: a local autosave backs the content up but never counts as
@@ -93,7 +98,7 @@ export function StatusBar() {
 
         <div className="cs-sb-right">
           <AIStatusBarStatus />
-          {filePath && versions.length > 0 && (
+          {canEdit && filePath && versions.length > 0 && (
             <button
               type="button"
               className="cs-nav-action-btn"
@@ -120,7 +125,7 @@ export function StatusBar() {
       </footer>
 
       {statsOpen && <StatisticsDialog onClose={() => setStatsOpen(false)} />}
-      {filePath && (
+      {canEdit && filePath && (
         <VersionHistory
           versions={versions}
           filePath={filePath}

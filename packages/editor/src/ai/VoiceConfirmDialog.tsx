@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { callAI, getAIConfig } from './ai-client'
-import { VOICE_FORMAT_SYSTEM_PROMPT } from './prompts'
+import { useAI } from '../extensions/ai-provider'
+import { formatTranscript as formatWithAI } from './format-transcript'
 import { SparklesIcon } from '../shell/icons'
 
 interface Props {
@@ -10,7 +10,9 @@ interface Props {
   onCancel: () => void
 }
 
+/** Rendered only where useAI() is non-null (VoiceToolbar, SelectionMenu's Format). */
 export function VoiceConfirmDialog({ rawTranscript, langCode, onConfirm, onCancel }: Props) {
+  const ai = useAI()!
   const [formattedText, setFormattedText] = useState<string>('')
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
@@ -26,9 +28,7 @@ export function VoiceConfirmDialog({ rawTranscript, langCode, onConfirm, onCance
     setIsLoading(true)
     setError('')
     try {
-      const config = getAIConfig()
-      const prompt = `Raw Voice Transcript (${langCode}):\n"${rawTranscript}"`
-      const result = await callAI(prompt, VOICE_FORMAT_SYSTEM_PROMPT, config, { clean: 'voice' })
+      const result = await formatWithAI(ai, rawTranscript, langCode)
       setFormattedText(result.trim())
     } catch (e: any) {
       console.error('AI formatting failed:', e)

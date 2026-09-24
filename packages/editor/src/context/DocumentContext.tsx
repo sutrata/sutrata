@@ -4,6 +4,14 @@ import type { DocumentNode } from '@sutrata/parser'
 import type { EditorMode, VersionEntry } from '../types'
 import { StorageAdapterProvider } from '../extensions/storage-adapter'
 import type { StorageAdapter } from '../extensions/storage-adapter'
+import { AIProviderProvider } from '../extensions/ai-provider'
+import type { AIProvider } from '../extensions/ai-provider'
+import { SpeechProviderProvider } from '../extensions/speech-provider'
+import type { SpeechProvider } from '../extensions/speech-provider'
+import { SessionProvider, DEFAULT_SESSION } from '../extensions/session'
+import type { SessionContext } from '../extensions/session'
+import { PanelRegistryProvider, createPanelRegistry } from '../extensions/panel-registry'
+import type { PanelRegistry, PanelContribution } from '../extensions/panel-registry'
 import { importDocx as importDocxToSutra } from '../file/docx-importer'
 import { runCommand, getEditorView } from '../editor/editor-bus'
 import { setFlatFrontmatterField } from '../editor/frontmatter-field'
@@ -27,7 +35,6 @@ interface DocumentContextValue {
   navVisible: boolean
   exportVisible: boolean
   settingsVisible: boolean
-  aiOnboardingVisible: boolean
   voiceActive: boolean
   metadataVisible: boolean
   findReplaceVisible: boolean
@@ -47,7 +54,6 @@ interface DocumentContextValue {
   setNavVisible: (v: boolean) => void
   setExportVisible: (v: boolean) => void
   setSettingsVisible: (v: boolean) => void
-  setAIOnboardingVisible: (v: boolean) => void
   setVoiceActive: (v: boolean) => void
   setMetadataVisible: (v: boolean) => void
   setFindReplaceVisible: (visible: boolean) => void
@@ -115,7 +121,27 @@ function clearRecoveryPointer(): void {
   }
 }
 
-export function DocumentProvider({ children, storageAdapter }: { children: React.ReactNode; storageAdapter: StorageAdapter }) {
+export interface DocumentProviderProps {
+  children: React.ReactNode
+  /** Required: where documents, versions and styles are stored. */
+  storageAdapter: StorageAdapter
+  /** Optional LLM access. Without it, AI features are hidden. */
+  aiProvider?: AIProvider
+  /** Optional speech-to-text. Voice dictation needs it and aiProvider. */
+  speechProvider?: SpeechProvider
+  /** Optional user/permission/feature-flag context. Default: local user, `edit`. */
+  session?: SessionContext
+  /** Optional embedder panels: a live registry, or a fixed list. */
+  panels?: PanelRegistry | PanelContribution[]
+}
+
+export function DocumentProvider({
+  children, storageAdapter, aiProvider, speechProvider, session, panels,
+}: DocumentProviderProps) {
+  const panelRegistry = useMemo(
+    () => (Array.isArray(panels) || !panels ? createPanelRegistry(panels ?? []) : panels),
+    [panels],
+  )
   const [text, setTextState] = useState(EMPTY_DOC)
   const [ast, setAst] = useState<DocumentNode>(() => parse(EMPTY_DOC))
   const [mode, setMode] = useState<EditorMode>('formatted')
@@ -131,7 +157,6 @@ export function DocumentProvider({ children, storageAdapter }: { children: React
   const [navVisible, setNavVisible] = useState(() => window.innerWidth > 640)
   const [exportVisible, setExportVisible] = useState(false)
   const [settingsVisible, setSettingsVisible] = useState(false)
-  const [aiOnboardingVisible, setAIOnboardingVisible] = useState(false)
   const [voiceActive, setVoiceActive] = useState(false)
   const [metadataVisible, setMetadataVisible] = useState(true)
   const [findReplaceVisible, setFindReplaceVisible] = useState(false)
@@ -505,10 +530,27 @@ export function DocumentProvider({ children, storageAdapter }: { children: React
     return () => window.removeEventListener('beforeunload', onBeforeUnload)
   }, [isDirty])
 
+  const canEditRef = useRef(true)
+  canEditRef.current = (session ?? DEFAULT_SESSION).permission === 'edit'
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const mod = e.ctrlKey || e.metaKey
       const cs  = mod && e.shiftKey
+
+      // Read-only sessions: only find, mode and panel toggles.
+      if (!canEditRef.current) {
+        if (mod && !e.shiftKey && !e.altKey && e.code === 'KeyF') {
+          e.preventDefault()
+          setFindMode('find')
+          setFindReplaceVisible(v => !v)
+        } else if (cs && !e.altKey && e.code === 'KeyE') {
+          e.preventDefault(); setMode(m => m === 'formatted' ? 'source' : 'formatted')
+        } else if (cs && !e.altKey && e.code === 'KeyB') {
+          e.preventDefault(); setNavVisible(v => !v)
+        }
+        return
+      }
 
       // File operations — use e.code for layout-independence
       if (mod && !e.shiftKey && !e.altKey && e.code === 'KeyS') {
@@ -624,19 +666,27 @@ export function DocumentProvider({ children, storageAdapter }: { children: React
 
   return (
     <StorageAdapterProvider value={storageAdapter}>
+    <SessionProvider value={session ?? DEFAULT_SESSION}>
+    <AIProviderProvider value={aiProvider ?? null}>
+    <SpeechProviderProvider value={speechProvider ?? null}>
+    <PanelRegistryProvider value={panelRegistry}>
       <DocumentContext.Provider value={{
         text, ast, mode, filePath, isDirty, lastSaveTarget, ribbonVisible, navVisible, exportVisible, settingsVisible,
-        aiOnboardingVisible, voiceActive, metadataVisible,
+        voiceActive, metadataVisible,
         findReplaceVisible, findMode, styleVisible, customStyles, resolvedStyle, watermarkText,
         confirmModal, toasts, versions, versionHistoryVisible,
         setText, setMode, setFilePath, setRibbonVisible, setNavVisible, setExportVisible, setSettingsVisible,
-        setAIOnboardingVisible, setVoiceActive, setMetadataVisible,
+        setVoiceActive, setMetadataVisible,
         setFindReplaceVisible, setFindMode, setStyleVisible, setVersionHistoryVisible, setDocumentStyle, reloadCustomStyles,
         markClean, save, newDocument, openFile, saveFile, saveFileAs, importDocx, restoreVersion, clearVersionHistory,
         showConfirm, closeConfirm, showToast, dismissToast,
       }}>
         {children}
       </DocumentContext.Provider>
+    </PanelRegistryProvider>
+    </SpeechProviderProvider>
+    </AIProviderProvider>
+    </SessionProvider>
     </StorageAdapterProvider>
   )
 }
