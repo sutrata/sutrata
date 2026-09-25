@@ -111,7 +111,7 @@ describe('AIProvider / SpeechProvider injection', () => {
 describe('SessionContext permissions', () => {
   const READ = { userId: 'r', displayName: 'Reader', permission: 'read' as const, featureFlags: {} }
 
-  const GATED = ['Save', 'Open .sutra', 'New file', 'Voice Dictation', GENERATE_ALL, 'Lock Scene Numbers']
+  const GATED = ['Save', 'Open .sutra', 'New file', 'Voice Dictation', GENERATE_ALL, 'Renumber scenes']
 
   it('edit (control): the gated actions are present', async () => {
     await act(async () => {

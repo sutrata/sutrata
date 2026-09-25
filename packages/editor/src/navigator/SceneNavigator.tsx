@@ -7,7 +7,10 @@ import { getEditorView, getSourceView } from '../editor/editor-bus'
 import { schema } from '../editor/schema'
 import { EditorView as CmView } from '@codemirror/view'
 import { StatisticsDialog } from './StatisticsDialog'
-import { EyeIcon, EyeOffIcon, LockIcon, StatsIcon, SparklesIcon, CloseIcon } from '../shell/icons'
+import { EyeIcon, EyeOffIcon, RenumberIcon, OmitIcon, RestoreIcon, StatsIcon, SparklesIcon, CloseIcon } from '../shell/icons'
+import { sceneNumberIssues, renumberScenes } from './scene-numbering'
+import type { SceneNumberIssue } from './scene-numbering'
+import { setSceneNumbersInText, omitSceneInText, restoreSceneInText, applyTextEdit } from './scene-edits'
 import { SCENE_METADATA_PROMPT, SCENE_METADATA_SCHEMA } from '../ai/prompts'
 import { useAI } from '../extensions/ai-provider'
 import type { AIProvider } from '../extensions/ai-provider'
@@ -177,39 +180,6 @@ function updateSceneMetadataInProseMirror(sceneIndex: number, key: string, val: 
   }
 }
 
-/** Lock scene numbers in raw Sutra text. */
-function lockNumbersInText(text: string): string {
-  const lines = text.split('\n')
-  const result: string[] = []
-  let sceneCount = 0
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i] ?? ''
-    const trimmed = line.trim()
-    result.push(line)
-
-    if (trimmed.startsWith('## ') || trimmed.startsWith('##\t')) {
-      sceneCount++
-      let hasNumber = false
-      let j = i + 1
-      while (j < lines.length) {
-        const nextLine = (lines[j] ?? '').trim()
-        if (nextLine.startsWith('##') || nextLine.startsWith('#')) break
-        if (nextLine.startsWith('& number:')) {
-          hasNumber = true
-          break
-        }
-        j++
-      }
-
-      if (!hasNumber) {
-        result.push(`& number: ${sceneCount}`)
-      }
-    }
-  }
-  return result.join('\n')
-}
-
 /** Ask the AI provider for a scene's synopsis + duration (one structured call). */
 function generateSceneMetadata(ai: AIProvider, sceneText: string) {
   return ai.completeStructured<{ synopsis: string; duration: string }>({
@@ -259,6 +229,11 @@ export function SceneNavigator() {
   useEffect(() => {
     setScenes(buildSceneList(text))
   }, [text])
+
+  // Numbers that need renumbering (missing/duplicate/out of order; §7.4).
+  // Nothing is flagged until at least one scene has a number.
+  const numberIssues = React.useMemo(() => sceneNumberIssues(scenes.map(s => s.number)), [scenes])
+  const issueLabel = (issue: SceneNumberIssue) => t(`navigator.number.${issue}`)
 
   const handleSceneMetadata = useCallback(async (scene: SceneEntry) => {
     setIsProcessing(true)
@@ -519,52 +494,37 @@ export function SceneNavigator() {
     }
   }, [editVal, text, setText])
 
-  const handleLockNumbers = useCallback(() => {
-    const view = getEditorView()
-    if (view) {
-      let tr = view.state.tr
-      let headingCount = 0
-      let posMap: { headingPos: number; currentNum: string | null }[] = []
+  /**
+   * Current editor text: the navigator's `text` can lag the editor by a
+   * render, and these actions rewrite whole scenes.
+   */
+  const liveText = useCallback(() => {
+    const pmView = getEditorView()
+    const cmView = getSourceView()
+    return pmView ? prosemirrorToSutra(pmView.state.doc) : cmView ? cmView.state.doc.toString() : textRef.current
+  }, [])
 
-      view.state.doc.forEach((node, offset) => {
-        if (node.type.name === 'scene_heading') {
-          headingCount++
-          let hasNumber = false
-          let index = view.state.doc.resolve(offset).index(0) + 1
-          while (index < view.state.doc.childCount) {
-            const sibling = view.state.doc.child(index)
-            if (sibling.type.name === 'scene_metadata') {
-              if (sibling.attrs['metaKey'] === 'number') {
-                hasNumber = true
-                break
-              }
-            } else {
-              break
-            }
-            index++
-          }
-          if (!hasNumber) {
-            posMap.push({ headingPos: offset, currentNum: String(headingCount) })
-          }
-        }
-      })
-
-      for (let k = posMap.length - 1; k >= 0; k--) {
-        const { headingPos, currentNum } = posMap[k]!
-        const headingNode = view.state.doc.nodeAt(headingPos)!
-        const insertPos = headingPos + headingNode.nodeSize
-        const metaNode = schema.nodes['scene_metadata']!.create(
-          { metaKey: 'number' },
-          schema.text(currentNum!)
-        )
-        tr = tr.insert(insertPos, metaNode)
-      }
-      view.dispatch(tr)
-    } else {
-      const nextText = lockNumbersInText(text)
-      setText(nextText)
+  // Renumber scenes (format spec §7.4): only when the writer asks.
+  const handleRenumber = useCallback(() => {
+    const current = liveText()
+    const list = buildSceneList(current)
+    const next = renumberScenes(list.map(s => s.number))
+    const changed = next.filter((n, i) => n !== list[i]!.number).length
+    if (changed === 0) {
+      showToast('Scene numbers are already in order.', 'info')
+      return
     }
-  }, [text, setText])
+    applyTextEdit(setSceneNumbersInText(current, next), setText)
+    showToast(`Renumbered ${changed} scene${changed === 1 ? '' : 's'}.`, 'success')
+  }, [liveText, setText, showToast])
+
+  const handleOmitToggle = useCallback((scene: SceneEntry) => {
+    const current = liveText()
+    const idx = buildSceneList(current).findIndex(s => s.index === scene.index)
+    if (idx === -1) return
+    const omitted = scene.status.toLowerCase() === 'omitted'
+    applyTextEdit(omitted ? restoreSceneInText(current, idx) : omitSceneInText(current, idx), setText)
+  }, [liveText, setText])
 
   return (
     <div className="cs-navigator" role="navigation" aria-label="Scene Navigator">
@@ -621,11 +581,11 @@ export function SceneNavigator() {
               <button
                 type="button"
                 className="cs-nav-action-btn"
-                onClick={handleLockNumbers}
-                title="Lock Scene Numbers"
-                aria-label="Lock Scene Numbers"
+                onClick={handleRenumber}
+                title={t('navigator.renumber')}
+                aria-label={t('navigator.renumber')}
               >
-                <LockIcon size={14} />
+                <RenumberIcon size={14} />
               </button>
             )}
           </div>
@@ -651,12 +611,19 @@ export function SceneNavigator() {
           </div>
         )}
 
-        {scenes.map((scene, idx) => (
+        {scenes.map((scene, idx) => {
+          const issue = numberIssues[idx] ?? null
+          const omitted = scene.status.toLowerCase() === 'omitted'
+          const notes = [
+            ...(scene.id ? [] : [t('navigator.missingId')]),
+            ...(issue ? [issueLabel(issue)] : []),
+          ]
+          return (
           <div
             key={scene.id ?? `scene-${idx}`}
             role="button"
             tabIndex={0}
-            aria-label={scene.id ? `Jump to ${scene.heading}` : `Jump to ${scene.heading} (${t('navigator.missingId')})`}
+            aria-label={`Jump to ${scene.heading}${notes.length ? ` (${notes.join('; ')})` : ''}`}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
@@ -667,6 +634,8 @@ export function SceneNavigator() {
               'cs-nav-item',
               // No {#id}: comments, scene-level diff, and page locking can't anchor to it.
               scene.id ? '' : 'cs-nav-scene-missing-id',
+              issue ? 'cs-nav-scene-number-issue' : '',
+              omitted ? 'cs-nav-scene-omitted' : '',
               dragIndex === idx ? 'cs-nav-dragging' : '',
               dropIndex === idx ? 'cs-nav-drop-target' : '',
             ]
@@ -783,13 +752,37 @@ export function SceneNavigator() {
                 </div>
               )}
             </div>
-            {scene.id ? (
-              <div className="cs-nav-scene-num">{scene.id}</div>
-            ) : (
-              <div className="cs-nav-missing-id-icon" title={t('navigator.missingId')} aria-hidden="true">⚠</div>
-            )}
+            <div className="cs-nav-scene-side">
+              {/* The scene number is & number:, falling back to the {#id} (§6.1) —
+                  except when numbering is in use and this scene has none yet. */}
+              {issue !== 'missing' && (scene.number ?? scene.id) ? (
+                <div
+                  className={`cs-nav-scene-num${issue ? ' cs-nav-num-issue' : ''}`}
+                  title={issue ? issueLabel(issue) : undefined}
+                >
+                  {scene.number ?? scene.id}
+                </div>
+              ) : issue ? (
+                <div className="cs-nav-scene-num cs-nav-num-issue" title={issueLabel(issue)}>#?</div>
+              ) : null}
+              {!scene.id && (
+                <div className="cs-nav-missing-id-icon" title={t('navigator.missingId')} aria-hidden="true">⚠</div>
+              )}
+              {canEdit && (
+                <button
+                  type="button"
+                  className="cs-nav-action-btn cs-nav-omit-btn"
+                  title={omitted ? t('navigator.restoreScene') : t('navigator.omitScene')}
+                  aria-label={`${omitted ? t('navigator.restoreScene') : t('navigator.omitScene')}: ${scene.heading}`}
+                  onClick={e => { e.stopPropagation(); handleOmitToggle(scene) }}
+                >
+                  {omitted ? <RestoreIcon size={12} /> : <OmitIcon size={12} />}
+                </button>
+              )}
+            </div>
           </div>
-        ))}
+          )
+        })}
 
         {scenes.length === 0 && (
           <div className="cs-nav-empty">

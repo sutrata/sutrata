@@ -217,6 +217,22 @@ html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
   cursor: help;
 }
 
+/* Scene number needs renumbering (format spec §7.4) */
+.cs-nav-scene-number-issue { box-shadow: inset 3px 0 0 var(--cs-ui-warning, #c2410c); }
+.cs-nav-num-issue {
+  color: var(--cs-ui-warning, #c2410c) !important;
+  background: var(--cs-ui-warning-subtle, #fff7ed);
+  border-radius: 3px;
+  padding: 0 4px;
+  cursor: help;
+}
+.cs-nav-scene-side { display: flex; align-items: flex-start; gap: 2px; flex-shrink: 0; }
+.cs-nav-omit-btn { opacity: 0; transition: opacity 0.1s; }
+.cs-nav-item:hover .cs-nav-omit-btn,
+.cs-nav-item:focus-within .cs-nav-omit-btn,
+.cs-nav-omit-btn:focus-visible { opacity: 1; }
+.cs-nav-scene-omitted .cs-nav-heading { text-decoration: line-through; opacity: 0.7; }
+
 .cs-nav-scene-num {
   font-size: 12px;
   font-weight: 600;
@@ -3080,4 +3096,13 @@ html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
 @media (max-width: 640px) {
   .cs-ai-import-review { grid-template-columns: 1fr; }
   .cs-ai-import-block { grid-template-columns: 1fr; }
+}
+
+/* Omitted scene (format spec §7.4) */
+.cs-scene-omitted .cs-scene-heading-text { text-decoration: line-through; opacity: 0.6; }
+.cs-omitted-badge {
+  display: inline-block; margin-left: 12px; padding: 0 6px; border-radius: 3px;
+  font-size: 0.75em; font-weight: 700; letter-spacing: 0.08em; text-decoration: none;
+  color: var(--cs-ui-warning, #c2410c); background: var(--cs-ui-warning-subtle, #fff7ed);
+  user-select: none; vertical-align: middle;
 }

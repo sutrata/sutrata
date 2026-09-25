@@ -39,13 +39,6 @@
     --cs-ui-warning). On hold: a parser/editor helper (assignSceneIds) that
     assigns IDs as a visible, user-confirmed edit, so every tool uses the same
     ID-generation rule.
-13. Scene numbering (OSS spec §3.6, P2; format spec §6.1, §7.4 done).
-    Implement: a user-requested "Renumber scenes" action (replacing
-    SceneNavigator's "lock scene numbers"), highlighting of missing /
-    duplicate / out-of-order numbers in the navigator, an "Omit scene"
-    action, and OMITTED rendering in the editor and exports. Revision mode
-    (colors, marks, stars, page locking) is a Sutrata Cloud feature with
-    data kept outside the file — not part of this repo.
 14. Import (OSS spec §5.5, §5.6, P2). Done: AI-assisted import of any
     .docx/.txt/.md or pasted text (packages/editor/src/import/). HOLD:
     legacy-font → Unicode conversion (Krutidev/Shree-Lipi for Hindi,

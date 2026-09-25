@@ -21,6 +21,7 @@ import { styleToDocxParagraphStyles } from '../styles/docx-adapter'
 import { SCRIPT_UNICODE_RANGES } from '../styles/script-ranges'
 import { DEFAULT_COVER_LAYOUT } from '../styles/types'
 import type { ScreenplayStyleDefinition, CoverElementKey } from '../styles/types'
+import { sceneNumberOf, isOmitted } from './scene-number'
 
 interface TextRunProps {
   text: string
@@ -502,17 +503,19 @@ export async function exportToDocx(
         childrenNodes.push(...processNode(subNode))
       }
     } else if (node.type === 'scene-heading') {
-      const headingRuns = runsFor([{ text: node.text.toUpperCase(), bold: true }])
-      if (node.id) {
+      // Scene number: & number:, else {#id} (§6.1); an omitted scene prints OMITTED (§7.4).
+      const sceneNumber = sceneNumberOf(node)
+      const headingRuns = runsFor([{ text: isOmitted(node) ? 'OMITTED' : node.text.toUpperCase(), bold: true }])
+      if (sceneNumber) {
         headingRuns.push(
           new TextRun({ text: '\t' }),
-          ...runsFor([{ text: node.id, bold: true }])
+          ...runsFor([{ text: sceneNumber, bold: true }])
         )
       }
       childrenNodes.push(
         new Paragraph({
           style: 'CineSceneHeading',
-          tabStops: node.id
+          tabStops: sceneNumber
             ? [{ type: TabStopType.RIGHT, position: contentRightEdgeTwips }]
             : undefined,
           children: headingRuns,

@@ -9,6 +9,7 @@ import { createAutocompletePlugin } from '../autocomplete/AutocompletePlugin'
 import { createSpellcheckPlugin } from '../spellcheck/spellcheck-plugin'
 import { createAttrPencilPlugin } from './attr-pencil-plugin'
 import { createFindHighlightPlugin } from './find-highlight-plugin'
+import { createOmittedScenePlugin } from './omitted-scene-plugin'
 
 export function buildPlugins() {
   return [
@@ -22,5 +23,6 @@ export function buildPlugins() {
     createSpellcheckPlugin(),
     createAttrPencilPlugin(),
     createFindHighlightPlugin(),
+    createOmittedScenePlugin(),
   ]
 }

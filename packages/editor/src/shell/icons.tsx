@@ -280,6 +280,31 @@ export const LockIcon = ({ size }: IconProps) => (
   </svg>
 )
 
+/** Numbered list: "Renumber scenes". */
+export const RenumberIcon = ({ size }: IconProps) => (
+  <svg {...base(size)}>
+    <path d="M2.5 3.5h1v3M2.5 6.5h2" />
+    <path d="M2.5 10h2l-2 2.5h2" />
+    <path d="M7 4.5h6.5M7 11.5h6.5" />
+  </svg>
+)
+
+/** Circle with a slash: "Omit scene". */
+export const OmitIcon = ({ size }: IconProps) => (
+  <svg {...base(size)}>
+    <circle cx="8" cy="8" r="5.5" />
+    <path d="M4.2 11.8l7.6-7.6" />
+  </svg>
+)
+
+/** Curved arrow back: "Restore scene". */
+export const RestoreIcon = ({ size }: IconProps) => (
+  <svg {...base(size)}>
+    <path d="M3.5 6.5h6a3.5 3.5 0 010 7H6" />
+    <path d="M6 3.5l-2.5 3 2.5 3" />
+  </svg>
+)
+
 export const StatsIcon = ({ size }: IconProps) => (
   <svg {...base(size)}>
     <line x1="12" y1="14" x2="12" y2="4" />
