@@ -12,7 +12,7 @@
 > **Changes from v2.0.** This document now covers **only the open-source application**.
 > Accounts, sync, managed AI, real-time collaboration, and production management moved to
 > the Cloud spec. PDF export is back in P1 (client-side print pipeline; the planned backend
-> PDF service is dropped). Basic BiDi is P1. Revision marks, local version history, legacy
+> PDF service is dropped). Basic BiDi is P1. Scene numbering, local version history, legacy
 > font import, and Word import were added. A new §11.5 defines the extension points the
 > Cloud product embeds through. Electron references were replaced by Tauri.
 > Transliteration is now **one-way, Indic → Latin, at export only** (§5.8); Indic text is
@@ -361,21 +361,25 @@ Latin-script pages follow industry-standard layout:
 - Version browser with preview, **scene-level diff** (by stable scene ID), and restore.
 - Named snapshots ("Draft 2 – sent to producer").
 
-### 3.6 Revision Mode **[P2]**
+### 3.6 Scene Numbering and Omitted Scenes **[P2]**
 
-Revision data is part of the file, so it is open source. Distribution and acknowledgment
-of revised pages to a crew is a Cloud feature.
+Revision mode (colored revision sets, revision marks and margin stars, page locking with
+A-pages, revised-page distribution) is a **Sutrata Cloud** feature (§9.4). Its data is kept
+by Cloud outside the `.sutra` file and is not part of the Sutra format; downloadable
+revision data may be designed later, once the workflow is settled.
 
-- Standard production revision sequence: **White → Blue → Pink → Yellow → Green →
-  Goldenrod → Buff → Salmon → Cherry**, then Double-Blue onward; configurable.
-- Changes made while a revision is active are marked with that revision; revision stars
-  (`*`) in the margin on export.
-- **Page locking:** once locked, page numbers are stable; insertions produce A-pages
-  (12A); omitted scenes print "OMITTED".
-- Revision marks use the format spec's `{rev=color}` block attribute and the
-  `revision-set` / `revision-colors` / `locked-pages` frontmatter keys (Sutra format spec
-  §10.1–10.2; scene numbers and omitted scenes §7.4). Unknown-attribute preservation
-  guarantees older readers keep the marks intact.
+The open-source app covers the parts every numbered draft needs (Sutra format spec §6.1,
+§7.4):
+
+- Scene numbers live in `& number:`, separate from the stable `{#id}`.
+- **Renumber scenes** is a user-requested action, never automatic: an inserted scene takes
+  the next number and later scenes shift up by one, keeping letter suffixes; inside a
+  lettered run the inserted scene takes the next letter (`20A`, new, `20B` → `20A`,
+  `20B`, `20C`).
+- The scene navigator highlights missing, duplicated and out-of-order numbers until the
+  writer renumbers.
+- **Omit scene** keeps the heading and number with `& status: omitted`; exports print
+  "OMITTED".
 
 ---
 
@@ -911,7 +915,9 @@ These v2.0 items moved to the Sutrata Cloud roadmap (internal, not published in 
 - Accounts, cloud sync, cloud version history, share links
 - Managed AI (no-key access, spend caps) and whole-project AI (auto-breakdown)
 - Real-time collaboration, comments, roles
-- Revision distribution and crew acknowledgment
+- Revision mode: colored revision sets, revision marks and stars, page locking with
+  A-pages, revision distribution and crew acknowledgment (data kept by Cloud, outside the
+  `.sutra` file)
 - Breakdown, scheduling/stripboard, call sheets, budgeting, cast & crew, locations,
   storyboards
 - Server-side PDF rendering: **dropped** (§5.1 covers PDF client-side)

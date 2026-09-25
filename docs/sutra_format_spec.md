@@ -168,9 +168,6 @@ copyright: © 2026 Rangi Parata
 | `lang` | string | Primary language, BCP-47 (`hi`, `ta`, `te`, `en-IN`, …). Default `und`. |
 | `lang-secondary` | list | Additional languages tools should expect (spellcheck, fonts). |
 | `page` | string | Target page size for export: `A4` (default) or `Letter`. |
-| `revision-set` | string | Active production revision color (§10.1), e.g. `blue`. Absent = no revision is active. |
-| `revision-colors` | list | Revision color sequence (§10.1). Default: `white, blue, pink, yellow, green, goldenrod, buff, salmon, cherry, double-blue, double-pink, double-yellow, double-green`. |
-| `locked-pages` | list | Locked page breaks (§10.2). Absent = pages are not locked. |
 
 Custom keys are permitted and MUST be preserved on round-trip. When `title` is
 a map, tools SHOULD display the entry matching `lang` and MAY print others as
@@ -202,7 +199,7 @@ A level-2 Markdown heading. The heading text is free-form.
   keys `& setting:`, `& location:`, `& time:` (§7). When both are present,
   the metadata keys win.
 - The **scene ID** (`{#sc12}`, `{#12}`) is the stable anchor for
-  cross-references, comments, scene-level diff and page locking. IDs MUST be
+  cross-references, comments and scene-level diff. IDs MUST be
   unique within the document. Writers are not required to assign IDs; tools
   SHOULD offer to generate them and MUST NOT change existing ones.
 - The **scene number** (shown in the navigator, on the slate, in breakdown
@@ -517,74 +514,13 @@ heading, section heading, or character cue. Pandoc-style contents:
 |---|---|---|
 | `#word` | Stable ID | `{#sc12}`, `{#synopsis}` |
 | `key=value` | Property | `{lang=en}`, `{lang=mr}` |
-| `rev=color` | Revision mark (§10.1) | `{rev=blue}` |
 
 Multiple entries are space-separated: `{#sc12 lang=en}`. Unknown attributes
 MUST be preserved. Values containing spaces use quotes: `{key="some value"}`.
 
 For an **action paragraph**, an attribute block at the end of its first line
 applies to the whole paragraph (rarely needed; auto-detection covers most
-cases). The same holds for transition, centered-text and lyrics blocks.
-
-### 10.1 Revision Marks
-
-Production revisions follow the standard color sequence, recorded in
-frontmatter:
-
-```yaml
-revision-set: blue          # the revision currently being written
-revision-colors: [white, blue, pink, yellow, green, goldenrod, buff, salmon, cherry]
-```
-
-`revision-colors` is optional; the default sequence is listed in §5. Colors
-are lowercase kebab-case names (`double-blue`). `white` is the unrevised
-first draft and is never written as a mark.
-
-A block changed during a revision carries `rev=<color>` in the attribute
-block on its first line:
-
-```markdown
-## INT. रेलवे स्टेशन - रात {#12 rev=blue}
-
-मीरा घड़ी देखती है। {rev=pink}
-
-@मीरा {rev=blue}
-तुम फिर देर से आए।
-```
-
-- The mark covers the whole block: a heading marks only the heading line
-  (not the scene); a cue marks the cue and its dialogue.
-- A block keeps the color of the **latest** revision that changed it.
-  Tools MUST NOT remove marks when a new revision starts; "clear revision
-  marks" is an explicit user action (typically when a new draft begins).
-- Renderers print a revision asterisk (`*`) in the right margin beside
-  marked lines, and MAY tint marked blocks with the color.
-- Readers that don't know revisions preserve `rev=` like any unknown
-  attribute (§10) and render the text normally.
-
-### 10.2 Page Locking
-
-`locked-pages` records where each page began when pages were locked, so
-exports keep page numbers stable across later edits. It is a flow list of
-page-start anchors, one per page, in order:
-
-```yaml
-locked-pages: [1:0, 1:6, 2:0, 2:3+214, 3:0]
-```
-
-Each anchor is `<scene-id>:<block>[+<chars>]`: the scene's `{#id}`, the
-0-based index of the block within the scene (`0` is the heading, then its
-script blocks in order, excluding `&` metadata), and optionally the number of
-characters into that block's text where the page began. Page *n* begins at
-the *n*th anchor.
-
-- Locking requires every scene to have an ID; tools MUST refuse to lock (and
-  SHOULD point out the scenes that lack one) otherwise.
-- After locking, text that no longer fits on its locked page flows onto
-  **A-pages** (`12A`, `12B`, …) rather than renumbering later pages. A page
-  whose content was entirely removed prints as `12-13` (combined) or keeps
-  its number with "OMITTED" content — the renderer's choice.
-- Anchors whose scene no longer exists are ignored.
+cases).
 
 ---
 

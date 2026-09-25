@@ -39,15 +39,13 @@
     --cs-ui-warning). On hold: a parser/editor helper (assignSceneIds) that
     assigns IDs as a visible, user-confirmed edit, so every tool uses the same
     ID-generation rule.
-13. Revision mode (OSS spec §3.6, P2). Format spec done: revision-set /
-    revision-colors / locked-pages frontmatter, {rev=color} block attribute
-    (§10.1-10.2), & number: as the renumberable scene number and omitted
-    scenes (§7.4).
-    Remaining: implementation — revision toggle and marking, revision colors
-    in the editor, * margin stars in PDF/DOCX, page locking with A-pages,
-    OMITTED rendering, a user-requested "Renumber scenes" action per §7.4
-    (replacing SceneNavigator's "lock scene numbers"), and highlighting
-    missing/duplicate/out-of-order scene numbers in the navigator.
+13. Scene numbering (OSS spec §3.6, P2; format spec §6.1, §7.4 done).
+    Implement: a user-requested "Renumber scenes" action (replacing
+    SceneNavigator's "lock scene numbers"), highlighting of missing /
+    duplicate / out-of-order numbers in the navigator, an "Omit scene"
+    action, and OMITTED rendering in the editor and exports. Revision mode
+    (colors, marks, stars, page locking) is a Sutrata Cloud feature with
+    data kept outside the file — not part of this repo.
 14. Import (OSS spec §5.5, §5.6, P2): legacy-font → Unicode conversion
     (Krutidev/Shree-Lipi for Hindi, Bamini/TAM/TAB for Tamil, Anu for Telugu
     first; then Nudi/Baraha, ML-TT) and heuristic Word import of arbitrary
