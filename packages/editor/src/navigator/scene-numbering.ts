@@ -1,8 +1,8 @@
 /**
- * Scene numbers (Sutra format spec §7.4). `& number:` holds a scene's
- * production number: digits plus an optional letter suffix (`12`, `12A`).
- * Numbers change only when the writer asks to renumber; until then they may
- * be missing, duplicated or out of order, and the navigator flags them.
+ * Scene numbers (Sutra format spec §7.4). A scene's `{#id}` is its number:
+ * digits plus an optional letter suffix (`12`, `12A`). Numbers change only
+ * when the writer asks to renumber; until then they may be missing,
+ * duplicated or out of order, and the navigator flags them.
  */
 
 export interface SceneNumber {
@@ -41,12 +41,6 @@ export function nextLetter(suffix: string): string {
   return letters.join('')
 }
 
-function shiftLetters(suffix: string, by: number): string {
-  let s = suffix
-  for (let i = 0; i < by; i++) s = nextLetter(s)
-  return s
-}
-
 /**
  * Per scene: why its number needs renumbering, or null when it is fine.
  * Nothing is flagged while no scene has a number (the script was never
@@ -54,7 +48,7 @@ function shiftLetters(suffix: string, by: number): string {
  * one is flagged on the later scene.
  */
 export function sceneNumberIssues(numbers: readonly (string | null | undefined)[]): (SceneNumberIssue | null)[] {
-  if (!numbers.some(n => n && n.trim())) return numbers.map(() => null)
+  if (!numbers.some(n => parseSceneNumber(n))) return numbers.map(() => null)
   const seen = new Set<string>()
   let last: SceneNumber | null = null
   return numbers.map(value => {
@@ -71,46 +65,32 @@ export function sceneNumberIssues(numbers: readonly (string | null | undefined)[
 }
 
 /**
- * New numbers for every scene, per §7.4. Scenes whose number is fine keep
- * their place in the sequence; every flagged scene (and, in a never-numbered
- * script, every scene) counts as inserted at its position:
- * - if the next good scene continues the previous scene's lettered run, it
- *   takes the next letter and the rest of that run shifts one letter
- *   (20A, new, 20B → 20A, 20B, 20C);
- * - otherwise it takes the next number and every later number goes up by
- *   one, keeping its letter (12, new, 13 → 12, 13, 14; 20, 20A, 21 → 21, 21A, 22).
+ * New numbers for every scene, per §7.4. Position decides everything; a
+ * scene's old number only says whether it is a main scene (`12`) or a
+ * sub-scene (`12A`) of the main scene before it, so repeats and gaps need
+ * no special handling:
+ * - main scenes are numbered 1, 2, 3, … in order, closing any gaps;
+ * - sub-scenes take their main scene's number and the next letter (A, B, …);
+ * - a scene with no usable number is inserted: it is a sub-scene when the
+ *   next scene with a number is one (2A, new, 2B → 2A, 2B, 2C), otherwise
+ *   a main scene;
+ * - a sub-scene with no main scene before it becomes a main scene.
  */
 export function renumberScenes(numbers: readonly (string | null | undefined)[]): string[] {
-  const issues = sceneNumberIssues(numbers)
-  const inserted = numbers.map((n, i) => issues[i] !== null || !n || !n.trim())
-  const good = numbers.map((n, i) => (inserted[i] ? null : parseSceneNumber(n)))
+  const own = numbers.map(parseSceneNumber)
 
-  const out: SceneNumber[] = []
-  let shift = 0                        // added to every later good base
-  let letterShift = 0                  // added to later suffixes in the current run
-  let runBase: number | null = null    // original base of the current lettered run
-  let prev: SceneNumber | null = null  // previous output number
-
+  const out: string[] = []
+  let base = 0
+  let suffix = ''
   for (let i = 0; i < numbers.length; i++) {
-    const own = good[i]
-    if (own) {
-      if (own.base !== runBase) { runBase = own.base; letterShift = 0 }
-      prev = { base: own.base + shift, suffix: own.suffix ? shiftLetters(own.suffix, letterShift) : '' }
-      out.push(prev)
-      continue
-    }
-    const next = good.slice(i + 1).find((n): n is SceneNumber => n !== null) ?? null
-    if (prev && next && runBase === next.base && next.suffix !== '') {
-      prev = { base: prev.base, suffix: nextLetter(prev.suffix) }
-      letterShift++
+    const ref = own[i] ?? own.slice(i + 1).find((n): n is SceneNumber => n !== null) ?? null
+    if (ref && ref.suffix && base > 0) {
+      suffix = nextLetter(suffix)
     } else {
-      const base: number = prev ? prev.base + 1 : next ? next.base + shift : 1
-      shift += 1
-      prev = { base, suffix: '' }
-      runBase = null
-      letterShift = 0
+      base++
+      suffix = ''
     }
-    out.push(prev)
+    out.push(formatSceneNumber({ base, suffix }))
   }
-  return out.map(formatSceneNumber)
+  return out
 }

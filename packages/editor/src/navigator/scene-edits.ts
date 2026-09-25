@@ -1,4 +1,4 @@
-import { parse } from '@sutrata/parser'
+import { parse, splitAttributeBlock, formatAttributeBlock } from '@sutrata/parser'
 import type { Node as PmNode } from 'prosemirror-model'
 import { buildSceneList } from './scene-list'
 import { getEditorView, getSourceView } from '../editor/editor-bus'
@@ -74,9 +74,19 @@ function editScenes(text: string, edit: (index: number, parts: ReturnType<typeof
   return out
 }
 
-/** Write `numbers[i]` as scene i's `& number:`. */
-export function setSceneNumbersInText(text: string, numbers: readonly string[]): string {
-  return editScenes(text, (i, parts) => ({ ...parts, head: setMeta(parts.head, 'number', numbers[i] ?? null) }))
+/**
+ * Set scene i's `{#id}` (its scene number, §7.4) to `ids[i]`, keeping the
+ * heading's other attributes; `undefined` leaves the scene as it is.
+ */
+export function setSceneIdsInText(text: string, ids: readonly (string | undefined)[]): string {
+  return editScenes(text, (i, parts) => {
+    const id = ids[i]
+    if (id === undefined) return null
+    const m = /^(\s*##\s+)(.*)$/.exec(parts.head[0]!)!
+    const { body, attrs } = splitAttributeBlock(m[2]!.trimEnd())
+    const heading = `${m[1]}${body.trimEnd()}${formatAttributeBlock(id, attrs)}`
+    return { ...parts, head: [heading, ...parts.head.slice(1)] }
+  })
 }
 
 /**

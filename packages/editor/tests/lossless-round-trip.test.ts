@@ -70,6 +70,8 @@ describe('lossless editor round-trip: known gaps', () => {
     expectLossless('~ one *two*\n~ three\n\n>> A <<\n>> B <<\n\n>> CUT TO:\n>> LATER\n'))
   it('heading, section and cue attributes', () =>
     expectLossless('# Act {#act1 x-k="v w"}\n\n## INT. X {#1 lang=en .flash}\n\n@A (V.O.) ^ {lang=hi}\nहाँ।\n'))
+  it('tool-private x- scene metadata is kept', () =>
+    expectLossless('## INT. X {#2A}\n& x-sc-scene-id: 3f2a9c\n& status: draft\n\nAction.\n'))
 })
 
 // ── Property test ────────────────────────────────────────────────────────────

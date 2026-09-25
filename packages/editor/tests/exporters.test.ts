@@ -24,8 +24,8 @@ characters:
   MARY: Actor Two
 ---
 
-## Scene 1
-& number: 1
+## Scene 1 {#1}
+& x-sc-scene-id: 4f1c-private-ref
 & synopsis: John and Mary talk in a room.
 & status: Done
 & est-duration: 2m
@@ -309,6 +309,24 @@ describe('Exporters', () => {
     expect(doc).toContain('<w:titlePg/>')
     expect(doc).toContain('<w:pgNumType w:start="0"/>')
     expect(headers.some(h => !h.includes('PAGE'))).toBe(true)
+  })
+
+  it('never prints tool-private x- metadata (format spec §7.1)', async () => {
+    const zip = await JSZip.loadAsync(await (await exportToDocx(ast)).arrayBuffer())
+    expect(await zip.file('word/document.xml')!.async('text')).not.toContain('4f1c-private-ref')
+    const { scenes, characters } = extractWorkflowData(ast)
+    for (const csv of [exportOneLinerCsv(scenes), exportShotListCsv(scenes), exportCastReportCsv(characters)]) {
+      expect(csv).not.toContain('4f1c-private-ref')
+    }
+    const originalOpen = window.open
+    let written = ''
+    window.open = () => ({ document: { write: (html: string) => { written = html }, close: () => {} } } as any)
+    try {
+      await openScreenplayPrintPreview(ast)
+    } finally {
+      window.open = originalOpen
+    }
+    expect(written).not.toContain('4f1c-private-ref')
   })
 
   it('openScreenplayPrintPreview runs without error', () => {

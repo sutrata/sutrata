@@ -507,6 +507,11 @@ html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
   margin-left: max(10%, 8px);
 }
 
+/* Tool-private `x-` keys (format spec §7.1) stay in the text but are not shown */
+.cs-scene-metadata[data-private] {
+  display: none;
+}
+
 /* Synopsis renders as italic prose, visually distinct from key-value metadata */
 .cs-scene-metadata[data-key="synopsis"] {
   font-size: 10pt;

@@ -237,7 +237,8 @@ Inline camera directions (`CLOSE ON:` …) are ordinary action; planned shots li
   badges.
 - Click to jump to scene (formatted **and** source mode).
 - Drag to reorder scenes: moves the entire scene block *including its metadata lines*;
-  stable `{#id}`s and locked `& number:`s are never changed by reordering.
+  scene `{#id}`s (the scene numbers) are never changed by reordering, only by
+  **Renumber scenes** (§3.6).
 - Per-scene length indicator: estimated page count for Latin-script scenes;
   `& est-duration:` shown for all scripts. The navigator never shows page≈minute estimates
   for non-Latin text (§4.6).
@@ -358,7 +359,8 @@ Latin-script pages follow industry-standard layout:
 
 - On every manual save, a timestamped snapshot: desktop in a `<name>.sutra.versions/`
   directory; web in an IndexedDB store. Default retention 50 versions, configurable.
-- Version browser with preview, **scene-level diff** (by stable scene ID), and restore.
+- Version browser: picking a version shows the whole document with the changes from
+  the current text highlighted (word-level diff), with markers to jump between changes.
 - Named snapshots ("Draft 2 – sent to producer").
 
 ### 3.6 Scene Numbering and Omitted Scenes **[P2]**
@@ -371,11 +373,16 @@ revision data may be designed later, once the workflow is settled.
 The open-source app covers the parts every numbered draft needs (Sutra format spec §6.1,
 §7.4):
 
-- Scene numbers live in `& number:`, separate from the stable `{#id}`.
-- **Renumber scenes** is a user-requested action, never automatic: an inserted scene takes
-  the next number and later scenes shift up by one, keeping letter suffixes; inside a
-  lettered run the inserted scene takes the next letter (`20A`, new, `20B` → `20A`,
-  `20B`, `20C`).
+- A scene's number is its `{#id}` (`12`, `12A`); a lettered scene is a sub-scene of the
+  main scene before it. There is no separate number key.
+- **Renumber scenes** is a user-requested action, never automatic. Main scenes are
+  renumbered `1, 2, 3, …` in order, closing gaps; sub-scenes keep their place under their
+  main scene and take the next letter (`1, 2, 2A, 2B, 3, 4, 6, 5` → `1, 2, 2A, 2B, 3, 4, 5,
+  6`). A scene with no number inside a lettered run takes the next letter (`2A`, new, `2B`
+  → `2A`, `2B`, `2C`); elsewhere it becomes a main scene.
+- Embedders that need a scene identity that survives renumbering (e.g. Sutrata Cloud
+  comments) keep it in their own tool-private `x-` metadata key (format spec §7.1), which
+  the editor preserves, hides, and never exports.
 - The scene navigator highlights missing, duplicated and out-of-order numbers until the
   writer renumbers.
 - **Omit scene** keeps the heading and number with `& status: omitted`; exports print
@@ -883,13 +890,13 @@ All run on the user's own key, always as suggestions the writer confirms.
 
 ### 8.6 Workflow Metadata UI **[P1]**
 
-- Form-style scene inspector for reserved keys (`status`, `actors`, `number`,
+- Form-style scene inspector for reserved keys (`status`, `actors`,
   `story-day`, `tags`, `est-duration`) writing `&` lines.
 - Shot-list editor (add/reorder/edit `& shots:` items).
 - Custom keys editable as free key-value rows, round-trip-safe per the unknown-key rule.
-- **Scene number locking:** an explicit "lock scene numbers" action assigns `& number:`
-  to all scenes; thereafter insertions get letter-suffixed numbers (12A) and reordering
-  never renumbers.
+- **Scene number locking:** an explicit "lock scene numbers" action freezes the scene
+  `{#id}`s; thereafter Renumber only numbers new scenes, with letter suffixes (a scene
+  inserted after `12` becomes `12A`), and never changes an existing number.
 
 ---
 
@@ -1123,9 +1130,8 @@ page: A4
 
 # अंक एक                     ← section (act/sequence)
 
-## INT. रेलवे स्टेशन - रात {#sc1}   ← scene heading + stable ID
+## INT. रेलवे स्टेशन - रात {#1}    ← scene heading + scene number (its ID)
 & synopsis: मीरा और विक्रम सच जानते हैं। ← scene synopsis (reserved metadata key)
-& number: 1                  ← locked production scene number
 & actors: दीपिका, रणबीर       ← artists in scene
 & status: draft
 & shots:                     ← planned shot list

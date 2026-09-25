@@ -503,7 +503,7 @@ export async function exportToDocx(
         childrenNodes.push(...processNode(subNode))
       }
     } else if (node.type === 'scene-heading') {
-      // Scene number: & number:, else {#id} (§6.1); an omitted scene prints OMITTED (§7.4).
+      // Scene number: the {#id} (§6.1); an omitted scene prints OMITTED (§7.4).
       const sceneNumber = sceneNumberOf(node)
       const headingRuns = runsFor([{ text: isOmitted(node) ? 'OMITTED' : node.text.toUpperCase(), bold: true }])
       if (sceneNumber) {

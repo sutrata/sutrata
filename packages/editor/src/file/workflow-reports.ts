@@ -716,7 +716,7 @@ async function buildScreenplayPrintHtml(
       }
     } else if (node.type === 'scene-heading') {
       sceneOrdinal++
-      // Scene number: & number:, falling back to the {#id} (format spec §6.1).
+      // Scene number: the {#id} (format spec §6.1).
       const printedNumber = sceneNumberOf(node)
       const sceneLabel = printedNumber || String(sceneOrdinal)
       // An omitted scene (§7.4) prints OMITTED in place of its heading; its body is a comment.

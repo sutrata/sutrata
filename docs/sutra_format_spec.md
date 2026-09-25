@@ -188,25 +188,25 @@ identical in both.
 A level-2 Markdown heading. The heading text is free-form.
 
 ```markdown
-## INT. रेलवे स्टेशन - रात {#sc12}
+## INT. रेलवे स्टेशन - रात {#12}
 ```
 
 - An optional **attribute block** `{...}` at the end of the line (§10) can
-  carry a stable scene ID (`#sc12`), language override, or other attributes.
+  carry the scene ID (`#12`), language override, or other attributes.
 - Tools MAY additionally parse the conventional `SETTING. LOCATION - TIME`
   shape when present (in any language, via locale keyword tables), but the
   normative, language-neutral channel for this data is the scene metadata
   keys `& setting:`, `& location:`, `& time:` (§7). When both are present,
   the metadata keys win.
-- The **scene ID** (`{#sc12}`, `{#12}`) is the stable anchor for
-  cross-references, comments and scene-level diff. IDs MUST be
-  unique within the document. Writers are not required to assign IDs; tools
-  SHOULD offer to generate them and MUST NOT change existing ones.
-- The **scene number** (shown in the navigator, on the slate, in breakdown
-  sheets) is the `& number:` metadata key when present (§7.4); otherwise
-  tools MAY display the scene ID as the number. Keeping the two separate
-  lets scenes be renumbered as the script changes without breaking anything
-  anchored to their IDs.
+- The **scene ID is the scene number** (`{#12}`, `{#12A}`) — shown in the
+  navigator, on the slate and in breakdown sheets (§7.4). IDs SHOULD be
+  unique within the document; between renumberings a new scene may have
+  none and a copied scene may repeat one. Writers are not required to
+  assign IDs. Tools MUST NOT change IDs except when the writer asks to
+  renumber (§7.4).
+- Anything that needs a scene identity that survives renumbering (comments,
+  review threads) keeps it in its own tool-private `x-` metadata key (§7.1),
+  not in the ID.
 
 ### 6.2 Action
 
@@ -333,7 +333,7 @@ A line of the form `& key: value`. Keys are ASCII kebab-case identifiers
 following indented `- ` lines are its items.
 
 ```markdown
-## INT. रेलवे स्टेशन - रात {#sc12}
+## INT. रेलवे स्टेशन - रात {#12}
 & synopsis: मीरा और विक्रम आख़िरी ट्रेन छूट जाने का सच जानते हैं।
 & setting: INT
 & location: रेलवे स्टेशन, चारबाग़
@@ -365,11 +365,17 @@ following indented `- ` lines are its items.
 | `est-duration` | text | Writer's estimate of screen time (`2m30s`). The language-neutral replacement for the 1-page≈1-minute rule, which does not transfer to non-Latin scripts. |
 | `shots` | list | Planned shot list (§7.3). |
 | `lang` | BCP-47 | Language override for this scene (§9). |
-| `number` | text | Production scene number (§7.4): `12`, `12A`. Changed only when the writer renumbers. |
 
 **Unknown keys are valid** and MUST be preserved on round-trip. This is the
 extension point for downstream workflow data — `& props:`, `& vfx:`,
 `& budget-code:`, `& permit-status:` — without any format change.
+
+**Tool-private keys** start with `x-` (e.g. `& x-acme-scene-ref: 3f2a…`). They
+hold data that belongs to one tool or service rather than to the writer, such
+as a stable reference that lets a hosted service reattach comments after the
+scene is renumbered or moved. Like any unknown key they MUST be preserved;
+editors MAY hide them, and exports and reports MUST NOT print them. A tool
+SHOULD namespace its keys with its own prefix after `x-`.
 
 ### 7.3 Shot List Items
 
@@ -381,33 +387,37 @@ actors or scene IDs in prose; no further structure is imposed in 1.0.
 
 ### 7.4 Scene Numbers and Omitted Scenes
 
-`& number:` records a scene's production number. Numbers are **renumbered,
-not locked**, but only when the writer asks: tools MUST NOT renumber scenes
-automatically. Each scene keeps its `{#id}` throughout, so anything anchored
-to a scene survives renumbering.
+A scene's **number is its `{#id}`** (§6.1): digits with an optional letter
+suffix, `12` or `12A`. A plain number is a **main scene**; a lettered one is a
+**sub-scene** of the main scene before it. Numbers are **renumbered, not
+locked**, but only when the writer asks: tools MUST NOT renumber scenes
+automatically.
 
 **Between renumberings** numbers may be missing, duplicated or out of order
 (a new scene has no number yet; a copied scene repeats one). Sutra-aware
 tools SHOULD highlight such scenes (e.g. in the scene navigator) until the
 writer renumbers.
 
-**Renumbering** walks the scenes in order. A scene with no number, or whose
-number repeats or breaks the order of the scenes before it, is treated as
-inserted at its position:
+**Renumbering** walks the scenes in order. Position decides the new numbers;
+a scene's old number only decides whether it is a main scene or a sub-scene:
 
-- If the scene after it continues a lettered run of the scene before it, the
-  inserted scene takes the next letter and the rest of that run shifts by
-  one letter: inserted between `20A` and `20B`, it becomes `20B`, the old
-  `20B` becomes `20C`, and so on. (Inserted between `20` and `20A`, it
-  becomes `20A`.)
-- Otherwise it takes the next number, and every later scene's number goes up
-  by one, keeping its letter suffix: inserted after `12`, it becomes `13`
-  and the old `13` becomes `14`; a following run `20`, `20A`, `20B`, `21`
-  becomes `21`, `21A`, `21B`, `22`.
-- `{#id}` never changes.
+- Main scenes are numbered `1`, `2`, `3`, … in order, closing any gaps: `4`,
+  `6`, `5`, `7` becomes `4`, `5`, `6`, `7`.
+- Sub-scenes take their main scene's new number and the next letter (`A`,
+  `B`, … `Z`, `AA`), closing gaps in the letters too: `2`, `2A`, `2B`, `3`
+  stays as it is, and after the main scene becomes `5` it reads `5`, `5A`,
+  `5B`, `6`.
+- A scene with no number (or an ID that is not a number) is treated as
+  inserted: it becomes a sub-scene when the next scene that has a number is
+  a sub-scene, and a main scene otherwise. Inserted between `2A` and `2B`
+  it becomes `2B`, and the old `2B` becomes `2C`; inserted between `2C` and
+  `3` it becomes `3`, and every later main scene moves up by one.
+- A sub-scene with no main scene before it becomes a main scene.
+- Only the `#id` in the attribute block changes; the heading's other
+  attributes and all metadata lines are kept.
 
 A scene removed from the script can be kept as an **omitted scene**: its
-heading and `& number:` stay, `& status: omitted` is set, and its body is
+heading and `{#id}` stay, `& status: omitted` is set, and its body is
 empty (or kept in a comment). It still takes part in numbering. Renderers
 print the heading line as `OMITTED` next to the number.
 
@@ -512,10 +522,10 @@ heading, section heading, or character cue. Pandoc-style contents:
 
 | Form | Meaning | Example |
 |---|---|---|
-| `#word` | Stable ID | `{#sc12}`, `{#synopsis}` |
+| `#word` | ID (on a scene heading, its number — §7.4) | `{#12}`, `{#synopsis}` |
 | `key=value` | Property | `{lang=en}`, `{lang=mr}` |
 
-Multiple entries are space-separated: `{#sc12 lang=en}`. Unknown attributes
+Multiple entries are space-separated: `{#12 lang=en}`. Unknown attributes
 MUST be preserved. Values containing spaces use quotes: `{key="some value"}`.
 
 For an **action paragraph**, an attribute block at the end of its first line
@@ -595,7 +605,8 @@ size preference); the application spec defines the *presentation*.
 Recommended editor behaviors: fold/unfold `&` metadata; show scene synopses as
 a scene-list panel (the one-liner schedule view); use `& actors:` ∪ `& shots:`
 to generate shot-list and call-sheet exports; treat `& status: omitted` as a
-struck-through scene that keeps its `& number:` (§7.4).
+struck-through scene that keeps its `{#id}` (§7.4); hide tool-private `x-`
+keys (§7.1).
 
 ---
 

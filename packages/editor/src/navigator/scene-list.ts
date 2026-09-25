@@ -2,8 +2,6 @@ import { splitAttributeBlock } from '@sutrata/parser'
 
 export interface SceneEntry {
   id: string | null
-  /** `& number:` — the production scene number (format spec §7.4), if set. */
-  number: string | null
   heading: string
   synopsis: string
   status: string
@@ -43,7 +41,6 @@ export function buildSceneList(text: string): SceneEntry[] {
       let tags: string[] = []
       let location = ''
       let estDuration = ''
-      let number: string | null = null
 
       let j = i + 1
       while (j < lines.length) {
@@ -62,8 +59,6 @@ export function buildSceneList(text: string): SceneEntry[] {
             .filter(Boolean)
         } else if (nextLine.startsWith('& location:')) {
           location = nextLine.replace('& location:', '').trim()
-        } else if (nextLine.startsWith('& number:')) {
-          number = nextLine.replace('& number:', '').trim() || null
         } else if (nextLine.startsWith('& est-duration:')) {
           estDuration = nextLine.replace('& est-duration:', '').trim()
         }
@@ -72,7 +67,6 @@ export function buildSceneList(text: string): SceneEntry[] {
 
       scenes.push({
         id: sceneId,
-        number,
         heading,
         synopsis,
         status,

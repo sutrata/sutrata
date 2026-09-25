@@ -10,10 +10,12 @@ import { createSpellcheckPlugin } from '../spellcheck/spellcheck-plugin'
 import { createAttrPencilPlugin } from './attr-pencil-plugin'
 import { createFindHighlightPlugin } from './find-highlight-plugin'
 import { createOmittedScenePlugin } from './omitted-scene-plugin'
+import { createPrivateMetadataPlugin } from './private-metadata-plugin'
 
 export function buildPlugins() {
   return [
     history(),
+    createPrivateMetadataPlugin(), // before the keymaps, so Backspace/Delete can't merge hidden x- blocks
     buildKeymap(),
     keymap(baseKeymap),
     createLanguageClassPlugin(),

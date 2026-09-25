@@ -320,7 +320,8 @@ export function exportFountain(doc: DocumentNode): FountainExportResult {
   for (const node of doc.children) {
     if (node.type === 'scene-heading') {
       const synopsisNode = node.metadata.find(m => m.key === 'synopsis')
-      const otherMeta = node.metadata.filter(m => m.key !== 'synopsis')
+      // `x-` keys are tool-private (spec §7.1): dropped without a warning.
+      const otherMeta = node.metadata.filter(m => m.key !== 'synopsis' && !m.key.startsWith('x-'))
       if (otherMeta.length > 0) {
         warnings.push(`metadata dropped in Fountain export for scene "${node.text}"`)
       }

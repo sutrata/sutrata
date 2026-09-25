@@ -9,7 +9,7 @@ const PREDEFINED_TRANSITIONS = [
 ]
 
 const RESERVED_METADATA_KEYS = [
-  'status', 'tags', 'location', 'time', 'number', 'lang', 'mood',
+  'status', 'tags', 'location', 'time', 'lang', 'mood',
   'arc', 'note', 'locked',
 ]
 

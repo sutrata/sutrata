@@ -198,7 +198,13 @@ describe('SceneNavigator', () => {
         { heading: 'INT. CAR', missing: true },   // attributes without #id do not count
       ])
       expect(container.querySelectorAll('.cs-nav-missing-id-icon')).toHaveLength(2)
-      expect(screen.getByRole('button', { name: 'Jump to EXT. PARK - NIGHT (Scene has no ID)' })).toBeDefined()
+      // Scene 1 is numbered, so the others are missing a scene number (the id, §7.4).
+      expect(screen.getByRole('button', { name: 'Jump to EXT. PARK - NIGHT (No scene number yet — renumber to assign one)' })).toBeDefined()
+    })
+
+    it('says "no ID" in a script that was never numbered', async () => {
+      await act(async () => { render(<Wrapper text={'## INT. HOUSE {#intro}\n\n## EXT. PARK\n'} />) })
+      expect(screen.getByRole('button', { name: 'Jump to EXT. PARK (Scene has no ID)' })).toBeDefined()
     })
 
     it('drops the marker once an ID is added', async () => {

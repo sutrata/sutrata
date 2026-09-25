@@ -31,9 +31,9 @@ async function mount(text: string) {
   ))
 }
 
-const scene = (heading: string, number?: string) =>
-  `## ${heading}${number ? `\n& number: ${number}` : ''}\n\n${heading} action.\n`
-const NUMBERED = [scene('INT. A {#a}', '12'), scene('INT. NEW {#n}'), scene('INT. B {#b}', '13'), scene('INT. COPY {#c}', '13')].join('\n')
+const scene = (heading: string, id?: string) =>
+  `## ${heading}${id ? ` {#${id}}` : ''}\n\n${heading} action.\n`
+const NUMBERED = [scene('INT. A', '1'), scene('INT. NEW'), scene('INT. B', '2'), scene('INT. COPY', '2')].join('\n')
 
 function navItems(container: HTMLElement) {
   return Array.from(container.querySelectorAll('.cs-nav-item')).map(el => ({
@@ -47,10 +47,10 @@ describe('navigator: scene numbers (format spec §7.4)', () => {
   it('flags missing and duplicate numbers, with a reason', async () => {
     const { container } = await mount(NUMBERED)
     expect(navItems(container)).toEqual([
-      { num: '12', issue: false, title: null },
-      { num: '#?', issue: true, title: 'No scene number yet — renumber to assign one' },
-      { num: '13', issue: false, title: null },
-      { num: '13', issue: true, title: 'Duplicate scene number — renumber to fix' },
+      { num: '1', issue: false, title: null },
+      { num: null, issue: true, title: null },
+      { num: '2', issue: false, title: null },
+      { num: '2', issue: true, title: 'Duplicate scene number — renumber to fix' },
     ])
   })
 
@@ -62,19 +62,31 @@ describe('navigator: scene numbers (format spec §7.4)', () => {
   it('Renumber scenes fixes them as one undoable edit', async () => {
     const { container } = await mount(NUMBERED)
     await act(async () => { fireEvent.click(screen.getByLabelText('Renumber scenes')) })
-    await waitFor(() => expect(navItems(container).map(i => i.num)).toEqual(['12', '13', '14', '15']))
+    await waitFor(() => expect(navItems(container).map(i => i.num)).toEqual(['1', '2', '3', '4']))
     expect(container.querySelectorAll('.cs-nav-scene-number-issue')).toHaveLength(0)
-    expect(doc.text).toContain('## INT. B {#b}\n& number: 14')
+    expect(doc.text).toContain('## INT. B {#3}')
 
     const view = getEditorView()!
     act(() => { undo(view.state, view.dispatch) })
-    await waitFor(() => expect(navItems(container).map(i => i.num)).toEqual(['12', '#?', '13', '13']))
+    await waitFor(() => expect(navItems(container).map(i => i.num)).toEqual(['1', null, '2', '2']))
+  })
+
+  it('a script numbered 1, 2, 2A, 2B, 2C, 3, 4 is already in order; a gap is closed', async () => {
+    const ids = ['1', '2', '2A', '2B', '2C', '3', '4']
+    const text = ids.map((id, i) => scene(`INT. S${i}`, id)).join('\n')
+    const { container } = await mount(text)
+    await act(async () => { fireEvent.click(screen.getByLabelText('Renumber scenes')) })
+    expect(doc.text).toBe(text)
+
+    await act(async () => { doc.setText(text.replace('{#3}', '{#5}')) })
+    await act(async () => { fireEvent.click(screen.getByLabelText('Renumber scenes')) })
+    await waitFor(() => expect(navItems(container).map(i => i.num)).toEqual(ids))
   })
 
   it('Omit scene keeps heading and number, hides the body in a comment, and Restore brings it back', async () => {
     const { container } = await mount(NUMBERED)
     await act(async () => { fireEvent.click(screen.getByLabelText('Omit scene: INT. B')) })
-    await waitFor(() => expect(doc.text).toContain('## INT. B {#b}\n& number: 13\n& status: omitted\n\n<!-- INT. B {#b} action. -->'))
+    await waitFor(() => expect(doc.text).toContain('## INT. B {#2}\n& status: omitted\n\n<!-- INT. B action. -->'))
     expect(container.querySelector('.cs-nav-scene-omitted .cs-nav-heading')?.textContent).toBe('INT. B')
     expect(container.querySelector('.cs-scene-omitted .cs-omitted-badge')?.textContent).toBe('OMITTED')
 
@@ -85,9 +97,9 @@ describe('navigator: scene numbers (format spec §7.4)', () => {
 })
 
 describe('exports: scene number and OMITTED', () => {
-  const TEXT = '## INT. A {#a}\n& number: 12\n\nAction.\n\n## INT. B {#b}\n& number: 13\n& status: omitted\n\n<!-- gone -->\n\n## INT. C {#c}\n\nC.\n'
+  const TEXT = '## INT. A {#12}\n\nAction.\n\n## INT. B {#13}\n& status: omitted\n\n<!-- gone -->\n\n## INT. C {#c}\n\nC.\n'
 
-  it('DOCX prints & number: (else the id) and OMITTED', async () => {
+  it('DOCX prints the id and OMITTED', async () => {
     const zip = await JSZip.loadAsync(await (await exportToDocx(parse(TEXT))).arrayBuffer())
     const xml = await zip.file('word/document.xml')!.async('text')
     const texts = [...xml.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map(m => m[1])
@@ -98,7 +110,7 @@ describe('exports: scene number and OMITTED', () => {
     expect(texts).not.toContain('INT. B')
   })
 
-  it('PDF/print prints & number: and OMITTED', async () => {
+  it('PDF/print prints the id and OMITTED', async () => {
     const originalOpen = window.open
     let written = ''
     window.open = () => ({ document: { write: (html: string) => { written = html }, close: () => {} } } as any)

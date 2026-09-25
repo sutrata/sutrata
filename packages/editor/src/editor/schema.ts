@@ -124,6 +124,9 @@ const nodes: Record<string, NodeSpec> = {
     toDOM: (node) => {
       const attrs: Record<string, string> = { class: 'cs-scene-metadata', 'data-key': node.attrs['metaKey'] as string }
       if (node.attrs['list']) attrs['data-list'] = 'true'
+      // `x-` keys belong to a tool (format spec §7.1): kept, but not shown
+      // (private-metadata-plugin keeps the caret out).
+      if ((node.attrs['metaKey'] as string).startsWith('x-')) attrs['data-private'] = 'true'
       return ['div', attrs, 0]
     },
     parseDOM: [{

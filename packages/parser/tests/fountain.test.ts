@@ -90,6 +90,15 @@ describe('exportFountain', () => {
     expect(warnings.some(w => w.includes('metadata'))).toBe(true)
   })
 
+  it('drops tool-private x- metadata without a warning', () => {
+    const { document } = importFountain('INT. OFFICE - DAY\n\nAction.\n')
+    const scene = document.children[0] as SceneHeadingNode
+    scene.metadata.push({ type: 'scene-metadata', raw: '& x-sc-scene-id: 3f2a', key: 'x-sc-scene-id', value: '3f2a' })
+    const { text, warnings } = exportFountain(document)
+    expect(warnings).toEqual([])
+    expect(text).not.toContain('3f2a')
+  })
+
   it('exports & synopsis: metadata as Fountain synopsis (= synopsis)', () => {
     const { document } = importFountain('INT. OFFICE - DAY\n\nAction.\n')
     const scene = document.children[0] as SceneHeadingNode

@@ -10,7 +10,7 @@ import { StatisticsDialog } from './StatisticsDialog'
 import { EyeIcon, EyeOffIcon, RenumberIcon, OmitIcon, RestoreIcon, StatsIcon, SparklesIcon, CloseIcon } from '../shell/icons'
 import { sceneNumberIssues, renumberScenes } from './scene-numbering'
 import type { SceneNumberIssue } from './scene-numbering'
-import { setSceneNumbersInText, omitSceneInText, restoreSceneInText, applyTextEdit } from './scene-edits'
+import { setSceneIdsInText, omitSceneInText, restoreSceneInText, applyTextEdit } from './scene-edits'
 import { SCENE_METADATA_PROMPT, SCENE_METADATA_SCHEMA } from '../ai/prompts'
 import { useAI } from '../extensions/ai-provider'
 import type { AIProvider } from '../extensions/ai-provider'
@@ -232,7 +232,7 @@ export function SceneNavigator() {
 
   // Numbers that need renumbering (missing/duplicate/out of order; §7.4).
   // Nothing is flagged until at least one scene has a number.
-  const numberIssues = React.useMemo(() => sceneNumberIssues(scenes.map(s => s.number)), [scenes])
+  const numberIssues = React.useMemo(() => sceneNumberIssues(scenes.map(s => s.id)), [scenes])
   const issueLabel = (issue: SceneNumberIssue) => t(`navigator.number.${issue}`)
 
   const handleSceneMetadata = useCallback(async (scene: SceneEntry) => {
@@ -508,13 +508,14 @@ export function SceneNavigator() {
   const handleRenumber = useCallback(() => {
     const current = liveText()
     const list = buildSceneList(current)
-    const next = renumberScenes(list.map(s => s.number))
-    const changed = next.filter((n, i) => n !== list[i]!.number).length
+    const next = renumberScenes(list.map(s => s.id))
+    const ids = next.map((n, i) => (n === list[i]!.id ? undefined : n))
+    const changed = ids.filter(n => n !== undefined).length
     if (changed === 0) {
       showToast('Scene numbers are already in order.', 'info')
       return
     }
-    applyTextEdit(setSceneNumbersInText(current, next), setText)
+    applyTextEdit(setSceneIdsInText(current, ids), setText)
     showToast(`Renumbered ${changed} scene${changed === 1 ? '' : 's'}.`, 'success')
   }, [liveText, setText, showToast])
 
@@ -614,13 +615,13 @@ export function SceneNavigator() {
         {scenes.map((scene, idx) => {
           const issue = numberIssues[idx] ?? null
           const omitted = scene.status.toLowerCase() === 'omitted'
-          const notes = [
-            ...(scene.id ? [] : [t('navigator.missingId')]),
-            ...(issue ? [issueLabel(issue)] : []),
-          ]
+          // The id is the scene number, so a missing id is one note, not two.
+          const note = issue ? issueLabel(issue) : scene.id ? null : t('navigator.missingId')
+          const notes = note ? [note] : []
           return (
           <div
-            key={scene.id ?? `scene-${idx}`}
+            // Ids can repeat until the writer renumbers (§7.4), so the index keeps keys unique.
+            key={`${idx}:${scene.id ?? ''}`}
             role="button"
             tabIndex={0}
             aria-label={`Jump to ${scene.heading}${notes.length ? ` (${notes.join('; ')})` : ''}`}
@@ -753,20 +754,16 @@ export function SceneNavigator() {
               )}
             </div>
             <div className="cs-nav-scene-side">
-              {/* The scene number is & number:, falling back to the {#id} (§6.1) —
-                  except when numbering is in use and this scene has none yet. */}
-              {issue !== 'missing' && (scene.number ?? scene.id) ? (
+              {/* The scene number is the {#id} (§6.1, §7.4). */}
+              {scene.id ? (
                 <div
                   className={`cs-nav-scene-num${issue ? ' cs-nav-num-issue' : ''}`}
                   title={issue ? issueLabel(issue) : undefined}
                 >
-                  {scene.number ?? scene.id}
+                  {scene.id}
                 </div>
-              ) : issue ? (
-                <div className="cs-nav-scene-num cs-nav-num-issue" title={issueLabel(issue)}>#?</div>
-              ) : null}
-              {!scene.id && (
-                <div className="cs-nav-missing-id-icon" title={t('navigator.missingId')} aria-hidden="true">⚠</div>
+              ) : (
+                <div className="cs-nav-missing-id-icon" title={issue ? issueLabel(issue) : t('navigator.missingId')} aria-hidden="true">⚠</div>
               )}
               {canEdit && (
                 <button
