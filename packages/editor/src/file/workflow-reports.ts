@@ -19,12 +19,14 @@ import { printPaginatorScript } from './print-paginator'
 const CSS_PX_PER_IN = 96
 import { DEFAULT_COVER_LAYOUT } from '../styles/types'
 import type { ScreenplayStyleDefinition } from '../styles/types'
+import { sceneNumberOf, isOmitted } from './scene-number'
 
 // CSV Escape Helper
 function esc(val: string): string {
   const str = val ? String(val) : ''
   return `"${str.replace(/"/g, '""')}"`
 }
+
 
 export interface WorkflowSceneData {
   number: string
@@ -63,8 +65,7 @@ export function extractWorkflowData(ast: DocumentNode): {
       const rawHeading = node.text.toUpperCase()
 
       // Find metadata keys
-      const numMeta = node.metadata.find(m => m.key === 'number')?.value
-      const sceneNum = numMeta || node.id || String(sceneCount)
+      const sceneNum = sceneNumberOf(node) || String(sceneCount)
       const synopsis = node.metadata.find(m => m.key === 'synopsis')?.value ?? ''
       const actors = node.metadata.find(m => m.key === 'actors')?.value ?? ''
       const status = node.metadata.find(m => m.key === 'status')?.value ?? ''
@@ -715,11 +716,15 @@ async function buildScreenplayPrintHtml(
       }
     } else if (node.type === 'scene-heading') {
       sceneOrdinal++
-      const sceneLabel = node.id || String(sceneOrdinal)
+      // Scene number: & number:, falling back to the {#id} (format spec §6.1).
+      const printedNumber = sceneNumberOf(node)
+      const sceneLabel = printedNumber || String(sceneOrdinal)
+      // An omitted scene (§7.4) prints OMITTED in place of its heading; its body is a comment.
+      const title = isOmitted(node) ? 'OMITTED' : textHtml(node.text.toUpperCase())
       bodyHtml += tagScene(`
         <div class="print-scene-heading">
-          <span class="print-scene-title">${textHtml(node.text.toUpperCase())}</span>
-          ${node.id ? `<span class="print-scene-num">${escapeHtml(node.id)}</span>` : ''}
+          <span class="print-scene-title">${title}</span>
+          ${printedNumber ? `<span class="print-scene-num">${escapeHtml(printedNumber)}</span>` : ''}
         </div>
       `, sceneLabel, true)
       for (const sub of node.children) {

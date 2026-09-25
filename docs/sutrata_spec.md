@@ -527,7 +527,7 @@ Every Sutra element maps to a named Word style so recipients can restyle:
 
 ### 5.3 Workflow Document Exports **[P1]**
 
-Generated from `=` scene synopses and `&` metadata:
+Generated from `& synopsis:` scene synopses and other `&` metadata:
 
 - **One-liner schedule / scene breakdown:** scene number, heading, synopsis, actors,
   status, est-duration. PDF, DOCX, CSV/XLSX.
@@ -795,7 +795,7 @@ Editor insertion (after confirmation, §7.2.3)
 The system prompt instructs the model to:
 
 1. Identify screenplay elements from unstructured narration and emit **only valid
-   Sutra** (sigil-based: `##`, `@`, `>>`, `=`, `&`), never Fountain, never commentary.
+   Sutra** (sigil-based: `##`, `@`, `>>`, `~`, `&` — scene synopses as `& synopsis:`), never Fountain, never commentary.
 2. Mark character cues with `@`; **never rely on or require ALL CAPS**. Preserve the
    writer's casing for Latin names.
 3. Infer `& setting:`, `& location:`, `& time:` from context; keep the heading text in the
@@ -852,7 +852,7 @@ All run on the user's own key, always as suggestions the writer confirms.
 | Term | Meaning | Where it lives |
 |---|---|---|
 | **Logline** | One-sentence premise of the whole film. Target ≤ 30 words; warning above 50. | Frontmatter `logline:` |
-| **Scene Synopsis** | One-sentence summary of a single scene (the industry "one-liner"). The set of all scene synopses is the one-liner schedule. | `=` line per scene |
+| **Scene Synopsis** | One-sentence summary of a single scene (the industry "one-liner"). The set of all scene synopses is the one-liner schedule. | `& synopsis:` line per scene |
 | **Synopsis** | 1–3 paragraph (short) to multi-page (full) prose telling of the story. | `{#synopsis}` section |
 | **Step Outline** | Beat sheet linked to scenes. | `#`/`###` sections + scene synopses |
 | **Shot List** | Planned shots per scene. | `& shots:` per scene |
@@ -864,7 +864,7 @@ All run on the user's own key, always as suggestions the writer confirms.
 
 ### 8.3 Scene Synopsis Panel **[P1]**
 
-- Sidebar listing every scene with its `=` synopsis; placeholders for scenes lacking one.
+- Sidebar listing every scene with its `& synopsis:` line; placeholders for scenes lacking one.
 - Editing in the panel writes directly to the `.sutra` text.
 - "Generate all missing" via AI (§7.3).
 - Exports as the one-liner schedule (§5.3).
