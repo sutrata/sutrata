@@ -12,7 +12,8 @@
     "release": "pnpm build:packages && changeset publish",
     "build:tauri": "pnpm --filter @sutrata/tauri build",
     "dev:web": "pnpm --filter @sutrata/app dev",
-    "dev:tauri": "pnpm --filter @sutrata/tauri dev"
+    "dev:tauri": "pnpm --filter @sutrata/tauri dev",
+    "providers:update": "pnpm --filter @sutrata/app providers:update"
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.3",

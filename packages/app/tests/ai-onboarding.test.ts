@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { getAIConfig, saveAIConfig, getApiKey, setApiKey, deleteApiKey, fetchProviders } from '../src/ai/ai-client';
+import { getAIConfig, saveAIConfig, getApiKey, setApiKey, deleteApiKey, getProviders, cleanVoiceResponse } from '../src/ai/ai-client';
 
 describe('AI Client Key Management & Onboarding', () => {
   beforeEach(() => {
@@ -8,15 +8,15 @@ describe('AI Client Key Management & Onboarding', () => {
 
   it('should return default AIConfig when none is saved', () => {
     const config = getAIConfig();
-    expect(config.preferredProvider).toBe('anthropic');
-    expect(config.preferredModel).toBe('');
+    expect(config.activeProvider).toBe('anthropic');
+    expect(config.modelByProvider).toEqual({});
     expect(config.customProviders).toEqual([]);
   });
 
   it('should save and load AIConfig correctly', () => {
     const customConfig = {
-      preferredProvider: 'groq',
-      preferredModel: 'llama-3.3-70b-versatile',
+      activeProvider: 'groq',
+      modelByProvider: { groq: 'llama-3.3-70b-versatile', anthropic: 'claude-sonnet-5' },
       customProviders: [
         {
           id: 'local-ollama',
@@ -42,10 +42,10 @@ describe('AI Client Key Management & Onboarding', () => {
     expect(clearedKey).toBeNull();
   });
 
-  it('should merge custom providers with base providers', async () => {
-    const customConfig = {
-      preferredProvider: 'local-ollama',
-      preferredModel: 'llama3',
+  it('lists bundled providers without models, plus custom providers', () => {
+    const config = {
+      activeProvider: 'local-ollama',
+      modelByProvider: {},
       customProviders: [
         {
           id: 'local-ollama',
@@ -55,15 +55,23 @@ describe('AI Client Key Management & Onboarding', () => {
         }
       ]
     };
-    const list = await fetchProviders(customConfig);
+    const list = getProviders(config);
     const ollama = list.find(p => p.id === 'local-ollama');
-    expect(ollama).toBeDefined();
-    expect(ollama?.name).toBe('Local Ollama');
-    expect(ollama?.models[0]?.id).toBe('llama3');
+    expect(ollama?.models?.[0]?.id).toBe('llama3');
 
-    // Default provider should still exist
     const gemini = list.find(p => p.id === 'gemini');
-    expect(gemini).toBeDefined();
+    expect(gemini?.baseUrl).toBe('https://generativelanguage.googleapis.com/v1beta/openai');
+    expect(gemini?.models).toBeUndefined();
+    expect(list.every(p => p.id === 'local-ollama' || p.baseUrl.startsWith('https://'))).toBe(true);
+  });
+
+  it('a custom provider with a bundled id replaces it', () => {
+    const list = getProviders({
+      activeProvider: 'groq',
+      modelByProvider: {},
+      customProviders: [{ id: 'groq', name: 'My Groq Proxy', baseUrl: 'https://proxy.example/v1' }],
+    });
+    expect(list.filter(p => p.id === 'groq')).toEqual([{ id: 'groq', name: 'My Groq Proxy', baseUrl: 'https://proxy.example/v1' }]);
   });
 
   describe('cleanVoiceResponse', () => {

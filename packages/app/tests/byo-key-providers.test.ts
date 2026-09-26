@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createByoKeyAIProvider, createWebSpeechProvider } from '../src/ai/byo-key-providers'
-import { mockActiveCallsList, setApiKey, deleteApiKey } from '../src/ai/ai-client'
+import { mockActiveCallsList, setApiKey, deleteApiKey, saveAIConfig } from '../src/ai/ai-client'
 
 describe('createByoKeyAIProvider', () => {
   beforeEach(async () => {
@@ -8,10 +8,12 @@ describe('createByoKeyAIProvider', () => {
     await deleteApiKey('anthropic')
   })
 
-  it('reports configured only once an API key is stored', async () => {
+  it('reports configured only once the active provider has a key and a model', async () => {
     const ai = createByoKeyAIProvider(() => {})
     expect(await ai.isConfigured()).toBe(false)
     await setApiKey('anthropic', 'sk-test')
+    expect(await ai.isConfigured()).toBe(false)
+    saveAIConfig({ activeProvider: 'anthropic', modelByProvider: { anthropic: 'claude-sonnet-5' }, customProviders: [] })
     expect(await ai.isConfigured()).toBe(true)
   })
 

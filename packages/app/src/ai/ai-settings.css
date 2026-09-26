@@ -1,0 +1,155 @@
+/* Styles for the app's AI setup UI (Settings section + setup wizard). Both
+   sit on light dialog surfaces, unlike the editor's dark voice-toolbar
+   controls (.cs-voice-btn-secondary, .cs-voice-textarea) they used to borrow. */
+
+/* The wizard is mounted outside .cs-app-shell, so it doesn't inherit the UI
+   font; form controls never inherit it by default. */
+.cs-onboarding-dialog {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.cs-onboarding-dialog :is(input, select, button, textarea),
+.cs-ai-form :is(input, select, button, textarea),
+.cs-ai-combo-panel :is(input, button) {
+  font-family: inherit;
+}
+.cs-tab-btn:focus { outline: none; }
+.cs-tab-btn:focus-visible { outline: 2px solid var(--cs-ui-accent, #c4760a); outline-offset: -2px; }
+
+.cs-ai-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.cs-ai-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cs-ai-field-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.cs-ai-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cs-ui-text-light-primary, #1c1b18);
+}
+.cs-ai-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--cs-ui-accent, #c4760a);
+  cursor: pointer;
+}
+.cs-ai-link:disabled { opacity: 0.5; cursor: default; }
+
+.cs-ai-input,
+.cs-ai-select,
+.cs-ai-combo-trigger {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 10px;
+  border: 1px solid var(--cs-ui-border-light, #d6d3c8);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--cs-ui-text-light-primary, #1c1b18);
+  font-size: 13px;
+}
+.cs-ai-input.is-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+.cs-ai-input::placeholder { color: var(--cs-ui-text-light-muted, #8c897f); }
+.cs-ai-select:disabled { background: var(--cs-ui-bg-panel-subtle, #f4f2ea); color: var(--cs-ui-text-light-muted, #8c897f); }
+.cs-ai-input:focus-visible,
+.cs-ai-select:focus-visible,
+.cs-ai-combo-trigger:focus-visible {
+  outline: 2px solid var(--cs-ui-accent, #c4760a);
+  outline-offset: 1px;
+}
+
+.cs-ai-btn-secondary {
+  padding: 5px 12px;
+  border: 1px solid var(--cs-ui-border-light, #d6d3c8);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--cs-ui-text-light-primary, #1c1b18);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.cs-ai-btn-secondary:hover:not(:disabled) { background: var(--cs-ui-bg-panel-subtle, #f4f2ea); }
+.cs-ai-btn-secondary:disabled { opacity: 0.6; cursor: default; }
+.cs-ai-btn-ghost {
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--cs-ui-text-light-secondary, #59574f);
+  font-size: 12px;
+  cursor: pointer;
+}
+.cs-ai-btn-ghost:hover { background: var(--cs-ui-bg-panel-subtle, #f4f2ea); color: var(--cs-ui-text-light-primary, #1c1b18); }
+
+.cs-ai-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.cs-ai-status { font-size: 12px; }
+.cs-ai-status.is-ok { color: #047857; }
+.cs-ai-status.is-warn { color: #b45309; }
+.cs-ai-status.is-error { color: #dc2626; white-space: pre-wrap; }
+
+/* Provider combobox */
+.cs-ai-combo-trigger {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+.cs-ai-combo-caret { color: var(--cs-ui-text-light-secondary, #59574f); font-size: 11px; }
+.cs-ai-combo-panel {
+  position: fixed;
+  z-index: 400; /* above .cs-dialog-overlay (up to 310) */
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid var(--cs-ui-border-light, #d6d3c8);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.cs-ai-combo-search {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  border-bottom: 1px solid var(--cs-ui-border-light, #e2e0d6);
+  padding: 9px 12px;
+  font-size: 13px;
+  color: var(--cs-ui-text-light-primary, #1c1b18);
+  outline: none;
+}
+.cs-ai-combo-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.cs-ai-combo-group {
+  padding: 8px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--cs-ui-text-light-muted, #8c897f);
+}
+.cs-ai-combo-option {
+  display: flex;
+  justify-content: space-between;
+  padding: 7px 12px;
+  font-size: 13px;
+  color: var(--cs-ui-text-light-primary, #1c1b18);
+  cursor: pointer;
+}
+.cs-ai-combo-option.is-active { background: var(--cs-ui-bg-panel-subtle, #f4f2ea); }
+.cs-ai-combo-option[aria-selected="true"] { font-weight: 600; color: var(--cs-ui-accent, #c4760a); }
+.cs-ai-combo-empty { padding: 10px 12px; font-size: 13px; color: var(--cs-ui-text-light-muted, #8c897f); }
