@@ -2753,9 +2753,12 @@ html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
   padding: 10px 12px;
   font-size: 13px;
   color: var(--cs-ui-text-light-primary, #1c1b18);
-  min-height: 140px;
   line-height: 1.5;
   white-space: pre-wrap;
+  /* Long selections scroll inside the pane; .cs-dialog clips overflow. */
+  box-sizing: border-box;
+  height: min(50vh, 420px);
+  overflow-y: auto;
 }
 .cs-voice-box-formatted {
   width: 100%;
@@ -2767,6 +2770,8 @@ html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
   font-size: 13px;
   font-family: 'Courier Prime', Courier, monospace;
   color: var(--cs-ui-text-light-primary, #1c1b18);
+  /* Same height as the raw pane so the two read side by side. */
+  height: min(50vh, 420px);
   min-height: 140px;
   line-height: 1.4;
   resize: vertical;

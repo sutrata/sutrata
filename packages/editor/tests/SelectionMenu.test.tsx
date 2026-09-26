@@ -67,7 +67,7 @@ describe('SelectionMenu floating toolbar', () => {
 
     // Clicking Format should open the confirm dialog
     fireEvent.click(screen.getByText('Format'));
-    expect(screen.getByText('Formatting speech into Sutra screenplay format...')).toBeInTheDocument();
+    expect(screen.getByText('Formatting into Sutra screenplay format...')).toBeInTheDocument();
   });
 
   it('hides the AI Format action without an AI provider', () => {

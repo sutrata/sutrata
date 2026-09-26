@@ -50,13 +50,13 @@ export function VoiceConfirmDialog({ rawTranscript, langCode, onConfirm, onCance
         className="cs-dialog cs-voice-confirm-dialog"
         role="dialog"
         aria-modal="true"
-        aria-label="Confirm Voice Dictation Formatting"
+        aria-label="Review Formatting"
         onClick={e => e.stopPropagation()}
       >
         <div className="cs-dialog-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <SparklesIcon size={16} />
-            <span className="cs-dialog-title">Review Voice Formatting</span>
+            <span className="cs-dialog-title">Review Formatting</span>
           </div>
           <button
             type="button"
@@ -73,7 +73,7 @@ export function VoiceConfirmDialog({ rawTranscript, langCode, onConfirm, onCance
             <div className="cs-voice-loading-state">
               <div className="cs-spinner" style={{ width: '28px', height: '28px', borderWidth: '2.5px' }} />
               <span style={{ fontSize: '13px', color: 'var(--cs-ui-text-dark-secondary, #a8a69d)' }}>
-                Formatting speech into Sutra screenplay format...
+                Formatting into Sutra screenplay format...
               </span>
             </div>
           ) : (
@@ -86,8 +86,8 @@ export function VoiceConfirmDialog({ rawTranscript, langCode, onConfirm, onCance
 
               <div className="cs-voice-grid">
                 <div className="cs-voice-column">
-                  <span className="cs-voice-col-title">Raw Dictation</span>
-                  <div className="cs-voice-box-raw">{rawTranscript}</div>
+                  <span className="cs-voice-col-title">Raw Content</span>
+                  <div className="cs-voice-box-raw" tabIndex={0}>{rawTranscript}</div>
                 </div>
 
                 <div className="cs-voice-column">
