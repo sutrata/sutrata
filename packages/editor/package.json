@@ -1,6 +1,6 @@
 {
   "name": "@sutrata/editor",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "React + ProseMirror screenplay editor for Sutra, with first-class support for Indic and other complex scripts.",
   "license": "GPL-3.0-or-later",
   "keywords": [
