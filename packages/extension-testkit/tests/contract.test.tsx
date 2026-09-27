@@ -14,7 +14,7 @@ import {
 } from '@sutrata/editor'
 import type { DocumentProviderProps } from '@sutrata/editor'
 import {
-  createMemoryStorage, createStubAI, createStubSpeech, createSession, createStubDecorations, createStubCollab,
+  createMemoryStorage, createSyncStorage, createStubAI, createStubSpeech, createSession, createStubDecorations, createStubCollab,
 } from '../src'
 
 const TEXT = '## INT. HOUSE - DAY {#1}\n\nMeera waits.\n\n## EXT. PARK - NIGHT {#2}\n\nRain.\n'
@@ -50,6 +50,34 @@ describe('StorageAdapter', () => {
     await mount({ storageAdapter: storage })
     await act(async () => { fireEvent.keyDown(window, { code: 'KeyS', ctrlKey: true }) })
     await waitFor(() => expect([...storage.files.values()]).toContain(TEXT))
+  })
+})
+
+describe('StorageAdapter sync members', () => {
+  const REF = '& x-tool-id: 7'
+
+  it('a SaveResult is applied to the open document, outside undo history', async () => {
+    const storage = createSyncStorage()
+    storage.onSave = (_p, content) => content.replace('{#1}', `{#1}\n${REF}`)
+    const { view } = await mount({ storageAdapter: storage })
+    await act(async () => { doc.setFilePath('doc-1') })
+    await act(async () => { await doc.save() })
+    expect(doc.text).toContain(REF)
+    act(() => { undo(view.state, view.dispatch) })
+    expect(doc.text).toContain(REF)
+  })
+
+  it('a remote update is applied when there are no unsaved edits, and dropped otherwise', async () => {
+    const storage = createSyncStorage()
+    const { view } = await mount({ storageAdapter: storage })
+    await act(async () => { doc.setFilePath('doc-1') })
+    await act(async () => { await doc.save() })
+    act(() => { storage.pushRemote('doc-1', TEXT.replace('Rain.', 'Heavy rain.')) })
+    expect(doc.text).toContain('Heavy rain.')
+
+    act(() => { view.dispatch(view.state.tr.insertText('!', view.state.doc.content.size - 1)) })
+    act(() => { storage.pushRemote('doc-1', TEXT.replace('Rain.', 'Snow.')) })
+    expect(doc.text).not.toContain('Snow.')
   })
 })
 

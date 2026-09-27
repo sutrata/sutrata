@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react'
-import { Annotation, Compartment, EditorState } from '@codemirror/state'
+import { Annotation, Compartment, EditorState, Transaction } from '@codemirror/state'
 import { EditorView, keymap } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { tags } from '@lezer/highlight'
 import { sutraLanguage } from './sutra-lang'
 import { useDocument } from '../context/DocumentContext'
-import { setSourceView } from '../editor/editor-bus'
+import { setSourceView, takeExternalText } from '../editor/editor-bus'
 import { sourceFindHighlightExtension } from './find-highlight-source'
 import { useCanEdit } from '../extensions/session'
 
@@ -89,7 +89,8 @@ export function SourceView() {
           EditorState.transactionFilter.of(tr =>
             tr.docChanged && !canEditRef.current && !tr.annotation(externalSync) ? [] : tr),
           EditorView.updateListener.of(update => {
-            if (update.docChanged) {
+            // Mirrored text (externalSync) is already the document's text.
+            if (update.docChanged && !update.transactions.some(t => t.annotation(externalSync))) {
               const newText = update.state.doc.toString()
               lastTextRef.current = newText
               setText(newText)
@@ -115,6 +116,20 @@ export function SourceView() {
     const view = viewRef.current
     if (!view || text === lastTextRef.current) return
     lastTextRef.current = text
+    if (takeExternalText(text)) {
+      // From storage: change only what differs, keep the cursor, not undoable.
+      const old = view.state.doc.toString()
+      let from = 0
+      while (from < old.length && from < text.length && old[from] === text[from]) from++
+      let endOld = old.length
+      let endNew = text.length
+      while (endOld > from && endNew > from && old[endOld - 1] === text[endNew - 1]) { endOld--; endNew-- }
+      view.dispatch({
+        changes: { from, to: endOld, insert: text.slice(from, endNew) },
+        annotations: [externalSync.of(true), Transaction.addToHistory.of(false)],
+      })
+      return
+    }
     view.dispatch({
       changes: { from: 0, to: view.state.doc.length, insert: text },
       annotations: externalSync.of(true),

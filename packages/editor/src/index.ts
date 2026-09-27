@@ -13,7 +13,7 @@ export { TranslationProvider, useTranslation } from './i18n/useTranslation'
 export type { EditorMode, VersionEntry } from './types'
 export type { ScreenplayStyleDefinition } from './styles/types'
 
-export type { StorageAdapter } from './extensions/storage-adapter'
+export type { StorageAdapter, SaveResult } from './extensions/storage-adapter'
 export { useStorageAdapter } from './extensions/storage-adapter'
 export type { AIProvider, AIRequest, AIActivity, JsonSchema } from './extensions/ai-provider'
 export { useAI } from './extensions/ai-provider'

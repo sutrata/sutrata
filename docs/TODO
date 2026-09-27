@@ -38,16 +38,3 @@
     false`), so an embedder can protect a locked script before the full mode
     exists; today the navigator's Renumber action is available to every edit
     session.
-20. StorageAdapter — sync members for networked embedders (OSS spec §11.5):
-    saveDocument returns void, so an adapter that merges on save, or adds
-    lines (e.g. tool-private `x-` keys) on save, cannot hand the result back,
-    and changes saved elsewhere cannot reach an open editor. Let saveDocument
-    optionally return `{ content?: string }` and add an optional
-    `subscribe(path, onRemote)`. The editor applies either as one transaction
-    kept out of undo history, mapping the cursor through it. Optional members
-    only, so the local adapter and testkit stubs keep working; add contract
-    tests to the testkit.
-21. Frontmatter — tool-private keys (format spec §5, §7.1): custom frontmatter
-    keys are preserved, but check they are never shown on the title page or
-    printed. If they can be, extend the `x-` rule to frontmatter keys: kept on
-    round-trip, hidden, never exported to print, DOCX or Fountain.

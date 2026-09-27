@@ -23,7 +23,10 @@ import type { DecorationProvider } from '../extensions/decorations'
 import { CollabBindingProvider } from '../extensions/collab'
 import type { CollabBinding } from '../extensions/collab'
 import { importDocx as importDocxToSutra } from '../file/docx-importer'
-import { getEditorView, getSourceView } from '../editor/editor-bus'
+import { getEditorView, getSourceView, markExternalText } from '../editor/editor-bus'
+import { externalChange } from '../editor/external-change'
+import { sutraToProsemirror } from '../editor/sutra-to-prosemirror'
+import { prosemirrorToSutra } from '../editor/prosemirror-to-sutra'
 import { setFlatFrontmatterField } from '../editor/frontmatter-field'
 import { builtinCommands } from '../shell/builtin-commands'
 import { resolveStyle } from '../styles/registry'
@@ -57,7 +60,8 @@ interface DocumentContextValue {
   toasts: ToastItem[]
   versions: VersionEntry[]
   versionHistoryVisible: boolean
-  setText: (next: string) => void
+  /** `markDirty: false` for changes that are not user edits (e.g. applied from storage). */
+  setText: (next: string, options?: { markDirty?: boolean }) => void
   setMode: (mode: EditorMode) => void
   setFilePath: (path: string | null) => void
   setRibbonVisible: (v: boolean) => void
@@ -268,10 +272,18 @@ export function DocumentProvider({
     return () => { cancelled = true }
   }, [storageAdapter, showToast])
 
-  const setText = useCallback((next: string) => {
+  // Refs so the autosave path always writes the latest text/filePath without
+  // needing them in a dependency array that would tear down the timers below
+  // on every keystroke. setText also updates textRef at once, so a save that
+  // is waiting on storage can tell whether the user typed in the meantime.
+  const textRef = useRef(text)
+  useEffect(() => { textRef.current = text }, [text])
+
+  const setText = useCallback((next: string, options?: { markDirty?: boolean }) => {
+    textRef.current = next
     setTextState(next)
     setAst(parse(next))
-    setDirty(true)
+    if (options?.markDirty !== false) setDirty(true)
   }, [])
 
   const frontmatterData = ast.frontmatter?.data as Record<string, unknown> | undefined
@@ -289,21 +301,47 @@ export function DocumentProvider({
 
   const markClean = useCallback(() => setDirty(false), [])
 
-  // Refs so the autosave path always writes the latest text/filePath without
-  // needing them in a dependency array that would tear down the timers below
-  // on every keystroke.
-  const textRef = useRef(text)
-  useEffect(() => { textRef.current = text }, [text])
   const modeRef = useRef(mode)
   modeRef.current = mode
   const filePathRef = useRef(filePath)
   useEffect(() => { filePathRef.current = filePath }, [filePath])
   const autosaveFailedRef = useRef(false)
+  // The text last written to or received from storage, for filePath.
+  const syncedRef = useRef<{ path: string; text: string } | null>(null)
+
+  /**
+   * Applies a document from storage (a SaveResult or a remote update, OSS spec
+   * §11.5): one change, kept out of undo history, not a user edit. In the
+   * formatted editor only the blocks that differ are replaced.
+   */
+  const applyExternalText = useCallback((path: string, next: string) => {
+    const view = getEditorView()
+    if (modeRef.current === 'formatted' && view) {
+      const tr = externalChange(view.state, sutraToProsemirror(parse(next)))
+      if (tr) view.dispatch(tr)
+      // The editor writes its own serialization of `next`; that is what is synced.
+      syncedRef.current = { path, text: prosemirrorToSutra(view.state.doc) }
+    } else {
+      markExternalText(next)
+      setText(next, { markDirty: false })
+      syncedRef.current = { path, text: next }
+    }
+  }, [setText])
 
   const save = useCallback(async () => {
     const path = filePathRef.current ?? '__autosave__'
+    const sent = textRef.current
+    if (syncedRef.current?.path === path && syncedRef.current.text === sent) return
     try {
-      await storageAdapter.saveDocument(path, textRef.current)
+      const result = await storageAdapter.saveDocument(path, sent)
+      syncedRef.current = { path, text: sent }
+      const content = result ? result.content : undefined
+      // Only if nothing was typed while the save was in flight; otherwise the
+      // next save carries those edits and the adapter merges again.
+      const samePath = (filePathRef.current ?? '__autosave__') === path
+      if (content !== undefined && content !== sent && textRef.current === sent && samePath) {
+        applyExternalText(path, content)
+      }
       writeRecoveryPointer(path)
       setLastSaveTarget('local')
       autosaveFailedRef.current = false
@@ -320,7 +358,18 @@ export function DocumentProvider({
         showToast('Autosave failed — your browser storage may be full or unavailable.', 'warn')
       }
     }
-  }, [storageAdapter, showToast])
+  }, [storageAdapter, showToast, applyExternalText])
+
+  // Changes saved elsewhere (OSS spec §11.5), applied only while there are no
+  // unsaved local edits; otherwise the next save merges them.
+  useEffect(() => {
+    if (!filePath || !storageAdapter.subscribe) return
+    return storageAdapter.subscribe(filePath, content => {
+      const synced = syncedRef.current
+      if (filePathRef.current !== filePath || synced?.path !== filePath || textRef.current !== synced.text) return
+      if (content !== textRef.current) applyExternalText(filePath, content)
+    })
+  }, [filePath, storageAdapter, applyExternalText])
 
   const newDocument = useCallback((initialContent?: string) => {
     const doNew = () => {

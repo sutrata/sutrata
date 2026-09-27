@@ -169,7 +169,9 @@ copyright: © 2026 Rangi Parata
 | `lang-secondary` | list | Additional languages tools should expect (spellcheck, fonts). |
 | `page` | string | Target page size for export: `A4` (default) or `Letter`. |
 
-Custom keys are permitted and MUST be preserved on round-trip. When `title` is
+Custom keys are permitted and MUST be preserved on round-trip. Keys starting
+with `x-` are tool-private, as in scene metadata (§7.1): editors MAY hide them
+from the title page, and exports MUST NOT print them. When `title` is
 a map, tools SHOULD display the entry matching `lang` and MAY print others as
 subtitle lines.
 

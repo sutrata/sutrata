@@ -10,6 +10,8 @@ export class FrontmatterFieldView implements NodeView {
     this.dom = document.createElement('div')
     this.dom.className = 'cs-fm-field'
     this.dom.dataset['key'] = node.attrs['fmKey'] as string
+    // Tool-private `x-` keys (format spec §5, §7.1) are hidden.
+    if ((node.attrs['fmKey'] as string).startsWith('x-')) this.dom.dataset['private'] = 'true'
 
     this.contentDOM = document.createElement('span')
     this.contentDOM.className = 'cs-fm-field-content'

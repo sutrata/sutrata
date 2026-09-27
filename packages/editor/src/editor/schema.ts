@@ -40,7 +40,11 @@ const nodes: Record<string, NodeSpec> = {
     content: '(text | hard_break)*',
     marks: '',
     attrs: { fmKey: { default: '' } },
-    toDOM: (node) => ['div', { class: 'cs-fm-field', 'data-key': node.attrs['fmKey'] as string }, 0],
+    toDOM: (node) => {
+      const key = node.attrs['fmKey'] as string
+      // Tool-private `x-` keys (format spec §5, §7.1) stay in the text but are not shown.
+      return ['div', { class: 'cs-fm-field', 'data-key': key, ...(key.startsWith('x-') ? { 'data-private': 'true' } : {}) }, 0]
+    },
     parseDOM: [{ tag: 'div.cs-fm-field', getAttrs: (dom) => ({ fmKey: (dom as HTMLElement).dataset['key'] ?? '' }) }],
   },
 
