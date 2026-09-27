@@ -179,7 +179,17 @@ export function DocumentProvider({
   const [text, setTextState] = useState(EMPTY_DOC)
   const [ast, setAst] = useState<DocumentNode>(() => parse(EMPTY_DOC))
   const [mode, setMode] = useState<EditorMode>('formatted')
-  const [filePath, setFilePath] = useState<string | null>(null)
+  const [filePath, setFilePathState] = useState<string | null>(null)
+  // Updated at once (like textRef), so a save right after setFilePath, even
+  // from a child's effect in the same commit, goes to the new path.
+  const filePathRef = useRef(filePath)
+  // Mirrored in render, not in an effect: a parent's effect runs after its
+  // children's, and would overwrite a newer path set by a child's effect.
+  filePathRef.current = filePath
+  const setFilePath = useCallback((path: string | null) => {
+    filePathRef.current = path
+    setFilePathState(path)
+  }, [])
   const fileDisplayName = filePath ? storageAdapter.displayName?.(filePath) ?? filePath : null
   const [isDirty, setIsDirty] = useState(false)
   // Where the most recent save attempt went. isDirty tracks "does this differ
@@ -286,7 +296,7 @@ export function DocumentProvider({
   // on every keystroke. setText also updates textRef at once, so a save that
   // is waiting on storage can tell whether the user typed in the meantime.
   const textRef = useRef(text)
-  useEffect(() => { textRef.current = text }, [text])
+  textRef.current = text   // in render, for the same reason as filePathRef
 
   const setText = useCallback((next: string, options?: { markDirty?: boolean }) => {
     textRef.current = next
@@ -312,8 +322,6 @@ export function DocumentProvider({
 
   const modeRef = useRef(mode)
   modeRef.current = mode
-  const filePathRef = useRef(filePath)
-  useEffect(() => { filePathRef.current = filePath }, [filePath])
   const autosaveFailedRef = useRef(false)
   // The text last written to or received from storage, for filePath.
   const syncedRef = useRef<{ path: string; text: string } | null>(null)

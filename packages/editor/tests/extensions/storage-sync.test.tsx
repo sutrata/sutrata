@@ -134,6 +134,28 @@ describe('StorageAdapter sync members (OSS spec §11.5)', () => {
     expect(save).toHaveBeenCalledTimes(1)
   })
 
+  it('a save right after setFilePath, in the same commit, goes to the new path', async () => {
+    const save = vi.fn(async () => undefined)
+    let doc!: ReturnType<typeof useDocument>
+    function OpenAndSave() {
+      doc = useDocument()
+      const [step, setStep] = React.useState(0)
+      React.useEffect(() => { doc.setFilePath('doc-9'); doc.setText(TEXT, { markDirty: false }); setStep(1) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+      React.useEffect(() => { if (step === 1) void doc.save() }, [step])
+      return null
+    }
+    await act(async () => {
+      render(
+        <TranslationProvider>
+          <DocumentProvider storageAdapter={storage(save)}>
+            <LanguageProvider><OpenAndSave /></LanguageProvider>
+          </DocumentProvider>
+        </TranslationProvider>,
+      )
+    })
+    expect(save).toHaveBeenCalledWith('doc-9', TEXT)
+  })
+
   it('a local adapter (void result) changes nothing', async () => {
     await mount(storage(vi.fn(async () => undefined)))
     await act(async () => { await ctx.save() })
