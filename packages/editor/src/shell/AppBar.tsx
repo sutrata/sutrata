@@ -12,7 +12,7 @@ import { SutrataLogo } from './SutrataLogo'
 import { getTemplate } from '../templates/templates'
 import { openTitlePageForm } from '../titlepage/TitlePageDialog'
 import { useSpeech } from '../extensions/speech-provider'
-import { useCanEdit } from '../extensions/session'
+import { useCanEdit, useSession, isFeatureEnabled } from '../extensions/session'
 import { usePanels } from '../extensions/panel-registry'
 import { usePanelContext } from './use-panel-context'
 import { useCommands, useCommandContext, displayShortcut } from './use-commands'
@@ -46,7 +46,7 @@ function AbBtn({ label, shortcut, active, variant, onClick, children }: AbBtnPro
 
 export function AppBar() {
   const {
-    mode, setMode, isDirty, filePath, ribbonVisible, setRibbonVisible,
+    mode, setMode, isDirty, filePath, fileDisplayName, ribbonVisible, setRibbonVisible,
     navVisible, setNavVisible, exportVisible, setExportVisible,
     settingsVisible, setSettingsVisible, metadataVisible, setMetadataVisible,
     voiceActive, setVoiceActive, newDocument, openFile, saveFile, saveFileAs, setText,
@@ -66,7 +66,9 @@ export function AppBar() {
   const commandContext = useCommandContext()
   const panelContext = usePanelContext()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const name = filePath ?? 'untitled.sutra'
+  const name = fileDisplayName ?? filePath ?? 'untitled.sutra'
+  // Embedders whose documents are not local files turn these off.
+  const localFiles = isFeatureEnabled(useSession(), 'localFiles')
   const nextMode = mode === 'formatted' ? 'source' : 'formatted'
 
   const handleNew = () => {
@@ -108,7 +110,7 @@ export function AppBar() {
             </AbBtn>
           </span>
         )}
-        <div className="cs-ab-file-pill" title={filePath ?? 'untitled.sutra'}>
+        <div className="cs-ab-file-pill" title={name}>
           <span className="cs-ab-file-name">{name}</span>
           {isDirty && <span className="cs-ab-dirty" title="Unsaved edits" />}
         </div>
@@ -160,12 +162,16 @@ export function AppBar() {
       <div className="cs-ab-group cs-ab-desktop-group">
         {canEdit && (
           <>
-            <AbBtn label={t('appbar.new')} onClick={handleNew}>
-              <NewIcon size={18} />
-            </AbBtn>
-            <AbBtn label={t('appbar.open')} shortcut="Ctrl+O" onClick={() => { void openFile() }}>
-              <OpenIcon size={18} />
-            </AbBtn>
+            {localFiles && (
+              <>
+                <AbBtn label={t('appbar.new')} onClick={handleNew}>
+                  <NewIcon size={18} />
+                </AbBtn>
+                <AbBtn label={t('appbar.open')} shortcut="Ctrl+O" onClick={() => { void openFile() }}>
+                  <OpenIcon size={18} />
+                </AbBtn>
+              </>
+            )}
             <AbBtn label={t('appbar.importDocx')} onClick={() => { void handleImportDocx() }}>
               <ImportDocxIcon size={18} />
             </AbBtn>
@@ -183,9 +189,11 @@ export function AppBar() {
             >
               <SaveIcon size={17} />
             </AbBtn>
-            <AbBtn label={t('appbar.saveAs')} shortcut="Ctrl+Shift+S" onClick={() => { void saveFileAs() }}>
-              <SaveAsIcon size={17} />
-            </AbBtn>
+            {localFiles && (
+              <AbBtn label={t('appbar.saveAs')} shortcut="Ctrl+Shift+S" onClick={() => { void saveFileAs() }}>
+                <SaveAsIcon size={17} />
+              </AbBtn>
+            )}
             <span className="cs-ab-sep" />
           </>
         )}
@@ -324,22 +332,22 @@ export function AppBar() {
                 <TitlePageIcon size={18} />
                 <span>{t('appbar.titlePage')}</span>
               </button>
-              <button
+              {localFiles && <button
                 type="button"
                 className="cs-mm-item"
                 onClick={() => { handleNew(); setMobileMenuOpen(false) }}
               >
                 <NewIcon size={18} />
                 <span>{t('appbar.new')}</span>
-              </button>
-              <button
+              </button>}
+              {localFiles && <button
                 type="button"
                 className="cs-mm-item"
                 onClick={() => { void openFile(); setMobileMenuOpen(false) }}
               >
                 <OpenIcon size={18} />
                 <span>{t('appbar.open')}</span>
-              </button>
+              </button>}
               <button
                 type="button"
                 className="cs-mm-item"
@@ -364,14 +372,14 @@ export function AppBar() {
                 <SaveIcon size={18} />
                 <span>{t('appbar.save')}</span>
               </button>
-              <button
+              {localFiles && <button
                 type="button"
                 className="cs-mm-item"
                 onClick={() => { void saveFileAs(); setMobileMenuOpen(false) }}
               >
                 <SaveAsIcon size={18} />
                 <span>{t('appbar.saveAs')}</span>
-              </button>
+              </button>}
               <button
                 type="button"
                 className="cs-mm-item"

@@ -8,7 +8,7 @@ import { AIProviderProvider } from '../extensions/ai-provider'
 import type { AIProvider } from '../extensions/ai-provider'
 import { SpeechProviderProvider } from '../extensions/speech-provider'
 import type { SpeechProvider } from '../extensions/speech-provider'
-import { SessionProvider, DEFAULT_SESSION } from '../extensions/session'
+import { SessionProvider, DEFAULT_SESSION, isFeatureEnabled } from '../extensions/session'
 import type { SessionContext } from '../extensions/session'
 import { PanelRegistryProvider, createPanelRegistry } from '../extensions/panel-registry'
 import type { PanelRegistry, PanelContribution } from '../extensions/panel-registry'
@@ -42,6 +42,8 @@ interface DocumentContextValue {
   ast: DocumentNode
   mode: EditorMode
   filePath: string | null
+  /** What to call the open document: StorageAdapter.displayName, else filePath. */
+  fileDisplayName: string | null
   isDirty: boolean
   lastSaveTarget: 'file' | 'local' | null
   ribbonVisible: boolean
@@ -178,6 +180,7 @@ export function DocumentProvider({
   const [ast, setAst] = useState<DocumentNode>(() => parse(EMPTY_DOC))
   const [mode, setMode] = useState<EditorMode>('formatted')
   const [filePath, setFilePath] = useState<string | null>(null)
+  const fileDisplayName = filePath ? storageAdapter.displayName?.(filePath) ?? filePath : null
   const [isDirty, setIsDirty] = useState(false)
   // Where the most recent save attempt went. isDirty tracks "does this differ
   // from the real file on disk" (VS Code-style) — a local autosave backs the
@@ -401,7 +404,12 @@ export function DocumentProvider({
     })
   }, [isDirty, showConfirm])
 
+  // `localFiles: false` (SessionContext): the embedder's documents are not local files.
+  const localFilesRef = useRef(true)
+  localFilesRef.current = isFeatureEnabled(session ?? DEFAULT_SESSION, 'localFiles')
+
   const openFile = useCallback(async () => {
+    if (!localFilesRef.current) return
     const doOpen = async () => {
       const result = await storageAdapter.openFile()
       if (!result) return
@@ -480,6 +488,7 @@ export function DocumentProvider({
   }, [filePath, text, showToast, storageAdapter, refreshVersions])
 
   const saveFileAs = useCallback(async () => {
+    if (!localFilesRef.current) return
     const name = filePath ?? 'untitled.sutra'
     const result = await storageAdapter.saveFile(name, text, null)
     if (result) {
@@ -746,7 +755,7 @@ export function DocumentProvider({
     <DecorationProvidersProvider value={decorationProviders ?? NO_DECORATIONS}>
     <CollabBindingProvider value={collabBinding ?? null}>
       <DocumentContext.Provider value={{
-        text, ast, mode, filePath, isDirty, lastSaveTarget, ribbonVisible, navVisible, exportVisible, settingsVisible,
+        text, ast, mode, filePath, fileDisplayName, isDirty, lastSaveTarget, ribbonVisible, navVisible, exportVisible, settingsVisible,
         voiceActive, metadataVisible,
         findReplaceVisible, findMode, styleVisible, customStyles, resolvedStyle, watermarkText,
         confirmModal, toasts, versions, versionHistoryVisible,

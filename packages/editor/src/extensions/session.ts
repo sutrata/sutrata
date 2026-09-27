@@ -13,7 +13,10 @@ import { createContext, useContext } from 'react'
  * - `comment`: like `read`; decoration providers (comment threads) may still
  *   handle clicks.
  *
- * `featureFlags`: `ai: false` hides AI features, `voice: false` hides voice
+ * `featureFlags`: `ai: false` hides AI features, `voice: false` hides voice;
+ * `localFiles: false` hides New, Open and Save As, for embedders whose
+ * documents are not local files (Save stays: it saves through the adapter).
+ *
  * dictation. Unset flags count as enabled.
  */
 export interface SessionContext {
