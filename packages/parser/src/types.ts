@@ -159,6 +159,23 @@ export type SceneContentNode =
 
 export type DialogueContentNode = DialogueNode | ParentheticalNode
 
+/**
+ * A range of the string passed to parseWithSpans(): `source.slice(start, end)`.
+ * Offsets are string indices (UTF-16 code units), not bytes.
+ */
+export interface SourceSpan {
+  start: number
+  end: number
+}
+
+export interface ParseWithSpansResult {
+  document: DocumentNode
+  /** From the opening `---` to the end of the closing `---` line, before its line break. */
+  frontmatter: SourceSpan | null
+  /** One span per `document.children` entry, in the same order. */
+  children: SourceSpan[]
+}
+
 // Fountain interop
 export interface FountainImportResult {
   document: DocumentNode

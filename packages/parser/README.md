@@ -64,6 +64,17 @@ serialize(doc) === source          // true: round-trip is byte-faithful
 
 Every node keeps the source text it was parsed from, and `serialize` writes that text back. Metadata keys, frontmatter keys and scene attributes that the parser doesn't recognise are **preserved, not dropped**, so files written by newer tools survive a round trip through older ones.
 
+### Source spans
+
+```ts
+import { parseWithSpans } from '@sutrata/parser'
+
+const { document, frontmatter, children } = parseWithSpans(source)
+source.slice(children[0].start, children[0].end)   // the first top-level node's text
+```
+
+`children[i]` is where `document.children[i]` sits in `source`: a scene runs from its heading line to the end of its last block. Only blank lines lie between spans, so cutting at the start of every `#` and `##` heading splits a document into parts that join back byte for byte. Offsets are string indices into the original source, CRLF line endings included.
+
 ### Fountain
 
 ```ts

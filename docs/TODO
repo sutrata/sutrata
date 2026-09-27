@@ -23,13 +23,6 @@
     Krutidev/Shree-Lipi for Hindi, Bamini/TAM/TAB for Tamil, Anu for Telugu
     first; then Nudi/Baraha, ML-TT. AI-assisted import of .docx/.txt/.md is
     done (packages/editor/src/import/).
-17. Parser — source offsets on parsed blocks: nodes carry `raw` text only, and
-    blank-line separators between blocks are not recorded, so an embedder cannot
-    map a node back to its exact byte range in the source. Add start/end offsets
-    to top-level nodes (at least scene and section headings) so a document can be
-    cut at `#`/`##` headings using the parser's block rules (format spec §11.1)
-    rather than a regex, with the pieces joining back byte for byte. No spec
-    section yet; add one under OSS spec §11.
 18. Print paginator — page map and margin marks, for revision mode kept by an
     embedder (OSS spec §3.6, §11.3): PrintPaginationOptions has only content
     height, page-number prefix and CONTINUED suffix. Needed:

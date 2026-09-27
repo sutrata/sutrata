@@ -1101,7 +1101,27 @@ path must become **lossless for every element and attribute**: unknown attribute
 metadata carried as node attributes, and a property-based test that
 `parse → PM → serialize → parse` yields an equal AST for the full conformance corpus.
 
-### 11.7 Risk Register
+### 11.7 Source Spans
+
+`parseWithSpans(source)` in `@sutrata/parser` returns the same AST as `parse()`, plus
+where each top-level node sits in `source`, so an embedder can cut a document into
+parts using the parser's block rules (format spec §11.1) instead of a line regex.
+
+- A span is `{ start, end }`, string indices (UTF-16 code units) into the exact string
+  passed in, before CRLF normalization: `source.slice(start, end)`.
+- `children[i]` is the span of `document.children[i]`. A span runs from the start of the
+  node's first line to the end of its last line, without the line break. A scene's span
+  runs from its heading line through its metadata and every block up to the next scene
+  heading or section heading.
+- `frontmatter` runs from the opening `---` to the end of the closing `---` line.
+- The text between spans, and after the last one, is blank lines only.
+- So cutting `source` at the start of every `#` and `##` heading gives pieces that join
+  back to `source` byte for byte, and parsing each piece gives the same nodes as parsing
+  the whole. A heading inside a multi-line comment is not a cut point.
+
+The AST itself carries no offsets, so ASTs of equal documents stay equal.
+
+### 11.8 Risk Register
 
 | Risk | Mitigation |
 |---|---|
