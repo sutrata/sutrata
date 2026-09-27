@@ -224,8 +224,12 @@ export function AppBar() {
         </AbBtn>
       </div>
 
-      {/* Mobile controls zone */}
+      {/* Mobile controls zone. Embedder app-bar panels (e.g. a sync status)
+          show here too; only one copy is ever displayed. */}
       <div className="cs-ab-group cs-ab-mobile-controls">
+        {appbarPanels.map(p => (
+          <span key={p.id} className="cs-ab-panel" aria-label={p.title}>{p.render(panelContext)}</span>
+        ))}
         {canEdit && (
           <AbBtn
             label={t('appbar.save')}
