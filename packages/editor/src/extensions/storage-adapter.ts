@@ -11,8 +11,31 @@ import type { ScreenplayStyleDefinition } from '../styles/types'
  * has no equivalent in a non-web adapter. Callers just thread whatever the
  * adapter returned back into a later saveFile() call without inspecting it.
  */
+/**
+ * What a networked adapter may return from saveDocument (OSS spec §11.5).
+ */
+export interface SaveResult {
+  /**
+   * The document as the adapter now holds it, e.g. merged with changes saved
+   * elsewhere, or with lines the adapter adds (such as tool-private `x-` keys).
+   * The editor applies it if it differs from what was saved, as one change kept
+   * out of undo history, so long as the document has not been edited since the
+   * save began; otherwise it is dropped and the next save carries the edits.
+   */
+  content?: string
+}
+
 export interface StorageAdapter {
-  saveDocument(path: string, content: string): Promise<void>
+  /**
+   * Autosave. Local adapters return nothing; networked ones may return a
+   * SaveResult (see there).
+   *
+   * A dropped result or remote update (see subscribe) is never lost as long as
+   * the adapter bases its next save on the content it was last *sent*, not on
+   * what it returned: the next save then carries the local edits, and the
+   * adapter merges it again.
+   */
+  saveDocument(path: string, content: string): Promise<void | SaveResult>
   loadDocument(path: string): Promise<string | null>
   listVersions(path: string): Promise<VersionEntry[]>
 
@@ -52,6 +75,15 @@ export interface StorageAdapter {
    * persist a new version entry when there is a difference against the previous version.
    */
   saveVersion?(path: string, content: string): Promise<boolean>
+
+  /**
+   * Optional: changes to `path` saved elsewhere (another device, a merge).
+   * `onRemote` receives the whole document. The editor applies it like a
+   * SaveResult, and only if there are no local edits since the last save;
+   * otherwise it is dropped and the next save merges them. Returns an
+   * unsubscribe function. Called for the open document's path (filePath).
+   */
+  subscribe?(path: string, onRemote: (content: string) => void): () => void
 }
 
 const StorageAdapterContext = createContext<StorageAdapter | null>(null)

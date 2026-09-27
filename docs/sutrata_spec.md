@@ -1072,7 +1072,7 @@ plugins) provide their own. **No embedder may require forking the editor.**
 
 | Extension point | Purpose | OSS default |
 |---|---|---|
-| `StorageAdapter` | open/save/list/autosave/versions of `.sutra` documents | IndexedDB (web), filesystem (desktop) |
+| `StorageAdapter` | open/save/list/autosave/versions of `.sutra` documents; optionally a networked store's merged result and remote updates (below) | IndexedDB (web), filesystem (desktop) |
 | `AIProvider` | LLM completion with streaming; declares capabilities and data-policy text for disclosure | BYO-key multi-provider client |
 | `SpeechProvider` | speech-to-text | BYO-key Whisper, Web Speech, whisper.cpp |
 | `PanelRegistry` | add side panels, inspector sections, and app-bar items; receives the AST and scene IDs | Built-in panels |
@@ -1091,6 +1091,15 @@ Rules:
   migration note.
 - CI includes an **extension contract test**: a stub embedder that implements every
   extension point must build and pass its tests against every commit.
+
+**Networked storage.** `saveDocument` may return `{ content }`: the document as the
+store now holds it (merged with changes saved elsewhere, or with tool-private `x-`
+lines added). An optional `subscribe(path, onRemote)` delivers changes saved
+elsewhere. The editor applies either one as a single change kept out of undo history,
+replacing only the blocks that differ so the cursor stays put, and only if there are
+no local edits since the last save; otherwise it drops it and the next save carries
+the edits. So an adapter must base each save on the content it last *sent*, and merge.
+Autosave skips a save when the text is unchanged since the last one.
 
 ### 11.6 Editor Serializer Fidelity **[P2]**
 

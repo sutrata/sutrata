@@ -15,6 +15,7 @@ import { useCanEdit } from '../extensions/session'
 import { useDecorationProviders } from '../extensions/decorations'
 import { useCollabBinding } from '../extensions/collab'
 import { createExternalDecorationsPlugin } from './external-decorations-plugin'
+import { EXTERNAL_CHANGE } from './external-change'
 
 export function EditorView() {
   const { text, ast, setText, resolvedStyle } = useDocument()
@@ -57,14 +58,15 @@ export function EditorView() {
       },
       editable: () => canEditRef.current,
       dispatchTransaction(tr) {
-        if (tr.docChanged && !canEditRef.current) return
+        if (tr.docChanged && !canEditRef.current && !tr.getMeta(EXTERNAL_CHANGE)) return
         const newState = view.state.apply(tr)
         view.updateState(newState)
         if (tr.docChanged) {
           const newText = prosemirrorToSutra(newState.doc)
           if (newText !== textRef.current) {
             selfChangeRef.current = true
-            setText(newText)
+            // A change applied from storage is not a user edit.
+            setText(newText, tr.getMeta(EXTERNAL_CHANGE) ? { markDirty: false } : undefined)
           }
         }
         emit()

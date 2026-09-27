@@ -508,7 +508,8 @@ html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
 }
 
 /* Tool-private `x-` keys (format spec §7.1) stay in the text but are not shown */
-.cs-scene-metadata[data-private] {
+.cs-scene-metadata[data-private],
+.cs-fm-field[data-private] {
   display: none;
 }
 

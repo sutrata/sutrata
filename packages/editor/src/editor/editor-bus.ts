@@ -49,3 +49,18 @@ export const OPEN_TITLE_PAGE_EVENT = 'cs:open-title-page'
 export function openTitlePageForm(): void {
   window.dispatchEvent(new CustomEvent(OPEN_TITLE_PAGE_EVENT))
 }
+
+// Text the document context is applying from storage (a SaveResult or a
+// remote update). The source view applies it outside its undo history.
+let externalText: string | null = null
+
+export function markExternalText(text: string): void {
+  externalText = text
+}
+
+/** True, once, if `text` is the one marked by markExternalText. */
+export function takeExternalText(text: string): boolean {
+  const hit = externalText === text
+  if (hit) externalText = null
+  return hit
+}

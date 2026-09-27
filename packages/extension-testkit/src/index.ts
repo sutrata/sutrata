@@ -63,6 +63,45 @@ export function createMemoryStorage(): MemoryStorage {
   return storage
 }
 
+/**
+ * A networked StorageAdapter: saveDocument returns the stored document
+ * (SaveResult), and changes saved elsewhere reach subscribers.
+ */
+export interface SyncStorage extends MemoryStorage {
+  /** What the "server" stores for a save; default: the content as sent. */
+  onSave: (path: string, content: string) => string
+  /** A change saved elsewhere: stored, then pushed to subscribers of `path`. */
+  pushRemote(path: string, content: string): void
+  /** Current subscriptions, by path. */
+  subscribers: Map<string, Set<(content: string) => void>>
+}
+
+export function createSyncStorage(): SyncStorage {
+  const base = createMemoryStorage()
+  const subscribers = new Map<string, Set<(content: string) => void>>()
+  const storage: SyncStorage = {
+    ...base,
+    subscribers,
+    onSave: (_path, content) => content,
+    async saveDocument(path, content) {
+      const stored = storage.onSave(path, content)
+      base.documents.set(path, stored)
+      return { content: stored }
+    },
+    subscribe(path, onRemote) {
+      const set = subscribers.get(path) ?? new Set()
+      set.add(onRemote)
+      subscribers.set(path, set)
+      return () => { set.delete(onRemote) }
+    },
+    pushRemote(path, content) {
+      base.documents.set(path, content)
+      for (const cb of subscribers.get(path) ?? []) cb(content)
+    },
+  }
+  return storage
+}
+
 // ── AIProvider ───────────────────────────────────────────────────────────────
 
 export interface StubAI extends AIProvider {

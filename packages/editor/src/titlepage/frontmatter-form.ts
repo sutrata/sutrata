@@ -127,7 +127,7 @@ export function readTitlePage(data: Record<string, unknown> | undefined): TitleP
 
   const managed = new Set<string>(MANAGED_KEYS)
   for (const [key, value] of Object.entries(data)) {
-    if (managed.has(key) || HIDDEN_KEYS.has(key)) continue
+    if (managed.has(key) || HIDDEN_KEYS.has(key) || key.startsWith('x-')) continue
     if (typeof value === 'string' && !value.includes('\n')) f.custom.push({ key, value })
   }
   return f
