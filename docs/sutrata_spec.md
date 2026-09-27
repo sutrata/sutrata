@@ -1014,7 +1014,7 @@ These v2.0 items moved to the Sutrata Cloud roadmap (internal, not published in 
 | `@sutrata/app` | Thin standalone shell: wires `@sutrata/editor` with local storage, BYO-key AI, and app chrome. Builds the PWA and the Tauri renderer. | GPL-3.0-or-later |
 | `@sutrata/tauri` | Tauri v2 shell (Rust): native dialogs, keychain, filesystem, print window. | GPL-3.0-or-later |
 | `@sutrata/extension-testkit` **[P1]** | Stub embedder implementing every §11.5 extension point; runs as the extension contract test in CI. | GPL-3.0-or-later |
-| `@sutrata/cloud-connector` **[P2, optional]** | Open `StorageAdapter` for the documented Sutrata Cloud sync API. Not bundled by default; the app works identically without it. | GPL-3.0-or-later |
+| `@sutrata/cloud-connector` **[deferred]** | Open `StorageAdapter` for a documented Sutrata Cloud sync API. Not planned for now; if built, not bundled by default, and the app works identically without it. | GPL-3.0-or-later |
 
 `@sutrata/editor` is split out of today's `@sutrata/app`. The split is what lets
 other products, including Sutrata Cloud, embed the editor without forking it.
