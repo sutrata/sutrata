@@ -1,12 +1,13 @@
 import { tokenize } from './lexer.js'
 import { parseFrontmatter } from './frontmatter.js'
-import { extractComments, type ExtractedComment } from './comments.js'
+import { extractComments, type ExtractedComment, type CommentShift } from './comments.js'
 import type {
   DocumentNode, ContentNode, SceneHeadingNode, SceneContentNode,
   CharacterNode, DialogueContentNode, DualDialogueNode,
   SectionNode, ActionNode, SceneMetadataNode,
   DialogueNode, ParentheticalNode, TransitionNode, CenteredNode,
   LyricsNode, NoteNode, CommentNode, PageBreakNode, InlineSpan,
+  SourceSpan, ParseWithSpansResult,
 } from './types.js'
 
 function parseInline(text: string): InlineSpan[] {
@@ -253,17 +254,90 @@ function parseBlock(
   } as ActionNode
 }
 
+/** A block of the comment-extracted body and where it sits in that body. */
+interface Block {
+  text: string
+  start: number
+}
+
+/** Same blocks as `body.split(/\n\n+/).filter(b => b.trim())`, with positions. */
+function splitBlocks(body: string): Block[] {
+  const blocks: Block[] = []
+  let pos = 0
+  for (const m of body.matchAll(/\n\n+/g)) {
+    if (body.slice(pos, m.index).trim()) blocks.push({ text: body.slice(pos, m.index), start: pos })
+    pos = m.index! + m[0].length
+  }
+  if (body.slice(pos).trim()) blocks.push({ text: body.slice(pos), start: pos })
+  return blocks
+}
+
+/** From the start of a block's first non-blank line to the end of its last one. */
+function blockSpan(block: Block): SourceSpan {
+  const lines = block.text.split('\n')
+  const first = lines.findIndex(l => l.trim() !== '')
+  let last = lines.length - 1
+  while (lines[last]!.trim() === '') last--
+  let start = block.start
+  for (let k = 0; k < first; k++) start += lines[k]!.length + 1
+  let end = start
+  for (let k = first; k <= last; k++) end += lines[k]!.length + (k < last ? 1 : 0)
+  return { start, end }
+}
+
+/**
+ * Maps an offset in the comment-extracted body back to the source passed to
+ * parse(): undoes comment placeholders, the frontmatter slice and CRLF → LF.
+ */
+function offsetMapper(source: string, bodyStart: number, shifts: CommentShift[]): (offset: number) => number {
+  // Normalized-text index of each LF that was preceded by a removed CR.
+  const crlf: number[] = []
+  for (let p = source.indexOf('\r\n'); p !== -1; p = source.indexOf('\r\n', p + 2)) crlf.push(p - crlf.length)
+  return (offset: number) => {
+    let n = offset
+    for (const s of shifts) {
+      if (s.at + s.placeholderLength > offset) break
+      n += s.rawLength - s.placeholderLength
+    }
+    n += bodyStart
+    // Count removed CRs whose LF comes before n.
+    let lo = 0, hi = crlf.length
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1
+      if (crlf[mid]! < n) lo = mid + 1
+      else hi = mid
+    }
+    return n + lo
+  }
+}
+
 export function parse(source: string): DocumentNode {
+  return parseWithSpans(source).document
+}
+
+/**
+ * parse(), plus where each top-level node sits in `source` (OSS spec §11.7).
+ * `children[i]` is the span of `document.children[i]`; a scene's span runs
+ * from its heading line to the end of its last block. The text between spans
+ * is only blank lines, so cutting `source` at the start of every section and
+ * scene heading gives pieces that join back to `source` exactly.
+ */
+export function parseWithSpans(source: string): ParseWithSpansResult {
   const normalized = source.replace(/\r\n/g, '\n')
   const frontmatter = parseFrontmatter(normalized)
-  const rawBody = frontmatter ? normalized.slice(frontmatter.raw.length) : normalized
+  const bodyStart = frontmatter ? frontmatter.raw.length : 0
+  const rawBody = normalized.slice(bodyStart)
   // Multi-line <!-- ... --> comments (including ones spanning a blank line)
   // are extracted before block-splitting so they're never fragmented or
   // classified by only their first line — see comments.ts.
-  const { body, comments } = extractComments(rawBody)
+  const { body, comments, shifts } = extractComments(rawBody)
+  const toSource = offsetMapper(source, bodyStart, shifts)
   // Blank-line count is normalized: serializer emits exactly \n\n between blocks
-  const blocks = body.split(/\n\n+/).filter(b => b.trim())
+  const blocks = splitBlocks(body)
   const children: ContentNode[] = []
+  const spans: SourceSpan[] = []
+  const spanOf = (from: Block, to: Block): SourceSpan =>
+    ({ start: toSource(blockSpan(from).start), end: toSource(blockSpan(to).end) })
   let i = 0
   // Tracks whether we're currently inside a {#characters}/"# Characters"
   // registry section, so @cue blocks there parse trailing "& key: value"
@@ -272,12 +346,13 @@ export function parse(source: string): DocumentNode {
   // collecting a scene's content at those same boundaries.
   let inCharacterRegistry = false
   while (i < blocks.length) {
-    const block = blocks[i]!
+    const block = blocks[i]!.text
     const firstLine = block.split('\n').find(l => l.trim() !== '') ?? ''
     const firstToken = tokenize(firstLine)[0]!
 
     if (firstToken.type === 'scene-heading') {
       inCharacterRegistry = false
+      const headingBlock = blocks[i]!
       // Collect this block plus all following non-heading blocks as scene children
       const sceneLines = block.split('\n').filter(l => l.trim() !== '')
       i++
@@ -286,8 +361,8 @@ export function parse(source: string): DocumentNode {
       const { metadata, next: li } = collectMetadata(sceneLines, 1)
       const headingRaw = [sceneLines.slice(0, li).join('\n')]
       if (li === sceneLines.length) {
-        while (i < blocks.length && isMetadataBlock(blocks[i]!)) {
-          const metaLines = blocks[i]!.split('\n').filter(l => l.trim() !== '')
+        while (i < blocks.length && isMetadataBlock(blocks[i]!.text)) {
+          const metaLines = blocks[i]!.text.split('\n').filter(l => l.trim() !== '')
           metadata.push(...collectMetadata(metaLines, 0).metadata)
           headingRaw.push(metaLines.join('\n'))
           i++
@@ -295,7 +370,7 @@ export function parse(source: string): DocumentNode {
       }
       const contentBlocks: string[] = []
       while (i < blocks.length) {
-        const nextBlock = blocks[i]!
+        const nextBlock = blocks[i]!.text
         const nextFirstLine = nextBlock.split('\n').find(l => l.trim() !== '') ?? ''
         const nextFirstToken = tokenize(nextFirstLine)[0]!
         if (nextFirstToken.type === 'scene-heading' || nextFirstToken.type === 'section') break
@@ -319,14 +394,30 @@ export function parse(source: string): DocumentNode {
       ]
       heading.children = parseSceneContent(allContentLines, comments)
       children.push(heading)
+      spans.push(spanOf(headingBlock, blocks[i - 1]!))
     } else {
       const node = parseBlock(block, comments, inCharacterRegistry)
-      if (node) children.push(node)
+      if (node) {
+        children.push(node)
+        spans.push(spanOf(blocks[i]!, blocks[i]!))
+      }
       if (node && node.type === 'section') {
         inCharacterRegistry = isCharacterRegistrySection(node.id, node.text)
       }
       i++
     }
   }
-  return { type: 'document', frontmatter, children }
+  let frontmatterSpan: SourceSpan | null = null
+  if (frontmatter) {
+    // Up to the end of the closing --- line, before its line break.
+    let end = toSource(0)
+    if (source[end - 1] === '\n') end--
+    if (source[end - 1] === '\r') end--
+    frontmatterSpan = { start: 0, end }
+  }
+  return {
+    document: { type: 'document', frontmatter, children },
+    frontmatter: frontmatterSpan,
+    children: spans,
+  }
 }

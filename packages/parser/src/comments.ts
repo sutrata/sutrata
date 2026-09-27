@@ -3,6 +3,13 @@ export interface ExtractedComment {
   text: string  // trimmed inner text
 }
 
+/** Where a placeholder sits in the returned body, for mapping offsets back. */
+export interface CommentShift {
+  at: number                 // placeholder start in the returned body
+  placeholderLength: number
+  rawLength: number          // length of the comment span it replaced
+}
+
 // Only spans that open and close their own line (like frontmatter's ---
 // delimiters) are extracted here — a single-line comment (no embedded
 // newline) is left untouched and still handled by lexer.ts's per-line
@@ -21,14 +28,22 @@ const COMMENT_SPAN = /^<!--([\s\S]*?)-->[ \t]*$/gm
  * can appear anywhere in the body, not just at the top, so a placeholder is
  * substituted in place rather than sliced off entirely.
  */
-export function extractComments(body: string): { body: string; comments: Map<string, ExtractedComment> } {
+export function extractComments(body: string): {
+  body: string
+  comments: Map<string, ExtractedComment>
+  shifts: CommentShift[]
+} {
   const comments = new Map<string, ExtractedComment>()
+  const shifts: CommentShift[] = []
   let index = 0
-  const replacedBody = body.replace(COMMENT_SPAN, (match, inner: string) => {
+  let delta = 0
+  const replacedBody = body.replace(COMMENT_SPAN, (match, inner: string, offset: number) => {
     if (!inner.includes('\n')) return match
     const placeholder = `\u0000COMMENT_${index++}\u0000`
     comments.set(placeholder, { raw: match, text: inner.trim() })
+    shifts.push({ at: offset + delta, placeholderLength: placeholder.length, rawLength: match.length })
+    delta += placeholder.length - match.length
     return placeholder
   })
-  return { body: replacedBody, comments }
+  return { body: replacedBody, comments, shifts }
 }
