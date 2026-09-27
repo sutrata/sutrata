@@ -6,4 +6,6 @@
 
 Tool-private `x-` frontmatter keys (format spec §5) are hidden on the title page, kept out of the caret's way and out of the title page form's custom rows; exports already never printed them.
 
-Existing adapters need no change: both members are optional.
+For embedders whose documents are not local files: `SessionContext.featureFlags.localFiles: false` hides New, Open and Save As (and Ctrl+O); Save stays and saves through the adapter. An optional `StorageAdapter.displayName(path)` names the document in the app bar's file pill (exposed as `fileDisplayName` on the document context), for adapters whose paths are opaque ids.
+
+Existing adapters need no change: every new member is optional.

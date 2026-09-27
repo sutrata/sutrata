@@ -1099,7 +1099,10 @@ elsewhere. The editor applies either one as a single change kept out of undo his
 replacing only the blocks that differ so the cursor stays put, and only if there are
 no local edits since the last save; otherwise it drops it and the next save carries
 the edits. So an adapter must base each save on the content it last *sent*, and merge.
-Autosave skips a save when the text is unchanged since the last one.
+Autosave skips a save when the text is unchanged since the last one. Adapters whose
+paths are opaque ids may name documents with `displayName(path)`, and an embedder whose
+documents are not local files sets `featureFlags.localFiles: false` to hide New, Open
+and Save As.
 
 ### 11.6 Editor Serializer Fidelity **[P2]**
 

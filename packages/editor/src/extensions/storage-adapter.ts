@@ -84,6 +84,12 @@ export interface StorageAdapter {
    * unsubscribe function. Called for the open document's path (filePath).
    */
   subscribe?(path: string, onRemote: (content: string) => void): () => void
+
+  /**
+   * Optional: the name to show for `path` (e.g. a document title when paths
+   * are opaque ids). Defaults to the path itself.
+   */
+  displayName?(path: string): string
 }
 
 const StorageAdapterContext = createContext<StorageAdapter | null>(null)
