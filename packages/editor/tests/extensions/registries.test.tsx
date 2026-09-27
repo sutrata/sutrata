@@ -55,7 +55,10 @@ describe('PanelRegistry', () => {
     expect(screen.getByRole('tab', { name: 'Scenes' })).toHaveAttribute('aria-selected', 'true')
     fireEvent.click(screen.getByRole('tab', { name: 'Notes' }))
     expect(screen.getByRole('tabpanel', { name: 'Notes' })).toHaveTextContent('Scenes: 1,2')
-    expect(screen.getByText('BADGE')).toBeInTheDocument()
+    // Desktop group and mobile controls each carry the panel; CSS shows one.
+    const badges = screen.getAllByText('BADGE')
+    expect(badges).toHaveLength(2)
+    expect(badges.some(b => b.closest('.cs-ab-mobile-controls'))).toBe(true)
 
     // activeSceneId follows the caret
     const view = getEditorView()!
