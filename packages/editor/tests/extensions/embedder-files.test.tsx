@@ -71,6 +71,18 @@ describe('embedders whose documents are not local files', () => {
     expect(screen.getAllByLabelText('Open .sutra').length).toBeGreaterThan(0)
   })
 
+  it('no local-session recovery: the pointer is neither read nor written', async () => {
+    const pointer = JSON.stringify({ path: 'other-doc', updatedAt: 1 })
+    localStorage.setItem('sutrata:recovery-pointer', pointer)
+    const adapter = storage({ loadDocument: vi.fn().mockResolvedValue('## OTHER\n') })
+    await mount(adapter, cloudSession)
+    expect(adapter.loadDocument).not.toHaveBeenCalled()
+    await act(async () => { ctx.setFilePath('doc-1'); ctx.setText('## MINE\n') })
+    await act(async () => { await ctx.save() })
+    expect(localStorage.getItem('sutrata:recovery-pointer')).toBe(pointer)
+    localStorage.removeItem('sutrata:recovery-pointer')
+  })
+
   it('the file pill shows the adapter display name for the path', async () => {
     await mount(storage({ displayName: path => (path === 'doc-7f3a' ? 'கடைசி ரயில்' : path) }), cloudSession)
     await act(async () => { ctx.setFilePath('doc-7f3a') })

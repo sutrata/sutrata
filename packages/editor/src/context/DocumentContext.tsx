@@ -247,10 +247,16 @@ export function DocumentProvider({
 
   useEffect(() => { void reloadCustomStyles() }, [reloadCustomStyles])
 
+  // `localFiles: false` (SessionContext): the embedder's documents are not local
+  // files, so there is no file to open or save as, and no local-session recovery
+  // (the embedder opens its documents and keeps its own offline copy).
+  const localFilesRef = useRef(true)
+  localFilesRef.current = isFeatureEnabled(session ?? DEFAULT_SESSION, 'localFiles')
+
   // Recover autosaved-but-unsaved content on boot (Ctrl-R, a crash, or the tab closing
   // without an explicit save) instead of always starting from a blank document.
   useEffect(() => {
-    const pointer = readRecoveryPointer()
+    const pointer = localFilesRef.current ? readRecoveryPointer() : null
     if (!pointer) return
     let cancelled = false
     void (async () => {
@@ -345,7 +351,7 @@ export function DocumentProvider({
       if (content !== undefined && content !== sent && textRef.current === sent && samePath) {
         applyExternalText(path, content)
       }
-      writeRecoveryPointer(path)
+      if (localFilesRef.current) writeRecoveryPointer(path)
       setLastSaveTarget('local')
       autosaveFailedRef.current = false
       // Deliberately NOT setDirty(false) here — this is a local backup, not a
@@ -403,10 +409,6 @@ export function DocumentProvider({
       onConfirm: doNew,
     })
   }, [isDirty, showConfirm])
-
-  // `localFiles: false` (SessionContext): the embedder's documents are not local files.
-  const localFilesRef = useRef(true)
-  localFilesRef.current = isFeatureEnabled(session ?? DEFAULT_SESSION, 'localFiles')
 
   const openFile = useCallback(async () => {
     if (!localFilesRef.current) return
