@@ -16,10 +16,45 @@
    print/PDF export (workflow-reports.ts), but is not applied in DOCX export
    (docx-exporter.ts). Also no per-export toggle to opt out when the field is
    set — it's implicitly always-on.
-10. @sutrata/cloud-connector (OSS spec §11.1, P2, optional): an open
-    StorageAdapter for the documented sync API. Not bundled by default; the
-    app must work identically without it.
+10. @sutrata/cloud-connector (OSS spec §11.1, deferred): an open
+    StorageAdapter for a documented sync API. Not planned for now; if built,
+    it is not bundled by default and the app must work identically without it.
 14. Import — legacy-font → Unicode conversion (OSS spec §5.5, §5.6, P2):
     Krutidev/Shree-Lipi for Hindi, Bamini/TAM/TAB for Tamil, Anu for Telugu
     first; then Nudi/Baraha, ML-TT. AI-assisted import of .docx/.txt/.md is
     done (packages/editor/src/import/).
+17. Parser — source offsets on parsed blocks: nodes carry `raw` text only, and
+    blank-line separators between blocks are not recorded, so an embedder cannot
+    map a node back to its exact byte range in the source. Add start/end offsets
+    to top-level nodes (at least scene and section headings) so a document can be
+    cut at `#`/`##` headings using the parser's block rules (format spec §11.1)
+    rather than a regex, with the pieces joining back byte for byte. No spec
+    section yet; add one under OSS spec §11.
+18. Print paginator — page map and margin marks, for revision mode kept by an
+    embedder (OSS spec §3.6, §11.3): PrintPaginationOptions has only content
+    height, page-number prefix and CONTINUED suffix. Needed:
+    - an optional fixed page map (locked page breaks), with new pages lettered
+      as A-pages (12, 12A, 13) instead of reflowing later pages;
+    - per-block margin marks (e.g. revision stars) and a per-page header label
+      (e.g. revision color and date).
+    Keep the default output unchanged when neither is given.
+19. Scene number locking (OSS spec §8.6, P1): the "lock scene numbers" mode is
+    specified but not implemented — once locked, Renumber letters new scenes
+    only (a scene after 12 becomes 12A) and never changes an existing number.
+    Also let SessionContext.featureFlags turn Renumber off (e.g. `renumber:
+    false`), so an embedder can protect a locked script before the full mode
+    exists; today the navigator's Renumber action is available to every edit
+    session.
+20. StorageAdapter — sync members for networked embedders (OSS spec §11.5):
+    saveDocument returns void, so an adapter that merges on save, or adds
+    lines (e.g. tool-private `x-` keys) on save, cannot hand the result back,
+    and changes saved elsewhere cannot reach an open editor. Let saveDocument
+    optionally return `{ content?: string }` and add an optional
+    `subscribe(path, onRemote)`. The editor applies either as one transaction
+    kept out of undo history, mapping the cursor through it. Optional members
+    only, so the local adapter and testkit stubs keep working; add contract
+    tests to the testkit.
+21. Frontmatter — tool-private keys (format spec §5, §7.1): custom frontmatter
+    keys are preserved, but check they are never shown on the title page or
+    printed. If they can be, extend the `x-` rule to frontmatter keys: kept on
+    round-trip, hidden, never exported to print, DOCX or Fountain.

@@ -1,6 +1,6 @@
 {
   "name": "@sutrata/parser",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Reference parser for Sutra, a plain-text screenplay format for world languages: AST, byte-faithful round-trip, Fountain import/export, Indic romanization.",
   "license": "Apache-2.0",
   "keywords": [
