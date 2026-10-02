@@ -1,5 +1,15 @@
 # @sutrata/editor
 
+## 0.4.0
+
+### Minor Changes
+
+- d423f51: Scene navigator lists `#` section headings as anchors between scenes; clicking one jumps to it.
+
+### Patch Changes
+
+- 6f0ad56: Find: a leftover query no longer highlights/scrolls the editor while the dialog is closed, and typing or editing no longer causes excessive scrolling (only off-screen matches scroll; Next/Prev still center).
+
 ## 0.3.0
 
 ### Minor Changes
