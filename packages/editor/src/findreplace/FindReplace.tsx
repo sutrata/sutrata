@@ -21,16 +21,24 @@ export function FindReplace() {
   const queryRef = useRef<HTMLInputElement>(null)
   const nextIndexAfterReplace = useRef<number | null>(null)
 
-  // Recompute matches whenever query/text/caseSensitive/mode changes.
+  // What the next highlight pass should scroll: 'none' (text edits), 'soft'
+  // (query typing: only if the match is off-screen), 'center' (navigation).
+  const pendingScroll = useRef<'none' | 'soft' | 'center'>('none')
+  const lastSearch = useRef({ query: '', caseSensitive: false, mode: mode as string })
+
+  // Recompute matches whenever query/text/caseSensitive/mode changes — but only
+  // while the panel is open, so a leftover query never affects the editor.
   // In formatted mode we search the PM doc's display text (not raw Sutra) so
   // offsets are correct; in source mode the CodeMirror doc *is* the raw Sutra
   // text, so raw-offset matches from find-engine map directly onto it.
   useEffect(() => {
+    if (!findReplaceVisible) return
     if (!query) {
       setMatches([])
       setCurrentIndex(0)
       clearFindHighlights()
       clearSourceFindHighlights()
+      lastSearch.current = { query, caseSensitive, mode }
       return
     }
     let found: PmMatch[]
@@ -42,36 +50,39 @@ export function FindReplace() {
       const view = getEditorView()
       found = view ? findInPmDoc(view.state.doc, query, { caseSensitive }) : []
     }
+    const prev = lastSearch.current
+    const searchChanged = prev.query !== query || prev.caseSensitive !== caseSensitive || prev.mode !== mode
+    lastSearch.current = { query, caseSensitive, mode }
     setMatches(found)
-    const highlight = mode === 'source' ? setSourceFindHighlights : setFindHighlights
-    const scrollTo = mode === 'source' ? scrollToSourceMatch : scrollToPmMatch
     if (nextIndexAfterReplace.current !== null) {
       const idx = Math.min(nextIndexAfterReplace.current, Math.max(0, found.length - 1))
       setCurrentIndex(idx)
       nextIndexAfterReplace.current = null
-      highlight(found, idx)
-      if (found.length > 0) scrollTo(found[idx]!)
+      pendingScroll.current = 'center'
     } else {
       setCurrentIndex(0)
-      highlight(found, 0)
-      if (found.length > 0) scrollTo(found[0]!)
+      // Plain document edits must not move the viewport.
+      pendingScroll.current = searchChanged ? 'soft' : 'none'
     }
   // text in deps so we re-search after replace; view not in deps (stable ref)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, text, caseSensitive, mode])
+  }, [query, text, caseSensitive, mode, findReplaceVisible])
 
-  // Scroll to current match and update active highlight whenever index changes.
-  const didMount = useRef(false)
+  // Update the active highlight (and scroll if requested) whenever matches/index change.
   useEffect(() => {
-    if (!didMount.current) { didMount.current = true; return }
+    if (!findReplaceVisible || !query) return
+    const scroll = pendingScroll.current
+    pendingScroll.current = 'none'
+    const cur = matches[currentIndex]
     if (mode === 'source') {
       setSourceFindHighlights(matches, currentIndex)
-      if (matches.length > 0) scrollToSourceMatch(matches[currentIndex]!)
+      if (cur && scroll !== 'none') scrollToSourceMatch(cur, scroll === 'center')
     } else {
       setFindHighlights(matches, currentIndex)
-      if (matches.length > 0) scrollToPmMatch(matches[currentIndex]!)
+      if (cur && scroll !== 'none') scrollToPmMatch(cur, scroll === 'center')
     }
-  }, [currentIndex, matches, mode])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex, matches, mode, findReplaceVisible])
 
   // Clear highlights when the panel closes.
   useEffect(() => {
@@ -88,11 +99,13 @@ export function FindReplace() {
 
   const goNext = useCallback(() => {
     if (matches.length === 0) return
+    pendingScroll.current = 'center'
     setCurrentIndex(i => (i + 1) % matches.length)
   }, [matches.length])
 
   const goPrev = useCallback(() => {
     if (matches.length === 0) return
+    pendingScroll.current = 'center'
     setCurrentIndex(i => (i - 1 + matches.length) % matches.length)
   }, [matches.length])
 

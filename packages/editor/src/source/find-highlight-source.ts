@@ -50,8 +50,9 @@ export function clearSourceFindHighlights(): void {
 }
 
 /** Scroll the source view so the given match is visible. */
-export function scrollToSourceMatch(match: SourceMatch): void {
+export function scrollToSourceMatch(match: SourceMatch, center = true): void {
   const view = getSourceView()
   if (!view) return
-  view.dispatch({ effects: EditorView.scrollIntoView(match.start, { y: 'center' }) })
+  // 'nearest' only scrolls when the match is off-screen (used while typing).
+  view.dispatch({ effects: EditorView.scrollIntoView(match.start, { y: center ? 'center' : 'nearest' }) })
 }

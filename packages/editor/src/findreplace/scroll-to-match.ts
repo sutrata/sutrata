@@ -69,13 +69,21 @@ export function findInPmDoc(
  * Highlighting is handled by the find-highlight plugin (decorations) — no selection
  * dispatch here so focus stays in the find input.
  */
-export function scrollToPmMatch(match: PmMatch): void {
+export function scrollToPmMatch(match: PmMatch, center = true): void {
   const view = getEditorView()
   if (!view) return
   try {
     const domNode = view.nodeDOM(match.pmFrom)
     const el = domNode instanceof Element ? domNode : (domNode as Element | null)?.parentElement
-    el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    if (!el) return
+    if (!center) {
+      // While typing: only scroll when the match is off-screen, and don't animate.
+      const r = el.getBoundingClientRect()
+      if (r.top >= 0 && r.bottom <= window.innerHeight) return
+      el.scrollIntoView({ block: 'center' })
+      return
+    }
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
   } catch {
     // At doc boundary — ignore
   }
