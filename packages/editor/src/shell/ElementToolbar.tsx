@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useTranslation } from '../i18n/useTranslation'
 import { ToolbarButton } from './ToolbarButton'
 import { subscribe } from '../editor/editor-bus'
 import { OverflowIcon, CloseIcon } from './icons'
@@ -24,6 +25,7 @@ function groupsOf(commands: CommandContribution[]): CommandContribution[][] {
  * separator between groups.
  */
 export function ElementToolbar() {
+  const { t } = useTranslation()
   const [, setTick] = useState(0)
   const [overflowOpen, setOverflowOpen] = useState(false)
   const commands = useCommands().filter(c => c.menu === 'toolbar')
@@ -41,7 +43,7 @@ export function ElementToolbar() {
 
   return (
     <>
-      <div className="cs-element-toolbar" role="toolbar" aria-label="Editing toolbar">
+      <div className="cs-element-toolbar" role="toolbar" aria-label={t('tb.editing')}>
         {groups.map((group, gi) => (
           <React.Fragment key={group[0]!.group ?? `g${gi}`}>
             {gi > 0 && <span className="cs-tb-sep" />}
@@ -62,7 +64,7 @@ export function ElementToolbar() {
         <button
           type="button"
           className={`cs-tb-overflow${overflowOpen ? ' cs-tb-overflow-active' : ''}`}
-          aria-label="More"
+          aria-label={t('tb.more')}
           aria-expanded={overflowOpen}
           onClick={() => setOverflowOpen(!overflowOpen)}
         >
@@ -82,21 +84,21 @@ export function ElementToolbar() {
             className="cs-tb-overflow-sheet"
             role="dialog"
             aria-modal="true"
-            aria-label="Screenplay Elements & Formatting"
+            aria-label={t('tb.sheetLabel')}
           >
             <div className="cs-tb-overflow-header">
-              <span className="cs-tb-overflow-title">Formatting &amp; Elements</span>
+              <span className="cs-tb-overflow-title">{t('tb.sheetTitle')}</span>
               <button
                 type="button"
                 className="cs-tb-overflow-close"
-                aria-label="Close"
+                aria-label={t('common.close')}
                 onClick={() => setOverflowOpen(false)}
               >
                 <CloseIcon size={18} />
               </button>
             </div>
 
-            <div className="cs-tb-overflow-section-label">Inline Formatting</div>
+            <div className="cs-tb-overflow-section-label">{t('tb.inline')}</div>
             <div className="cs-tb-overflow-inline-grid">
               {inline.map(c => (
                 <button key={c.id} type="button" className="cs-tb-overflow-item" onClick={() => run(c)}>
@@ -106,7 +108,7 @@ export function ElementToolbar() {
               ))}
             </div>
 
-            <div className="cs-tb-overflow-section-label">Screenplay Elements</div>
+            <div className="cs-tb-overflow-section-label">{t('tb.elements')}</div>
             <div className="cs-tb-overflow-list">
               {[...elements, ...others].map(c => {
                 const active = c.isActive?.(ctx) ?? false
@@ -122,7 +124,7 @@ export function ElementToolbar() {
                       <span className="cs-tb-overflow-list-name">{c.label}</span>
                       {c.sigil && <span className="cs-tb-overflow-list-sigil">{c.sigil}</span>}
                     </div>
-                    {active && <span className="cs-tb-overflow-current-badge">Active</span>}
+                    {active && <span className="cs-tb-overflow-current-badge">{t('tb.active')}</span>}
                   </button>
                 )
               })}

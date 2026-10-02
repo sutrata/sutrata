@@ -25,7 +25,7 @@ interface TranslationContextType {
 const TranslationContext = createContext<TranslationContextType>({
   locale: 'en',
   setLocale: () => {},
-  t: (key) => key,
+  t: (key) => (en as Record<string, string>)[key] ?? key,
 })
 
 const STORAGE_KEY = 'sutrata-ui-locale'

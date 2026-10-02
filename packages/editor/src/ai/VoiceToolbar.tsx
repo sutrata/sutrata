@@ -28,7 +28,7 @@ export function VoiceToolbar() {
   const ai = useAI()!
   const speech = useSpeech()!
   const sessionRef = useRef<SpeechRecognitionSession | null>(null)
-  const { locale } = useTranslation()
+  const { locale, t } = useTranslation()
   const defaultLang = VOICE_LANGUAGES.find(l => l.base === locale)?.code || 'en-US'
   const [langCode, setLangCode] = useState<string>(defaultLang)
   const [isListening, setIsListening] = useState<boolean>(false)
@@ -93,9 +93,9 @@ export function VoiceToolbar() {
         const result = await formatTranscript(ai, fullTranscript, langCode)
         insertSutra(result.trim(), mode)
         setVoiceActive(false)
-        showToast('Voice dictation inserted.', 'success')
+        showToast(t('voice.toast.inserted'), 'success')
       } catch (e: any) {
-        showToast(`Auto-insert failed: ${e.message || String(e)}. Opening confirmation dialog.`, 'warn')
+        showToast(t('voice.toast.autoFailed').replace('{error}', e.message || String(e)), 'warn')
         setShowConfirm(true)
       } finally {
         setIsFormatting(false)
@@ -108,10 +108,10 @@ export function VoiceToolbar() {
   const handleStart = async () => {
     if (!(await ai.isConfigured())) {
       if (ai.openSetup) {
-        showToast('AI must be set up to format dictated text. Opening Setup...', 'info')
+        showToast(t('voice.toast.setup'), 'info')
         ai.openSetup()
       } else {
-        showToast(`${ai.displayName} is not available right now.`, 'warn')
+        showToast(t('ai.unavailable').replace('{name}', ai.displayName), 'warn')
       }
       return
     }
@@ -171,7 +171,7 @@ export function VoiceToolbar() {
     insertSutra(formattedText, mode)
     setShowConfirm(false)
     setVoiceActive(false)
-    showToast('Screenplay formatted and inserted.', 'success')
+    showToast(t('voice.toast.formatted'), 'success')
   }
 
   const activeBaseLang = VOICE_LANGUAGES.find(l => l.code === langCode)?.base || 'en'
@@ -193,11 +193,11 @@ export function VoiceToolbar() {
   }
 
   return (
-    <div className="cs-voice-toolbar" role="region" aria-label="Voice Dictation Toolbar">
+    <div className="cs-voice-toolbar" role="region" aria-label={t('voice.toolbar.aria')}>
       <div className="cs-voice-toolbar-row">
         <div className="cs-voice-toolbar-badge">
           <MicIcon size={14} />
-          <span>Voice Dictation</span>
+          <span>{t('appbar.voice')}</span>
         </div>
 
         <select
@@ -205,7 +205,7 @@ export function VoiceToolbar() {
           value={langCode}
           onChange={e => setLangCode(e.target.value)}
           disabled={isListening}
-          aria-label="Voice Language"
+          aria-label={t('voice.language')}
         >
           {VOICE_LANGUAGES.map(l => (
             <option key={l.code} value={l.code}>{l.label}</option>
@@ -219,7 +219,7 @@ export function VoiceToolbar() {
               className="cs-voice-btn-danger"
               onClick={handleStopListening}
             >
-              Stop &amp; Format
+              {t('voice.stopFormat')}
             </button>
             <canvas
               ref={canvasRef}
@@ -227,7 +227,7 @@ export function VoiceToolbar() {
               height={26}
               className="cs-voice-waveform"
               role="img"
-              aria-label="Audio waveform visualization"
+              aria-label={t('voice.wave')}
             />
           </div>
         ) : (
@@ -239,7 +239,7 @@ export function VoiceToolbar() {
               disabled={!isSupported || isFormatting}
             >
               <MicIcon size={14} />
-              <span>{isFormatting ? 'Formatting...' : 'Start Dictation'}</span>
+              <span>{isFormatting ? t('voice.formattingBtn') : t('voice.start')}</span>
             </button>
 
             {transcript && (
@@ -250,7 +250,7 @@ export function VoiceToolbar() {
                   onClick={handleFormatCaptured}
                   disabled={isFormatting}
                 >
-                  Re-format
+                  {t('voice.reformat')}
                 </button>
                 <button
                   type="button"
@@ -260,7 +260,7 @@ export function VoiceToolbar() {
                     setError('')
                   }}
                 >
-                  Clear
+                  {t('voice.clear')}
                 </button>
               </>
             )}
@@ -272,12 +272,12 @@ export function VoiceToolbar() {
           className="cs-voice-btn-ghost"
           onClick={handleCancel}
         >
-          Close
+          {t('common.close')}
         </button>
 
         {!isSupported && (
           <span className="cs-voice-warning">
-            {speech.displayName} is not supported in this browser.
+            {t('voice.notSupported').replace('{name}', speech.displayName)}
           </span>
         )}
       </div>
@@ -288,14 +288,14 @@ export function VoiceToolbar() {
           <div className="cs-voice-transcript-box">
             {transcript}
             {interimResult && <span className="cs-voice-interim"> {interimResult}</span>}
-            {!transcript && !interimResult && <span className="cs-voice-placeholder">Speak now to dictate...</span>}
+            {!transcript && !interimResult && <span className="cs-voice-placeholder">{t('voice.speakNow')}</span>}
           </div>
         ) : (
           <textarea
             className="cs-voice-textarea"
             value={transcript}
             onChange={(e) => setTranscript(e.target.value)}
-            placeholder="Edit captured text before formatting..."
+            placeholder={t('voice.editCaptured')}
             rows={2}
           />
         )
@@ -309,7 +309,7 @@ export function VoiceToolbar() {
 
       {/* Localized formatting cheatsheet */}
       <div className="cs-voice-cheatsheet">
-        <span className="cs-voice-cheatsheet-title">Commands:</span>
+        <span className="cs-voice-cheatsheet-title">{t('voice.commands')}</span>
         {cheatsheet.map(c => {
           if (c.type === 'literal') return null
           return (

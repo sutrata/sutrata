@@ -191,13 +191,13 @@ function generateSceneMetadata(ai: AIProvider, sceneText: string) {
  * True when the provider can take calls; otherwise points the user at its
  * setup (if it has one) and returns false.
  */
-async function ensureAIReady(ai: AIProvider, showToast: (m: string, type?: 'info' | 'warn') => void): Promise<boolean> {
+async function ensureAIReady(ai: AIProvider, showToast: (m: string, type?: 'info' | 'warn') => void, t: (key: string) => string): Promise<boolean> {
   if (await ai.isConfigured()) return true
   if (ai.openSetup) {
-    showToast('AI must be set up to generate synopsis & duration. Opening Setup...', 'info')
+    showToast(t('navigator.toast.aiSetup'), 'info')
     ai.openSetup()
   } else {
-    showToast(`${ai.displayName} is not available right now.`, 'warn')
+    showToast(t('ai.unavailable').replace('{name}', ai.displayName), 'warn')
   }
   return false
 }
@@ -241,7 +241,7 @@ export function SceneNavigator() {
     setIsProcessing(true)
     setProgressText('Generating synopsis & estimating duration...')
     try {
-      if (!ai || !(await ensureAIReady(ai, showToast))) return
+      if (!ai || !(await ensureAIReady(ai, showToast, t))) return
 
       const idx = scenes.findIndex(s => s.index === scene.index)
       if (idx === -1) return
@@ -260,9 +260,9 @@ export function SceneNavigator() {
         nextText = updateSceneMetadataInText(nextText, scene.textOffset, 'est-duration', duration.trim())
         setText(nextText)
       }
-      showToast(`Generated synopsis & duration for scene ${scene.id || scene.index}.`, 'success')
+      showToast(t('navigator.toast.generatedOne').replace('{scene}', String(scene.id || scene.index)), 'success')
     } catch (e: any) {
-      showToast(`Scene metadata generation failed: ${e.message || String(e)}`, 'error')
+      showToast(t('navigator.toast.genFailed').replace('{error}', e.message || String(e)), 'error')
     } finally {
       setIsProcessing(false)
       setProgressText('')
@@ -273,7 +273,7 @@ export function SceneNavigator() {
     setIsProcessing(true)
     setProgressText('Starting batch synopsis & duration generation...')
     try {
-      if (!ai || !(await ensureAIReady(ai, showToast))) return
+      if (!ai || !(await ensureAIReady(ai, showToast, t))) return
 
       const pmView = getEditorView()
       const cmView = getSourceView()
@@ -282,7 +282,7 @@ export function SceneNavigator() {
       let currentScenes = buildSceneList(currentText)
       const missing = currentScenes.filter(s => !s.synopsis || !s.estDuration)
       if (missing.length === 0) {
-        showToast('All scenes already have synopsis and duration.', 'info')
+        showToast(t('navigator.toast.allHave'), 'info')
         return
       }
 
@@ -325,9 +325,9 @@ export function SceneNavigator() {
         }
       }
 
-      showToast(`Generated synopsis & duration for ${missing.length} scenes.`, 'success')
+      showToast(t('navigator.toast.generatedMany').replace('{count}', String(missing.length)), 'success')
     } catch (e: any) {
-      showToast(`Batch generation failed: ${e.message || String(e)}`, 'error')
+      showToast(t('navigator.toast.batchFailed').replace('{error}', e.message || String(e)), 'error')
     } finally {
       setIsProcessing(false)
       setProgressText('')
@@ -550,12 +550,12 @@ export function SceneNavigator() {
     const ids = next.map((n, i) => (n === list[i]!.id ? undefined : n))
     const changed = ids.filter(n => n !== undefined).length
     if (changed === 0) {
-      showToast('Scene numbers are already in order.', 'info')
+      showToast(t('navigator.toast.inOrder'), 'info')
       return
     }
     applyTextEdit(setSceneIdsInText(current, ids), setText)
-    showToast(`Renumbered ${changed} scene${changed === 1 ? '' : 's'}.`, 'success')
-  }, [liveText, setText, showToast])
+    showToast(t(changed === 1 ? 'navigator.toast.renumberedOne' : 'navigator.toast.renumberedMany').replace('{count}', String(changed)), 'success')
+  }, [liveText, setText, showToast, t])
 
   const handleOmitToggle = useCallback((scene: SceneEntry) => {
     const current = liveText()
@@ -571,7 +571,7 @@ export function SceneNavigator() {
       role="button"
       tabIndex={0}
       className="cs-nav-item cs-nav-section-anchor"
-      aria-label={`Jump to section ${section.heading}`}
+      aria-label={t('navigator.jumpSection').replace('{heading}', section.heading)}
       onClick={() => handleSectionJump(section)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -587,13 +587,13 @@ export function SceneNavigator() {
   )
 
   return (
-    <div className="cs-navigator" role="navigation" aria-label="Scene Navigator">
+    <div className="cs-navigator" role="navigation" aria-label={t('navigator.aria')}>
       <div className="cs-nav-mobile-bar">
         <span className="cs-nav-mobile-title">{t('navigator.title')}</span>
         <button
           type="button"
           className="cs-nav-mobile-close"
-          aria-label="Close navigator"
+          aria-label={t('navigator.close')}
           onClick={() => setNavVisible(false)}
         >
           <CloseIcon size={18} />
@@ -619,8 +619,8 @@ export function SceneNavigator() {
               type="button"
               className="cs-nav-action-btn"
               onClick={() => setShowNavSynopsis(!showNavSynopsis)}
-              title={showNavSynopsis ? 'Hide Synopsis & Duration' : 'Show Synopsis & Duration'}
-              aria-label={showNavSynopsis ? 'Hide Synopsis & Duration' : 'Show Synopsis & Duration'}
+              title={showNavSynopsis ? t('navigator.hideSynopsis') : t('navigator.showSynopsis')}
+              aria-label={showNavSynopsis ? t('navigator.hideSynopsis') : t('navigator.showSynopsis')}
             >
               {showNavSynopsis ? <EyeIcon size={14} /> : <EyeOffIcon size={14} />}
             </button>
@@ -630,8 +630,8 @@ export function SceneNavigator() {
                 className="cs-nav-action-btn"
                 onClick={handleGenerateAllSceneMetadata}
                 disabled={isProcessing}
-                title="Generate synopsis & estimate duration (all scenes)"
-                aria-label="Generate synopsis & estimate duration (all scenes)"
+                title={t('navigator.genAll')}
+                aria-label={t('navigator.genAll')}
                 style={{ opacity: isProcessing ? 0.5 : 1 }}
               >
                 <SparklesIcon size={14} />
@@ -687,7 +687,7 @@ export function SceneNavigator() {
             // Ids can repeat until the writer renumbers (§7.4), so the index keeps keys unique.
             role="button"
             tabIndex={0}
-            aria-label={`Jump to ${scene.heading}${notes.length ? ` (${notes.join('; ')})` : ''}`}
+            aria-label={t('navigator.jumpScene').replace('{heading}', scene.heading) + (notes.length ? ` (${notes.join('; ')})` : '')}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
@@ -745,7 +745,7 @@ export function SceneNavigator() {
                           setEditingSceneIdx(idx)
                           setEditVal(scene.synopsis)
                         }}
-                        title="Click to edit synopsis"
+                        title={t('navigator.editSynopsis')}
                       >
                         {scene.synopsis}
                       </div>
@@ -759,7 +759,7 @@ export function SceneNavigator() {
                         }}
                         role="button"
                         tabIndex={0}
-                        aria-label="Add synopsis"
+                        aria-label={t('navigator.addSynopsis')}
                         onKeyDown={e => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.stopPropagation()
@@ -778,8 +778,8 @@ export function SceneNavigator() {
                     type="button"
                     onClick={(e) => { e.stopPropagation(); void handleSceneMetadata(scene) }}
                     disabled={isProcessing}
-                    title="Generate synopsis & estimate duration"
-                    aria-label="Generate synopsis & estimate duration"
+                    title={t('navigator.genOne')}
+                    aria-label={t('navigator.genOne')}
                     className="cs-nav-action-btn cs-nav-synopsis-ai-btn"
                     style={{ color: 'var(--cs-ui-accent, #c4760a)', ...(isProcessing ? { opacity: 0.5 } : {}) }}
                   >
@@ -802,7 +802,7 @@ export function SceneNavigator() {
                   {showNavSynopsis && scene.estDuration && (
                     <span
                       className="cs-nav-status"
-                      title="Estimated Onscreen Duration"
+                      title={t('navigator.duration')}
                       style={{
                         background: 'rgba(217, 119, 6, 0.1)',
                         color: 'var(--cs-ui-accent, #c4760a)',
@@ -863,7 +863,7 @@ export function SceneNavigator() {
             onClick={() => setStatsOpen(true)}
             style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
           >
-            <StatsIcon size={14} /> <span className="cs-nav-title">Statistics</span>
+            <StatsIcon size={14} /> <span className="cs-nav-title">{t('navigator.stats')}</span>
           </button>
         </div>
       </div>

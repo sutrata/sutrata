@@ -72,7 +72,7 @@ export function StatusBar() {
 
   return (
     <>
-      <footer className="cs-status-bar" role="contentinfo" aria-label="Status bar">
+      <footer className="cs-status-bar" role="contentinfo" aria-label={t('statusbar.label')}>
         <div className="cs-sb-left">
           <span className="cs-sb-metric cs-sb-metric-scenes" title={t('statusbar.scenesTooltip')}>
             <strong>{scenes.length}</strong> <span className="cs-sb-metric-label">{scenes.length === 1 ? t('statusbar.scene') : t('statusbar.scenes')}</span>

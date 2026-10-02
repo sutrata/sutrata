@@ -1,3 +1,4 @@
+import { useTranslation } from '../i18n/useTranslation'
 import React, { useEffect, useRef } from 'react'
 
 export interface ConfirmOptions {
@@ -16,6 +17,7 @@ interface ConfirmDialogProps {
 }
 
 export function ConfirmDialog({ options, onClose }: ConfirmDialogProps) {
+  const { t } = useTranslation()
   const confirmBtnRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
@@ -51,7 +53,7 @@ export function ConfirmDialog({ options, onClose }: ConfirmDialogProps) {
               onClose()
             }}
           >
-            {options.cancelLabel ?? 'Cancel'}
+            {options.cancelLabel ?? t('common.cancel')}
           </button>
           <button
             ref={confirmBtnRef}
@@ -62,7 +64,7 @@ export function ConfirmDialog({ options, onClose }: ConfirmDialogProps) {
               onClose()
             }}
           >
-            {options.confirmLabel ?? 'Confirm'}
+            {options.confirmLabel ?? t('common.confirm')}
           </button>
         </div>
       </div>

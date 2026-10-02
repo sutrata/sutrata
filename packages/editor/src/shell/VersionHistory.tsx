@@ -1,6 +1,7 @@
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { diffWordsWithSpace, type Change } from 'diff'
 import type { VersionEntry } from '../types'
+import { useTranslation } from '../i18n/useTranslation'
 
 interface VersionHistoryProps {
   versions: VersionEntry[]
@@ -35,6 +36,7 @@ function formatTimestamp(ts: number): string {
 }
 
 export function VersionHistory({ versions, filePath, onRestore, onClearAll, visible, onClose }: VersionHistoryProps) {
+  const { t } = useTranslation()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const diffScrollRef = useRef<HTMLDivElement>(null)
   // Maps a diff-part index (only added/removed parts) to its rendered <span>,
@@ -106,14 +108,14 @@ export function VersionHistory({ versions, filePath, onRestore, onClearAll, visi
         style={{ maxWidth: '620px', width: '92%', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
       >
         <div className="cs-panel-header">
-          <span id="cs-version-dialog-title" className="cs-panel-title">Version History</span>
-          <button className="cs-panel-close" onClick={onClose} aria-label="Close">×</button>
+          <span id="cs-version-dialog-title" className="cs-panel-title">{t('version.title')}</span>
+          <button className="cs-panel-close" onClick={onClose} aria-label={t('common.close')}>×</button>
         </div>
 
         <div className="cs-version-body">
           <div className="cs-version-list">
             {versions.length === 0 ? (
-              <div className="cs-version-empty">No versions saved yet</div>
+              <div className="cs-version-empty">{t('version.empty')}</div>
             ) : (
               versions.map((v, idx) => (
                 <button
@@ -122,7 +124,7 @@ export function VersionHistory({ versions, filePath, onRestore, onClearAll, visi
                   className={`cs-version-list-item${selectedId === v.id ? ' cs-version-list-item-active' : ''}`}
                   onClick={() => setSelectedId(v.id)}
                 >
-                  <div className="cs-version-list-item-label">{idx === 0 ? 'Current' : formatTimestamp(v.timestamp)}</div>
+                  <div className="cs-version-list-item-label">{idx === 0 ? t('version.current') : formatTimestamp(v.timestamp)}</div>
                   {idx !== 0 && <div className="cs-version-list-item-date">{formatTimestamp(v.timestamp)}</div>}
                 </button>
               ))
@@ -132,12 +134,12 @@ export function VersionHistory({ versions, filePath, onRestore, onClearAll, visi
           <div className="cs-version-diff-wrap">
             <div className="cs-version-diff" ref={diffScrollRef}>
               {!selectedVersion ? (
-                <div className="cs-version-empty">Select a version to compare against the current document</div>
+                <div className="cs-version-empty">{t('version.select')}</div>
               ) : selectedVersion.id === currentVersion?.id ? (
-                <div className="cs-version-empty">This is the current version</div>
+                <div className="cs-version-empty">{t('version.isCurrent')}</div>
               ) : diff ? (
                 diff.every(part => !part.added && !part.removed) ? (
-                  <div className="cs-version-empty">No differences from the current version</div>
+                  <div className="cs-version-empty">{t('version.noDiff')}</div>
                 ) : (
                   <div className="cs-version-diff-content">
                     {diff.map((part, i) => {
@@ -176,7 +178,7 @@ export function VersionHistory({ versions, filePath, onRestore, onClearAll, visi
                   type="button"
                   className={`cs-version-diff-marker cs-version-diff-marker-${m.type}`}
                   style={{ top: `${m.position * 100}%` }}
-                  title={m.type === 'added' ? 'Jump to added text' : 'Jump to removed text'}
+                  title={m.type === 'added' ? t('version.jumpAdded') : t('version.jumpRemoved')}
                   onClick={() => scrollToMarker(m.position)}
                 />
               ))}
@@ -191,17 +193,17 @@ export function VersionHistory({ versions, filePath, onRestore, onClearAll, visi
             onClick={() => void onClearAll()}
             disabled={versions.length === 0}
           >
-            Delete Version History
+            {t('version.delete')}
           </button>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button type="button" className="cs-confirm-btn-cancel" onClick={onClose}>Close</button>
+            <button type="button" className="cs-confirm-btn-cancel" onClick={onClose}>{t('common.close')}</button>
             {selectedVersion && selectedVersion.id !== currentVersion?.id && (
               <button
                 type="button"
                 className="cs-confirm-btn-primary"
                 onClick={() => onRestore(selectedVersion)}
               >
-                Restore This Version
+                {t('version.restore')}
               </button>
             )}
           </div>

@@ -153,7 +153,7 @@ export function TitlePageDialog({ onClose }: Props) {
 
           <Panel id="credits" active={tab}>
             <TextField id="author" label={t('titlePage.field.author')} value={form.author} onChange={v => set('author', v)} />
-            <TextField id="credit" label={t('titlePage.field.credit')} placeholder="Written by" value={form.credit} onChange={v => set('credit', v)} />
+            <TextField id="credit" label={t('titlePage.field.credit')} placeholder={t('titlePage.placeholder.credit')} value={form.credit} onChange={v => set('credit', v)} />
             <TextField id="source" label={t('titlePage.field.source')} value={form.source} onChange={v => set('source', v)} />
             <TextField id="story" label={t('titlePage.field.story')} value={form.story} onChange={v => set('story', v)} />
             <TextField id="screenplay" label={t('titlePage.field.screenplay')} value={form.screenplay} onChange={v => set('screenplay', v)} />
@@ -161,7 +161,7 @@ export function TitlePageDialog({ onClose }: Props) {
           </Panel>
 
           <Panel id="draft" active={tab}>
-            <TextField id="draft" label={t('titlePage.field.draft')} placeholder="First Draft" value={form.draft} onChange={v => set('draft', v)} />
+            <TextField id="draft" label={t('titlePage.field.draft')} placeholder={t('titlePage.placeholder.draft')} value={form.draft} onChange={v => set('draft', v)} />
             <TextField id="revision" label={t('titlePage.field.revision')} value={form.revision} onChange={v => set('revision', v)} />
             <Field label={t('titlePage.field.date')} htmlFor="cs-tp-f-date">
               <DateInput id="cs-tp-f-date" value={form.date} onChange={v => set('date', v)}
@@ -210,7 +210,7 @@ export function TitlePageDialog({ onClose }: Props) {
                 onChange={e => set('page', e.target.value as PageSize)}>
                 <option value="">{t('titlePage.pageDefault')}</option>
                 <option value="A4">A4</option>
-                <option value="Letter">US Letter</option>
+                <option value="Letter">{t('titlePage.pageLetter')}</option>
               </select>
             </Field>
             <Field label={t('titlePage.field.style')} htmlFor="cs-tp-f-style">
@@ -223,14 +223,14 @@ export function TitlePageDialog({ onClose }: Props) {
                 )}
               </select>
             </Field>
-            <TextField id="watermark" label={t('titlePage.field.watermark')} placeholder="CONFIDENTIAL" value={form.watermark} onChange={v => set('watermark', v)} />
+            <TextField id="watermark" label={t('titlePage.field.watermark')} placeholder={t('titlePage.placeholder.watermark')} value={form.watermark} onChange={v => set('watermark', v)} />
           </Panel>
 
           <Panel id="other" active={tab}>
             {form.custom.map((c, i) => (
               <div className="cs-tp-row" key={i}>
                 <input aria-label={t('titlePage.field.key')} className="cs-tp-input cs-tp-key" value={c.key}
-                  placeholder="key"
+                  placeholder={t('titlePage.placeholder.key')}
                   onChange={e => set('custom', form.custom.map((x, j) => j === i ? { ...x, key: e.target.value } : x))} />
                 <input aria-label={t('titlePage.field.value')} className="cs-tp-input" value={c.value}
                   onChange={e => set('custom', form.custom.map((x, j) => j === i ? { ...x, value: e.target.value } : x))} />

@@ -170,7 +170,7 @@ export function FindReplace() {
         </div>
         <button
           className="cs-fr-close"
-          aria-label="Close"
+          aria-label={t('common.close')}
           onClick={() => setFindReplaceVisible(false)}
         >×</button>
       </div>
@@ -185,21 +185,21 @@ export function FindReplace() {
           value={query}
           onChange={e => setQuery(e.target.value)}
           onKeyDown={handleQueryKeyDown}
-          aria-label="Find"
+          aria-label={t('findreplace.find')}
         />
         <button
           type="button"
           className="cs-fr-nav-btn"
-          aria-label="Previous match"
-          title="Previous match (Shift+Enter)"
+          aria-label={t('findreplace.prev')}
+          title={t('findreplace.prevTitle')}
           onClick={goPrev}
           disabled={!hasMatches}
         >▲</button>
         <button
           type="button"
           className="cs-fr-nav-btn"
-          aria-label="Next match"
-          title="Next match (Enter)"
+          aria-label={t('findreplace.next')}
+          title={t('findreplace.nextTitle')}
           onClick={goNext}
           disabled={!hasMatches}
         >▼</button>
@@ -218,7 +218,7 @@ export function FindReplace() {
           <span className="cs-fr-nomatch">{t('findreplace.noMatches')}</span>
         )}
         {hasMatches && (
-          <span className="cs-fr-nav-count">{currentIndex + 1} of {matches.length}</span>
+          <span className="cs-fr-nav-count">{t('findreplace.countOf').replace('{current}', String(currentIndex + 1)).replace('{total}', String(matches.length))}</span>
         )}
       </div>
 
@@ -232,7 +232,7 @@ export function FindReplace() {
               value={replacement}
               onChange={e => setReplacement(e.target.value)}
               onKeyDown={e => { if (e.key === 'Escape') setFindReplaceVisible(false) }}
-              aria-label="Replace with"
+              aria-label={t('findreplace.replace')}
             />
           </div>
           <div className="cs-fr-actions">

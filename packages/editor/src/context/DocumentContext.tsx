@@ -1,3 +1,4 @@
+import { useTranslation } from '../i18n/useTranslation'
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { parse, importFountain, fountainDocToSutra } from '@sutrata/parser'
 import type { DocumentNode } from '@sutrata/parser'
@@ -173,6 +174,11 @@ export function DocumentProvider({
   children, storageAdapter, aiProvider, speechProvider, session, panels, commands, exporters,
   decorationProviders, collabBinding,
 }: DocumentProviderProps) {
+  const { t } = useTranslation()
+  // Callbacks and mount effects read the latest translator through a ref so a
+  // language switch never re-runs them.
+  const tRef = useRef(t)
+  tRef.current = t
   const panelRegistry = useRegistryProp(panels, createPanelRegistry)
   const commandRegistry = useRegistryProp(commands, createCommandRegistry)
   const exportRegistry = useRegistryProp(exporters, createExportRegistry)
@@ -283,7 +289,7 @@ export function DocumentProvider({
           const handle = await storageAdapter.restoreFileHandle?.(pointer.path)
           if (!cancelled && handle) fileHandleRef.current = handle
         }
-        showToast('Recovered unsaved changes from your last session.', 'info')
+        showToast(tRef.current('doc.recovered'), 'info')
       } catch {
         // Best-effort recovery; fall back to the empty template on failure.
       }
@@ -372,7 +378,7 @@ export function DocumentProvider({
     } catch {
       if (!autosaveFailedRef.current) {
         autosaveFailedRef.current = true
-        showToast('Autosave failed — your browser storage may be full or unavailable.', 'warn')
+        showToast(tRef.current('doc.autosaveFailed'), 'warn')
       }
     }
   }, [storageAdapter, showToast, applyExternalText])
@@ -410,9 +416,9 @@ export function DocumentProvider({
     }
 
     showConfirm({
-      title: 'Discard Unsaved Changes?',
-      message: 'Starting a new screenplay will discard all unsaved edits to your current document.',
-      confirmLabel: 'Discard & Create New',
+      title: tRef.current('doc.discardTitle'),
+      message: tRef.current('doc.newMsg'),
+      confirmLabel: tRef.current('doc.newConfirm'),
       destructive: true,
       onConfirm: doNew,
     })
@@ -459,9 +465,9 @@ export function DocumentProvider({
 
     await new Promise<void>((resolve) => {
       showConfirm({
-        title: 'Discard Unsaved Changes?',
-        message: 'Opening a different screenplay will discard any unsaved edits to your current document.',
-        confirmLabel: 'Discard & Open',
+        title: tRef.current('doc.discardTitle'),
+        message: tRef.current('doc.openMsg'),
+        confirmLabel: tRef.current('doc.openConfirm'),
         destructive: true,
         onConfirm: () => { void doOpen().then(resolve) },
         onCancel: () => resolve(),
@@ -493,7 +499,7 @@ export function DocumentProvider({
       clearRecoveryPointer()
       if (result.handle) void storageAdapter.persistFileHandle?.(result.savedName, result.handle)
       void refreshVersions(result.savedName)
-      showToast(`Saved ${result.savedName}`, 'success')
+      showToast(tRef.current('doc.saved').replace('{name}', result.savedName), 'success')
     }
   }, [filePath, text, showToast, storageAdapter, refreshVersions])
 
@@ -509,7 +515,7 @@ export function DocumentProvider({
       clearRecoveryPointer()
       if (result.handle) void storageAdapter.persistFileHandle?.(result.savedName, result.handle)
       void refreshVersions(result.savedName)
-      showToast(`Saved as ${result.savedName}`, 'success')
+      showToast(tRef.current('doc.savedAs').replace('{name}', result.savedName), 'success')
     }
   }, [filePath, text, showToast, storageAdapter, refreshVersions])
 
@@ -524,15 +530,15 @@ export function DocumentProvider({
     if (bodyText === null) return warnings
     return new Promise((resolve) => {
       showConfirm({
-        title: 'Import Word Document',
-        message: 'Replace the current screenplay content with the imported Word document? This cannot be undone.',
-        confirmLabel: 'Replace Screenplay',
+        title: tRef.current('doc.importTitle'),
+        message: tRef.current('doc.importMsg'),
+        confirmLabel: tRef.current('doc.importConfirm'),
         destructive: true,
         onConfirm: () => {
           const frontmatterRaw = ast.frontmatter?.raw
           const newText = frontmatterRaw ? `${frontmatterRaw}\n${bodyText}\n` : `${bodyText}\n`
           setText(newText)
-          showToast('Word document imported successfully', 'success')
+          showToast(tRef.current('doc.imported'), 'success')
           resolve(warnings)
         },
         onCancel: () => resolve(null),
@@ -554,24 +560,24 @@ export function DocumentProvider({
   const restoreVersion = useCallback((entry: VersionEntry) => {
     setText(entry.content) // setText already marks the document dirty
     setVersionHistoryVisible(false)
-    showToast('Version restored — remember to save.', 'info')
+    showToast(tRef.current('doc.versionRestored'), 'info')
   }, [setText, showToast])
 
   const clearVersionHistory = useCallback(async () => {
     if (!filePath) return
     return new Promise<void>((resolve) => {
       showConfirm({
-        title: 'Delete Version History?',
-        message: `Delete all ${versions.length} saved versions of ${filePath}? This cannot be undone.`,
-        confirmLabel: 'Delete Version History',
+        title: tRef.current('doc.clearVersionsTitle'),
+        message: tRef.current('doc.clearVersionsMsg').replace('{count}', String(versions.length)).replace('{file}', filePath),
+        confirmLabel: tRef.current('version.delete'),
         destructive: true,
         onConfirm: async () => {
           try {
             await storageAdapter.deleteAllVersions?.(filePath)
             setVersions([])
-            showToast('Version history cleared', 'success')
+            showToast(tRef.current('doc.versionsCleared'), 'success')
           } catch {
-            showToast('Failed to clear version history', 'error')
+            showToast(tRef.current('doc.versionsClearFailed'), 'error')
           }
           resolve()
         },
@@ -737,10 +743,10 @@ export function DocumentProvider({
         return
       }
       showConfirm({
-        title: 'Unsaved Changes',
-        message: 'You have unsaved changes. Save them before closing?',
-        confirmLabel: 'Save & Close',
-        cancelLabel: 'Cancel',
+        title: tRef.current('doc.unsavedTitle'),
+        message: tRef.current('doc.unsavedMsg'),
+        confirmLabel: tRef.current('doc.saveClose'),
+        cancelLabel: tRef.current('common.cancel'),
         onConfirm: () => {
           void saveFile().then(() => {
             // saveFile only clears isDirty on success — if the user cancelled a

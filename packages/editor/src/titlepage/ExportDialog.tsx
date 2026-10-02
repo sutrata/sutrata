@@ -82,11 +82,11 @@ export function ExportDialog() {
       const blob = output instanceof Blob ? output : output?.blob
       setWarnings(output && !(output instanceof Blob) ? output.warnings ?? [] : [])
       if (blob) downloadBlob(selected.fileName(ctx), blob)
-      showToast(selected.successMessage ?? `Exported ${selected.label}`, blob ? 'success' : 'info')
+      showToast(selected.successMessage ?? t('export.exported').replace('{label}', selected.label), blob ? 'success' : 'info')
     } catch (err) {
       console.error('Export failed', err)
       setWarnings(['An error occurred during export. Please check the console.'])
-      showToast('Export failed. Check console for details.', 'error')
+      showToast(t('export.failed'), 'error')
     } finally {
       setIsExporting(false)
     }
@@ -112,14 +112,14 @@ export function ExportDialog() {
       <div className="cs-export-dialog" role="dialog" aria-modal="true" aria-labelledby="cs-export-title" style={{ maxHeight: '90vh', maxWidth: '540px', width: '92%', display: 'flex', flexDirection: 'column' }}>
         <div className="cs-panel-header">
           <span id="cs-export-title" className="cs-panel-title">{t('export.title')}</span>
-          <button className="cs-panel-close" onClick={() => setExportVisible(false)} aria-label="Close">
+          <button className="cs-panel-close" onClick={() => setExportVisible(false)} aria-label={t('common.close')}>
             ×
           </button>
         </div>
 
         <div className="cs-panel-body" style={{ overflowY: 'auto', flex: 1, padding: '16px' }}>
           {/* Top Segmented Tabs: Screenplay vs Production Reports */}
-          <div className="cs-export-segmented" role="tablist" aria-label="Export category">
+          <div className="cs-export-segmented" role="tablist" aria-label={t('export.category')}>
             <button
               type="button"
               role="tab"
@@ -130,7 +130,7 @@ export function ExportDialog() {
                 if (selected?.group !== 'screenplay') setFormatId(screenplayFormats[0]?.id ?? '')
               }}
             >
-              Screenplay Formats
+              {t('export.tab.screenplay')}
             </button>
             {reportFormats.length > 0 && <button
               type="button"
@@ -142,7 +142,7 @@ export function ExportDialog() {
                 if (selected?.group !== 'report') setFormatId(reportFormats[0]?.id ?? '')
               }}
             >
-              Production Reports
+              {t('export.tab.reports')}
             </button>}
           </div>
 
@@ -209,7 +209,7 @@ export function ExportDialog() {
                     onChange={e => setSkipNotes(e.target.checked)}
                   />
                   <label htmlFor="cs-export-skip-notes" className="cs-settings-label" style={{ fontSize: '12px', margin: 0 }}>
-                    Skip notes ([[ ]])
+                    {t('export.skipNotes')}
                   </label>
                 </div>
               )}
@@ -217,7 +217,7 @@ export function ExportDialog() {
               {showRomanize && (
                 <div className="cs-settings-row" style={{ marginTop: '8px', padding: '10px', background: 'var(--cs-ui-bg-panel-subtle, #f4f2ea)', borderRadius: '6px', flexWrap: 'wrap', gap: '8px' }}>
                   <label className="cs-settings-label" htmlFor="cs-export-romanize-select" style={{ fontSize: '12px' }}>
-                    Romanized copy (ISO 15919)
+                    {t('export.romanized')}
                   </label>
                   <select
                     id="cs-export-romanize-select"
@@ -225,24 +225,24 @@ export function ExportDialog() {
                     value={romanizeScope}
                     onChange={e => setRomanizeScope(e.target.value as 'off' | 'all' | 'dialogue')}
                   >
-                    <option value="off">Off (native script)</option>
-                    <option value="all">All text</option>
-                    <option value="dialogue">Dialogue only</option>
+                    <option value="off">{t('export.roman.off')}</option>
+                    <option value="all">{t('export.roman.all')}</option>
+                    <option value="dialogue">{t('export.roman.dialogue')}</option>
                   </select>
                   {romanizeScope !== 'off' && (
                     <select
-                      aria-label="Romanization variant"
+                      aria-label={t('export.roman.variant')}
                       className="cs-settings-select"
                       value={romanizeVariant}
                       onChange={e => setRomanizeVariant(e.target.value as RomanizeVariant)}
                     >
-                      <option value="strict">Strict ISO 15919</option>
-                      <option value="colloquial">Casual (no diacritics)</option>
+                      <option value="strict">{t('export.roman.strict')}</option>
+                      <option value="colloquial">{t('export.roman.colloquial')}</option>
                     </select>
                   )}
                   {romanizeScope !== 'off' && (
                     <span style={{ fontSize: '11px', color: 'var(--cs-ui-text-light-secondary, #59574f)', flexBasis: '100%' }}>
-                      Your script is not changed. Page numbers in the romanized copy differ from the original.
+                      {t('export.roman.note')}
                     </span>
                   )}
                 </div>
@@ -278,7 +278,7 @@ export function ExportDialog() {
               {showReportRomanize && (
                 <div className="cs-settings-row" style={{ marginTop: '8px', padding: '10px', background: 'var(--cs-ui-bg-panel-subtle, #f4f2ea)', borderRadius: '6px', flexWrap: 'wrap', gap: '8px' }}>
                   <label className="cs-settings-label" htmlFor="cs-export-romanize-reports" style={{ fontSize: '12px' }}>
-                    Romanized copy (ISO 15919)
+                    {t('export.romanized')}
                   </label>
                   <select
                     id="cs-export-romanize-reports"
@@ -286,18 +286,18 @@ export function ExportDialog() {
                     value={romanizeReports ? 'on' : 'off'}
                     onChange={e => setRomanizeReports(e.target.value === 'on')}
                   >
-                    <option value="off">Off (native script)</option>
-                    <option value="on">Romanize all text</option>
+                    <option value="off">{t('export.roman.off')}</option>
+                    <option value="on">{t('export.roman.allReports')}</option>
                   </select>
                   {romanizeReports && (
                     <select
-                      aria-label="Romanization variant"
+                      aria-label={t('export.roman.variant')}
                       className="cs-settings-select"
                       value={romanizeVariant}
                       onChange={e => setRomanizeVariant(e.target.value as RomanizeVariant)}
                     >
-                      <option value="strict">Strict ISO 15919</option>
-                      <option value="colloquial">Casual (no diacritics)</option>
+                      <option value="strict">{t('export.roman.strict')}</option>
+                      <option value="colloquial">{t('export.roman.colloquial')}</option>
                     </select>
                   )}
                 </div>
@@ -324,7 +324,7 @@ export function ExportDialog() {
             {t('export.cancel')}
           </button>
           <button type="button" className="cs-confirm-btn-primary" onClick={doExport} disabled={isExporting || !selected}>
-            {isExporting ? 'Exporting...' : t('export.download')}
+            {isExporting ? t('export.exporting') : t('export.download')}
           </button>
         </div>
       </div>

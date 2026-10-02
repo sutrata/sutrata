@@ -1,23 +1,24 @@
 import React, { useMemo, useRef, useState } from 'react'
 import { useDocument } from '../context/DocumentContext'
+import { useTranslation } from '../i18n/useTranslation'
 import { useAI } from '../extensions/ai-provider'
 import { readImportFile, IMPORT_ACCEPT } from './extract'
 import { runAiImport, splitBlocks, blockKind, retypeBlock } from './ai-import'
 import type { ChunkResult, BlockKind } from './ai-import'
 import { applyImport } from './apply-import'
 
-const KIND_LABELS: Record<BlockKind, string> = {
-  scene_heading: 'Scene heading',
-  action: 'Action',
-  character: 'Character + dialogue',
-  transition: 'Transition',
-  centered: 'Centered',
-  lyrics: 'Lyrics',
-  note: 'Note',
-  section: 'Section',
-  other: 'Other',
+const KIND_LABEL_KEYS: Record<BlockKind, string> = {
+  scene_heading: 'toolbar.scene',
+  action: 'toolbar.action',
+  character: 'aiimport.kind.character',
+  transition: 'toolbar.transition',
+  centered: 'toolbar.centered',
+  lyrics: 'toolbar.lyrics',
+  note: 'toolbar.note',
+  section: 'toolbar.section',
+  other: 'aiimport.kind.other',
 }
-const KIND_OPTIONS = (Object.keys(KIND_LABELS) as BlockKind[]).filter(k => k !== 'other')
+const KIND_OPTIONS = (Object.keys(KIND_LABEL_KEYS) as BlockKind[]).filter(k => k !== 'other')
 
 type Step =
   | { name: 'source' }
@@ -34,6 +35,7 @@ type Step =
  */
 export function AIImportDialog({ onClose }: { onClose: () => void }) {
   const ai = useAI()
+  const { t } = useTranslation()
   const { text, setText, showToast } = useDocument()
   const [step, setStep] = useState<Step>({ name: 'source' })
   const [pasted, setPasted] = useState('')
@@ -81,7 +83,7 @@ export function AIImportDialog({ onClose }: { onClose: () => void }) {
         signal: controller.signal,
         onProgress: (done, total) => setStep({ name: 'running', done, total }),
       })
-      const warnings = result.chunks.flatMap(c => c.problems.map(p => `Part ${c.index + 1}: ${p}`))
+      const warnings = result.chunks.flatMap(c => c.problems.map(p => t('aiimport.part').replace('{n}', String(c.index + 1)).replace('{problem}', p)))
       setStep({ name: 'review', fileName, source, blocks: splitBlocks(result.sutra), chunks: result.chunks, warnings })
     } catch (e) {
       if (controller.signal.aborted) { setStep({ name: 'source' }); return }
@@ -95,7 +97,7 @@ export function AIImportDialog({ onClose }: { onClose: () => void }) {
   const finish = (how: 'replace' | 'append') => {
     if (step.name !== 'review') return
     applyImport(formatted, how, text, setText)
-    showToast(`Imported ${step.fileName} (${step.blocks.length} blocks).`, 'success')
+    showToast(t('aiimport.imported').replace('{file}', step.fileName).replace('{n}', String(step.blocks.length)), 'success')
     onClose()
   }
 
@@ -105,14 +107,14 @@ export function AIImportDialog({ onClose }: { onClose: () => void }) {
         className="cs-dialog cs-ai-import-dialog"
         role="dialog"
         aria-modal="true"
-        aria-label="Import with AI"
+        aria-label={t('appbar.importAI')}
         onClick={e => e.stopPropagation()}
         onKeyDown={e => { if (e.key === 'Escape') close() }}
         style={{ maxWidth: step.name === 'review' ? '1100px' : '560px', width: '94%' }}
       >
         <div className="cs-dialog-header">
-          <span className="cs-dialog-title">Import with AI</span>
-          <button className="cs-fr-close" aria-label="Close" onClick={close}>×</button>
+          <span className="cs-dialog-title">{t('appbar.importAI')}</span>
+          <button className="cs-fr-close" aria-label={t('common.close')} onClick={close}>×</button>
         </div>
 
         <div className="cs-ai-import-body">
@@ -121,19 +123,17 @@ export function AIImportDialog({ onClose }: { onClose: () => void }) {
           {step.name === 'source' && (
             <>
               <p className="cs-ai-import-hint">
-                Import a screenplay written in Word, a text file or Markdown. The AI formats it as Sutra;
-                you review the result before anything changes. A Word file exported from Sutrata is imported
-                directly, without AI.
+                {t('aiimport.hint')}
               </p>
               <input
                 ref={fileRef}
                 type="file"
                 accept={IMPORT_ACCEPT}
-                aria-label="Choose a file to import"
+                aria-label={t('aiimport.choose')}
                 onChange={e => void pickFile(e.target.files?.[0])}
               />
               <label className="cs-settings-label" htmlFor="cs-ai-import-paste" style={{ display: 'block', marginTop: 12 }}>
-                …or paste the text
+                {t('aiimport.paste')}
               </label>
               <textarea
                 id="cs-ai-import-paste"
@@ -147,9 +147,9 @@ export function AIImportDialog({ onClose }: { onClose: () => void }) {
                   type="button"
                   className="cs-confirm-btn-primary"
                   disabled={!pasted.trim()}
-                  onClick={() => setStep({ name: 'confirm', fileName: 'pasted text', text: pasted.trim() })}
+                  onClick={() => setStep({ name: 'confirm', fileName: t('aiimport.pastedText'), text: pasted.trim() })}
                 >
-                  Continue
+                  {t('aiimport.continue')}
                 </button>
               </div>
             </>
@@ -158,23 +158,22 @@ export function AIImportDialog({ onClose }: { onClose: () => void }) {
           {step.name === 'confirm' && (
             <>
               <p className="cs-ai-import-hint">
-                <strong>{step.fileName}</strong> ({step.text.length.toLocaleString()} characters) will be sent to{' '}
-                <strong>{ai.displayName}</strong> to be formatted.
+                {t('aiimport.summary').replace('{file}', step.fileName).replace('{chars}', step.text.length.toLocaleString()).replace('{name}', ai.displayName)}
               </p>
-              <div className="cs-ai-import-policy" aria-label="Data policy">{ai.dataPolicyText}</div>
+              <div className="cs-ai-import-policy" aria-label={t('aiimport.policy')}>{ai.dataPolicyText}</div>
               <label className="cs-ai-import-agree">
                 <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} />
-                I understand, send this text to {ai.displayName}
+                {t('aiimport.agree').replace('{name}', ai.displayName)}
               </label>
               <div className="cs-ai-import-actions">
-                <button type="button" className="cs-confirm-btn-cancel" onClick={() => setStep({ name: 'source' })}>Back</button>
+                <button type="button" className="cs-confirm-btn-cancel" onClick={() => setStep({ name: 'source' })}>{t('aiimport.back')}</button>
                 <button
                   type="button"
                   className="cs-confirm-btn-primary"
                   disabled={!agreed}
                   onClick={() => void start(step.fileName, step.text)}
                 >
-                  Format with AI
+                  {t('aiimport.format')}
                 </button>
               </div>
             </>
@@ -184,10 +183,10 @@ export function AIImportDialog({ onClose }: { onClose: () => void }) {
             <>
               <p className="cs-ai-import-hint" role="status">
                 <span className="cs-spinner" style={{ width: 10, height: 10, borderWidth: 1.5, marginRight: 8 }} />
-                Formatting part {Math.min(step.done + 1, step.total)} of {step.total}…
+                {t('aiimport.progress').replace('{done}', String(Math.min(step.done + 1, step.total))).replace('{total}', String(step.total))}
               </p>
               <div className="cs-ai-import-actions">
-                <button type="button" className="cs-confirm-btn-cancel" onClick={() => abortRef.current?.abort()}>Cancel</button>
+                <button type="button" className="cs-confirm-btn-cancel" onClick={() => abortRef.current?.abort()}>{t('common.cancel')}</button>
               </div>
             </>
           )}
@@ -196,24 +195,24 @@ export function AIImportDialog({ onClose }: { onClose: () => void }) {
             <>
               {step.warnings.length > 0 && (
                 <div className="cs-export-warnings cs-ai-import-warnings" role="alert">
-                  <div className="cs-export-warn-title">Check these parts before importing</div>
+                  <div className="cs-export-warn-title">{t('aiimport.check')}</div>
                   {step.warnings.map((w, i) => <div key={i} className="cs-export-warn-item">• {w}</div>)}
                 </div>
               )}
               <div className="cs-ai-import-review">
-                <section aria-label="Source">
-                  <div className="cs-ai-import-col-title">Source</div>
+                <section aria-label={t('aiimport.source')}>
+                  <div className="cs-ai-import-col-title">{t('aiimport.source')}</div>
                   <pre className="cs-ai-import-source">{step.source}</pre>
                 </section>
-                <section aria-label="Formatted">
-                  <div className="cs-ai-import-col-title">Formatted ({step.blocks.length} blocks)</div>
+                <section aria-label={t('aiimport.formatted').replace('{n}', String(step.blocks.length))}>
+                  <div className="cs-ai-import-col-title">{t('aiimport.formatted').replace('{n}', String(step.blocks.length))}</div>
                   <ol className="cs-ai-import-blocks">
                     {step.blocks.map((block, i) => {
                       const kind = blockKind(block)
                       return (
                         <li key={i} className="cs-ai-import-block">
                           <select
-                            aria-label={`Block ${i + 1} type`}
+                            aria-label={t('aiimport.blockType').replace('{n}', String(i + 1))}
                             className="cs-settings-select"
                             value={kind}
                             onChange={e => {
@@ -222,8 +221,8 @@ export function AIImportDialog({ onClose }: { onClose: () => void }) {
                               setStep({ ...step, blocks })
                             }}
                           >
-                            {kind === 'other' && <option value="other">{KIND_LABELS.other}</option>}
-                            {KIND_OPTIONS.map(k => <option key={k} value={k}>{KIND_LABELS[k]}</option>)}
+                            {kind === 'other' && <option value="other">{t(KIND_LABEL_KEYS.other)}</option>}
+                            {KIND_OPTIONS.map(k => <option key={k} value={k}>{t(KIND_LABEL_KEYS[k])}</option>)}
                           </select>
                           <pre>{block}</pre>
                         </li>
@@ -233,18 +232,18 @@ export function AIImportDialog({ onClose }: { onClose: () => void }) {
                 </section>
               </div>
               <div className="cs-ai-import-actions">
-                <button type="button" className="cs-confirm-btn-cancel" onClick={close}>Cancel</button>
+                <button type="button" className="cs-confirm-btn-cancel" onClick={close}>{t('common.cancel')}</button>
                 <button type="button" className="cs-confirm-btn-cancel" onClick={() => finish('append')} disabled={!step.blocks.length}>
-                  Append to document
+                  {t('aiimport.append')}
                 </button>
                 <button
                   type="button"
                   className="cs-confirm-btn-primary"
-                  title="Replaces the script; the title page is kept"
+                  title={t('aiimport.replaceTitle')}
                   onClick={() => finish('replace')}
                   disabled={!step.blocks.length}
                 >
-                  Replace script
+                  {t('aiimport.replace')}
                 </button>
               </div>
             </>

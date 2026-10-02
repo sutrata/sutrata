@@ -82,15 +82,15 @@ export function AppBar() {
         showToast(warnings.join(' • '), 'warn')
       }
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Failed to import the Word document.', 'error')
+      showToast(err instanceof Error ? err.message : t('appbar.importFailed'), 'error')
     }
   }
 
   return (
-    <header className="cs-app-bar" role="banner" aria-label="Application header">
+    <header className="cs-app-bar" role="banner" aria-label={t('appbar.header')}>
       {/* Left zone: Brand mark, Navigator toggle, and Document identifier */}
       <div className="cs-ab-group cs-ab-left">
-        <div className="cs-ab-brand" title="Sutrata Multilingual Screenplay Editor">
+        <div className="cs-ab-brand" title={t('appbar.brandTitle')}>
           <SutrataLogo size={20} showText={false} />
           <span className="cs-ab-brand-title">Sutrata</span>
         </div>
@@ -112,7 +112,7 @@ export function AppBar() {
         )}
         <div className="cs-ab-file-pill" title={name}>
           <span className="cs-ab-file-name">{name}</span>
-          {isDirty && <span className="cs-ab-dirty" title="Unsaved edits" />}
+          {isDirty && <span className="cs-ab-dirty" title={t('appbar.unsaved')} />}
         </div>
       </div>
 
@@ -139,7 +139,7 @@ export function AppBar() {
         )}
         {speech && (
           <AbBtn
-            label="Voice Dictation"
+            label={t('appbar.voice')}
             shortcut="Ctrl+Shift+V"
             active={voiceActive}
             onClick={() => setVoiceActive(!voiceActive)}
@@ -148,7 +148,7 @@ export function AppBar() {
           </AbBtn>
         )}
         <AbBtn
-          label={metadataVisible ? 'Hide Metadata' : 'Show Metadata'}
+          label={metadataVisible ? t('appbar.hideMetadata') : t('appbar.showMetadata')}
           active={metadataVisible}
           onClick={() => setMetadataVisible(!metadataVisible)}
         >
@@ -176,7 +176,7 @@ export function AppBar() {
               <ImportDocxIcon size={18} />
             </AbBtn>
             {ai && (
-              <AbBtn label="Import with AI" onClick={() => setAiImportOpen(true)}>
+              <AbBtn label={t('appbar.importAI')} onClick={() => setAiImportOpen(true)}>
                 <SparklesIcon size={18} />
               </AbBtn>
             )}
@@ -240,7 +240,7 @@ export function AppBar() {
           </AbBtn>
         )}
         <AbBtn
-          label="Menu"
+          label={t('appbar.menu')}
           active={mobileMenuOpen}
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
@@ -260,7 +260,7 @@ export function AppBar() {
             className="cs-mobile-menu-drawer"
             role="dialog"
             aria-modal="true"
-            aria-label="Application Menu"
+            aria-label={t('appbar.appMenu')}
           >
             <div className="cs-mm-header">
               <div className="cs-mm-brand">
@@ -270,7 +270,7 @@ export function AppBar() {
               <button
                 type="button"
                 className="cs-mm-close"
-                aria-label="Close menu"
+                aria-label={t('appbar.closeMenu')}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <CloseIcon size={18} />
@@ -279,11 +279,11 @@ export function AppBar() {
 
             <div className="cs-mm-file-info">
               <span className="cs-mm-file-name">{name}</span>
-              {isDirty && <span className="cs-ab-dirty" title="Unsaved edits" />}
+              {isDirty && <span className="cs-ab-dirty" title={t('appbar.unsaved')} />}
             </div>
 
             <div className="cs-mm-section">
-              <div className="cs-mm-section-title">Views &amp; Tools</div>
+              <div className="cs-mm-section-title">{t('appbar.viewsTools')}</div>
               <button
                 type="button"
                 className="cs-mm-item"
@@ -314,7 +314,7 @@ export function AppBar() {
                 onClick={() => { setVoiceActive(!voiceActive); setMobileMenuOpen(false) }}
               >
                 <MicIcon size={18} />
-                <span>Voice Dictation</span>
+                <span>{t('appbar.voice')}</span>
               </button>}
               <button
                 type="button"
@@ -322,12 +322,12 @@ export function AppBar() {
                 onClick={() => { setMetadataVisible(!metadataVisible); setMobileMenuOpen(false) }}
               >
                 <span style={{ fontWeight: 700, width: 18, textAlign: 'center' }}>&amp;</span>
-                <span>{metadataVisible ? 'Hide Metadata' : 'Show Metadata'}</span>
+                <span>{metadataVisible ? t('appbar.hideMetadata') : t('appbar.showMetadata')}</span>
               </button>
             </div>
 
             {canEdit && <div className="cs-mm-section">
-              <div className="cs-mm-section-title">File Operations</div>
+              <div className="cs-mm-section-title">{t('appbar.fileOps')}</div>
               <button
                 type="button"
                 className="cs-mm-item"
@@ -366,7 +366,7 @@ export function AppBar() {
                 onClick={() => { setAiImportOpen(true); setMobileMenuOpen(false) }}
               >
                 <SparklesIcon size={18} />
-                <span>Import with AI</span>
+                <span>{t('appbar.importAI')}</span>
               </button>}
               <button
                 type="button"
@@ -419,7 +419,7 @@ export function AppBar() {
             </div>}
 
             <div className="cs-mm-section">
-              <div className="cs-mm-section-title">Preferences</div>
+              <div className="cs-mm-section-title">{t('appbar.preferences')}</div>
               {canEdit && <button
                 type="button"
                 className="cs-mm-item"

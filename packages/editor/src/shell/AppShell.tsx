@@ -65,7 +65,7 @@ export function AppShell() {
               <SceneNavigator />
             ) : (
               <div className="cs-sidebar">
-                <div className="cs-sidebar-tabs" role="tablist" aria-label="Sidebar">
+                <div className="cs-sidebar-tabs" role="tablist" aria-label={t('shell.sidebar')}>
                   {[{ id: 'navigator', title: t('navigator.title') }, ...sidebarPanels].map(p => (
                     <button
                       key={p.id}
@@ -96,7 +96,7 @@ export function AppShell() {
           </main>
         </div>
         {inspectorPanels.length > 0 && (
-          <aside className="cs-inspector" aria-label="Inspector">
+          <aside className="cs-inspector" aria-label={t('shell.inspector')}>
             {inspectorPanels.map(p => (
               <section key={p.id} className="cs-inspector-section" aria-label={p.title}>
                 <div className="cs-inspector-title">{p.title}</div>

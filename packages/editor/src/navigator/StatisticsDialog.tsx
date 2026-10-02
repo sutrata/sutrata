@@ -4,6 +4,7 @@ import { extractWorkflowData } from '../file/workflow-reports'
 import { getEditorView } from '../editor/editor-bus'
 import { schema } from '../editor/schema'
 import { useCanEdit } from '../extensions/session'
+import { useTranslation } from '../i18n/useTranslation'
 
 interface Props {
   onClose: () => void
@@ -11,6 +12,7 @@ interface Props {
 
 export function StatisticsDialog({ onClose }: Props) {
   const { ast, text, setText } = useDocument()
+  const { t } = useTranslation()
   const canEdit = useCanEdit()
   const { scenes, characters } = extractWorkflowData(ast)
 
@@ -109,8 +111,8 @@ export function StatisticsDialog({ onClose }: Props) {
         style={{ maxWidth: '640px', width: '92%', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
       >
         <div className="cs-panel-header">
-          <span id="cs-stats-dialog-title" className="cs-panel-title">Script Statistics</span>
-          <button className="cs-panel-close" onClick={onClose} aria-label="Close">
+          <span id="cs-stats-dialog-title" className="cs-panel-title">{t('stats.title')}</span>
+          <button className="cs-panel-close" onClick={onClose} aria-label={t('common.close')}>
             ×
           </button>
         </div>
@@ -118,35 +120,35 @@ export function StatisticsDialog({ onClose }: Props) {
           <div className="cs-stats-summary-grid">
             <div className="cs-stats-card">
               <div className="cs-stats-card-val">{scenes.length}</div>
-              <div className="cs-stats-card-lbl">Scenes</div>
+              <div className="cs-stats-card-lbl">{t('stats.scenes')}</div>
             </div>
             <div className="cs-stats-card">
               <div className="cs-stats-card-val">{wordCount.toLocaleString()}</div>
-              <div className="cs-stats-card-lbl">Words</div>
+              <div className="cs-stats-card-lbl">{t('stats.words')}</div>
             </div>
             <div className="cs-stats-card">
               <div className="cs-stats-card-val">
                 {totalDurationLabel}
               </div>
-              <div className="cs-stats-card-lbl">Est. Duration</div>
+              <div className="cs-stats-card-lbl">{t('stats.duration')}</div>
             </div>
           </div>
 
           <div className="cs-stats-section-hdr">
-            Cast List &amp; Occurrences ({characters.length})
+            {t('stats.cast')} ({characters.length})
           </div>
 
           {characters.length === 0 ? (
             <div style={{ color: 'var(--cs-ui-text-light-muted, #8c897f)', fontStyle: 'italic', fontSize: '12px' }}>
-              No character cues detected in the screenplay yet.
+              {t('stats.noCharacters')}
             </div>
           ) : (
             <table className="cs-stats-table">
               <thead>
                 <tr>
-                  <th style={{ textAlign: 'left', width: '35%' }}>Character</th>
-                  <th style={{ textAlign: 'left' }}>Actor</th>
-                  <th style={{ textAlign: 'center', width: '15%' }}>Scenes</th>
+                  <th style={{ textAlign: 'left', width: '35%' }}>{t('stats.character')}</th>
+                  <th style={{ textAlign: 'left' }}>{t('stats.actor')}</th>
+                  <th style={{ textAlign: 'center', width: '15%' }}>{t('stats.scenes')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -160,8 +162,8 @@ export function StatisticsDialog({ onClose }: Props) {
                         value={c.actor}
                         onChange={(e) => handleUpdateActor(c.name, e.target.value)}
                         readOnly={!canEdit}
-                        placeholder="Assign actor..."
-                        aria-label={`Actor for ${c.name}`}
+                        placeholder={t('stats.assignActor')}
+                        aria-label={t('stats.actorFor').replace('{name}', c.name)}
                       />
                     </td>
                     <td style={{ textAlign: 'center', fontWeight: '500' }}>{c.sceneCount}</td>
@@ -185,7 +187,7 @@ export function StatisticsDialog({ onClose }: Props) {
             className="cs-confirm-btn-primary"
             onClick={onClose}
           >
-            Close
+            {t('common.close')}
           </button>
         </div>
       </div>

@@ -5,6 +5,7 @@ import { insertSutra } from './insert-helper'
 import { VoiceConfirmDialog } from '../ai/VoiceConfirmDialog'
 import { SparklesIcon } from '../shell/icons'
 import { useAI } from '../extensions/ai-provider'
+import { useTranslation } from '../i18n/useTranslation'
 
 const VOICE_LANG_MAP: Record<string, string> = {
   en: 'en-US',
@@ -36,6 +37,7 @@ function isSelectionInEditor(sel: Selection): boolean {
 export function SelectionMenu() {
   const { currentLanguage } = useLanguage()
   const { mode } = useDocument()
+  const { t } = useTranslation()
   const ai = useAI()
   const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null)
   const [selectedText, setSelectedText] = useState<string>('')
@@ -123,7 +125,7 @@ export function SelectionMenu() {
         top: `${menuPosition.y}px`,
       }}
       role="toolbar"
-      aria-label="Text Selection Actions"
+      aria-label={t('selection.label')}
     >
       {ai && (
         <>
@@ -131,10 +133,10 @@ export function SelectionMenu() {
             type="button"
             className="cs-selection-btn cs-selection-btn-format"
             onClick={handleFormat}
-            title="Format selected text using AI"
+            title={t('selection.formatTitle')}
           >
             <SparklesIcon size={12} />
-            <span>Format</span>
+            <span>{t('selection.format')}</span>
           </button>
           <div className="cs-selection-sep" />
         </>
@@ -144,14 +146,14 @@ export function SelectionMenu() {
         className="cs-selection-btn"
         onClick={handleCut}
       >
-        Cut
+        {t('selection.cut')}
       </button>
       <button
         type="button"
         className="cs-selection-btn"
         onClick={handleCopy}
       >
-        Copy
+        {t('selection.copy')}
       </button>
     </div>
   )

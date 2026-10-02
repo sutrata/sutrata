@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useAI } from '../extensions/ai-provider'
 import { formatTranscript as formatWithAI } from './format-transcript'
 import { SparklesIcon } from '../shell/icons'
+import { useTranslation } from '../i18n/useTranslation'
 
 interface Props {
   rawTranscript: string
@@ -13,6 +14,7 @@ interface Props {
 /** Rendered only where useAI() is non-null (VoiceToolbar, SelectionMenu's Format). */
 export function VoiceConfirmDialog({ rawTranscript, langCode, onConfirm, onCancel }: Props) {
   const ai = useAI()!
+  const { t } = useTranslation()
   const [formattedText, setFormattedText] = useState<string>('')
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
@@ -50,19 +52,19 @@ export function VoiceConfirmDialog({ rawTranscript, langCode, onConfirm, onCance
         className="cs-dialog cs-voice-confirm-dialog"
         role="dialog"
         aria-modal="true"
-        aria-label="Review Formatting"
+        aria-label={t('voice.title')}
         onClick={e => e.stopPropagation()}
       >
         <div className="cs-dialog-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <SparklesIcon size={16} />
-            <span className="cs-dialog-title">Review Formatting</span>
+            <span className="cs-dialog-title">{t('voice.title')}</span>
           </div>
           <button
             type="button"
             className="cs-fr-close"
             onClick={onCancel}
-            aria-label="Close"
+            aria-label={t('common.close')}
           >
             ×
           </button>
@@ -73,25 +75,25 @@ export function VoiceConfirmDialog({ rawTranscript, langCode, onConfirm, onCance
             <div className="cs-voice-loading-state">
               <div className="cs-spinner" style={{ width: '28px', height: '28px', borderWidth: '2.5px' }} />
               <span style={{ fontSize: '13px', color: 'var(--cs-ui-text-dark-secondary, #a8a69d)' }}>
-                Formatting into Sutra screenplay format...
+                {t('voice.formatting')}
               </span>
             </div>
           ) : (
             <>
               {error && (
                 <div className="cs-voice-error" role="alert">
-                  AI formatting notice: {error} (showing raw input below)
+                  {t('voice.notice').replace('{error}', error)}
                 </div>
               )}
 
               <div className="cs-voice-grid">
                 <div className="cs-voice-column">
-                  <span className="cs-voice-col-title">Raw Content</span>
+                  <span className="cs-voice-col-title">{t('voice.raw')}</span>
                   <div className="cs-voice-box-raw" tabIndex={0}>{rawTranscript}</div>
                 </div>
 
                 <div className="cs-voice-column">
-                  <span className="cs-voice-col-title">Formatted Sutra</span>
+                  <span className="cs-voice-col-title">{t('voice.formatted')}</span>
                   <textarea
                     className="cs-voice-box-formatted"
                     value={formattedText}
@@ -108,7 +110,7 @@ export function VoiceConfirmDialog({ rawTranscript, langCode, onConfirm, onCance
                     checked={alwaysAutoInsert}
                     onChange={e => setAlwaysAutoInsert(e.target.checked)}
                   />
-                  <span>Always auto-insert directly into screenplay (skip review)</span>
+                  <span>{t('voice.autoInsert')}</span>
                 </label>
               </div>
 
@@ -118,14 +120,14 @@ export function VoiceConfirmDialog({ rawTranscript, langCode, onConfirm, onCance
                   className="cs-voice-btn-ghost"
                   onClick={onCancel}
                 >
-                  Discard
+                  {t('voice.discard')}
                 </button>
                 <button
                   type="button"
                   className="cs-voice-btn-primary"
                   onClick={handleConfirm}
                 >
-                  Insert Into Screenplay
+                  {t('voice.insert')}
                 </button>
               </div>
             </>

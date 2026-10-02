@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useLanguage } from '../i18n/LanguageContext'
+import { useTranslation } from '../i18n/useTranslation'
 import { useDocument } from '../context/DocumentContext'
 import { getEditorView } from '../editor/editor-bus'
 import { useCanEdit } from '../extensions/session'
@@ -19,6 +20,7 @@ const LANG_NAMES: Record<string, string> = {
 }
 
 export function LanguageStatus() {
+  const { t } = useTranslation()
   const { currentLanguage } = useLanguage()
   const { text, setText } = useDocument()
   const canEdit = useCanEdit()
@@ -65,8 +67,8 @@ export function LanguageStatus() {
       <button
         type="button"
         className="cs-lang-status-btn cs-lang-pill"
-        title={`Script language at caret: ${langName} (${currentLanguage.toUpperCase()})`}
-        aria-label={`Script language: ${langName}`}
+        title={t('lang.tooltip').replace('{name}', langName).replace('{code}', currentLanguage.toUpperCase())}
+        aria-label={t('lang.aria').replace('{name}', langName)}
         aria-haspopup="menu"
         aria-expanded={menuOpen}
         onClick={() => setMenuOpen(!menuOpen)}
@@ -76,7 +78,7 @@ export function LanguageStatus() {
       </button>
 
       {menuOpen && (
-        <div className="cs-lang-menu" role="menu" aria-label="Script languages">
+        <div className="cs-lang-menu" role="menu" aria-label={t('lang.menu')}>
           {Object.entries(LANG_NAMES).map(([code, name]) => {
             const isActive = currentLanguage === code
             return (
