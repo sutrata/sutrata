@@ -83,3 +83,24 @@ export function buildSceneList(text: string): SceneEntry[] {
 
   return scenes
 }
+
+export interface SectionEntry {
+  heading: string
+  index: number       // 1-based position among sections (for PM navigation)
+  textOffset: number  // character offset in source text where this section starts
+}
+
+/** Derive the `# ` section headings (acts, sequences, …) from Sutra source text. */
+export function buildSectionList(text: string): SectionEntry[] {
+  const sections: SectionEntry[] = []
+  let offset = 0
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim()
+    if (trimmed === '#' || trimmed.startsWith('# ') || trimmed.startsWith('#\t')) {
+      const { body } = splitAttributeBlock(trimmed.slice(1).trim())
+      sections.push({ heading: body.trim(), index: sections.length + 1, textOffset: offset })
+    }
+    offset += line.length + 1
+  }
+  return sections
+}

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { TextSelection } from 'prosemirror-state'
 import { useDocument } from '../context/DocumentContext'
 import { useTranslation } from '../i18n/useTranslation'
-import { buildSceneList, SceneEntry } from './scene-list'
+import { buildSceneList, buildSectionList, SceneEntry, SectionEntry } from './scene-list'
 import { getEditorView, getSourceView } from '../editor/editor-bus'
 import { schema } from '../editor/schema'
 import { EditorView as CmView } from '@codemirror/view'
@@ -210,6 +210,7 @@ export function SceneNavigator() {
   const ai = useAI()
   const canEdit = useCanEdit()
   const [scenes, setScenes] = useState<SceneEntry[]>([])
+  const [sections, setSections] = useState<SectionEntry[]>([])
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [dropIndex, setDropIndex] = useState<number | null>(null)
 
@@ -228,6 +229,7 @@ export function SceneNavigator() {
   // Rebuild scene list whenever text changes
   useEffect(() => {
     setScenes(buildSceneList(text))
+    setSections(buildSectionList(text))
   }, [text])
 
   // Numbers that need renumbering (missing/duplicate/out of order; §7.4).
@@ -404,6 +406,42 @@ export function SceneNavigator() {
     }
   }, [setNavVisible])
 
+  const handleSectionJump = useCallback((section: SectionEntry) => {
+    const view = getEditorView()
+    if (!view) {
+      const cmView = getSourceView()
+      if (cmView) {
+        cmView.dispatch({
+          selection: { anchor: section.textOffset },
+          effects: CmView.scrollIntoView(section.textOffset, { y: 'start' }),
+        })
+        cmView.focus()
+        if (typeof window !== 'undefined' && window.innerWidth <= 640) setNavVisible(false)
+      }
+      return
+    }
+    try {
+      let pos: number | null = null
+      let count = 0
+      view.state.doc.forEach((node, offset) => {
+        if (pos !== null) return
+        if (node.type.name === 'section') {
+          count++
+          if (count === section.index) pos = offset
+        }
+      })
+      if (pos === null) return
+      view.dispatch(view.state.tr.setSelection(TextSelection.near(view.state.doc.resolve(pos + 1))))
+      view.focus()
+      const domNode = view.nodeDOM(pos)
+      const el = domNode instanceof Element ? domNode : (domNode as Node | null)?.parentElement
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      if (typeof window !== 'undefined' && window.innerWidth <= 640) setNavVisible(false)
+    } catch {
+      /* at doc boundary — ignore */
+    }
+  }, [setNavVisible])
+
   const handleDragStart = useCallback((idx: number) => {
     setDragIndex(idx)
   }, [])
@@ -527,6 +565,27 @@ export function SceneNavigator() {
     applyTextEdit(omitted ? restoreSceneInText(current, idx) : omitSceneInText(current, idx), setText)
   }, [liveText, setText])
 
+  const renderSection = (section: SectionEntry) => (
+    <div
+      key={`section:${section.index}`}
+      role="button"
+      tabIndex={0}
+      className="cs-nav-item cs-nav-section-anchor"
+      aria-label={`Jump to section ${section.heading}`}
+      onClick={() => handleSectionJump(section)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          handleSectionJump(section)
+        }
+      }}
+    >
+      <div className="cs-nav-scene-info">
+        <div className="cs-nav-heading">{section.heading || '—'}</div>
+      </div>
+    </div>
+  )
+
   return (
     <div className="cs-navigator" role="navigation" aria-label="Scene Navigator">
       <div className="cs-nav-mobile-bar">
@@ -613,15 +672,19 @@ export function SceneNavigator() {
         )}
 
         {scenes.map((scene, idx) => {
+          // Sections that start before this scene (and after the previous one) render as anchors above it.
+          const prevOffset = idx === 0 ? -1 : scenes[idx - 1]!.textOffset
+          const leading = sections.filter(sec => sec.textOffset > prevOffset && sec.textOffset < scene.textOffset)
           const issue = numberIssues[idx] ?? null
           const omitted = scene.status.toLowerCase() === 'omitted'
           // The id is the scene number, so a missing id is one note, not two.
           const note = issue ? issueLabel(issue) : scene.id ? null : t('navigator.missingId')
           const notes = note ? [note] : []
           return (
+          <React.Fragment key={`${idx}:${scene.id ?? ''}`}>
+          {leading.map(renderSection)}
           <div
             // Ids can repeat until the writer renumbers (§7.4), so the index keeps keys unique.
-            key={`${idx}:${scene.id ?? ''}`}
             role="button"
             tabIndex={0}
             aria-label={`Jump to ${scene.heading}${notes.length ? ` (${notes.join('; ')})` : ''}`}
@@ -778,10 +841,16 @@ export function SceneNavigator() {
               )}
             </div>
           </div>
+          </React.Fragment>
           )
         })}
 
-        {scenes.length === 0 && (
+        {/* Sections after the last scene (or all of them when there are no scenes). */}
+        {sections
+          .filter(sec => scenes.length === 0 || sec.textOffset > scenes[scenes.length - 1]!.textOffset)
+          .map(renderSection)}
+
+        {scenes.length === 0 && sections.length === 0 && (
           <div className="cs-nav-empty">
             {t('navigator.empty')}
           </div>

@@ -3117,3 +3117,15 @@ html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
   color: var(--cs-ui-warning, #c2410c); background: var(--cs-ui-warning-subtle, #fff7ed);
   user-select: none; vertical-align: middle;
 }
+
+/* Section headings (acts, sequences) shown as anchors in the navigator. */
+.cs-nav-section-anchor {
+  background: var(--cs-ui-bg-panel-subtle, #f4f2ea);
+  border-bottom: 1px solid var(--cs-ui-border-light, #e2e0d6);
+}
+.cs-nav-section-anchor .cs-nav-heading {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
