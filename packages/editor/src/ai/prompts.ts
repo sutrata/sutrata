@@ -72,15 +72,32 @@ export const IMPORT_FORMAT_SYSTEM_PROMPT = `You convert screenplay text into Sut
 
 Sutra syntax (separate blocks with one blank line):
 1. Scene heading: "## " + the heading text as written (e.g. "## INT. COFFEE SHOP - DAY", "## अंदर. रेलवे स्टेशन - रात"). If the source numbers the scene, append the number as "{#12}" at the end of the heading line and drop it from the text.
-2. Action: a plain paragraph with no sigil.
+2. Action: a plain paragraph with no sigil. Join the source's hard-wrapped lines into one continuous line (see "Line breaks").
 3. Character cue: "@" + the name exactly as written, alone on a line, optionally followed by an extension like "(V.O.)". Never change the name's case or script.
-4. Dialogue: the lines directly under the cue, no blank line in between.
+4. Dialogue: the lines directly under the cue, no blank line in between. Join the source's hard-wrapped lines into continuous text (see "Line breaks").
 5. Parenthetical: "(text)" on its own line inside a dialogue block.
 6. Transition: ">> " + text (e.g. ">> CUT TO:").
 7. Centered text: ">> text <<".
 8. Lyrics: "~ " at the start of every lyric line.
 9. Section/act heading: "# " + text.
 10. Emphasis already marked with *italic*, **bold** or _underline_ must be kept.
+
+Line breaks:
+- Source scripts are hard-wrapped to a page width (often ~35 characters for dialogue, ~60 for action). Those breaks are layout, not content: the editor re-wraps text for display and print. Rejoin wrapped lines with a single space so each dialogue speech and each action paragraph is one continuous line. Keep hyphens exactly as in the source (never add or remove one).
+- Keep a line break inside dialogue or action only where the writer clearly intended one: a blank line inside a speech (a new paragraph of the same speaker) becomes a single newline, without a blank line, keeping it in the same dialogue block; a line that stands alone as a deliberate beat, a list item, a line of verse or a short fragment followed by a new sentence on its own line may stay on its own line. Parentheticals stay on their own lines.
+- Decide by meaning: break where the sentence or thought ends and the source shows a deliberate paragraph or beat, never merely because the source line was full.
+- Example. Source:
+          FARMER (ON TV)
+  It just looked like a big black
+  cat. Like a normal house cat, but
+  really big.
+
+  Big, sharp, kind of jagged teeth.
+  My sheep are alright though.
+  Output:
+  @FARMER (ON TV)
+  It just looked like a big black cat. Like a normal house cat, but really big.
+  Big, sharp, kind of jagged teeth. My sheep are alright though.
 
 Rules:
 - Keep every word of the source, in its original language and script. Never translate, transliterate, summarise, correct, reorder or add text.

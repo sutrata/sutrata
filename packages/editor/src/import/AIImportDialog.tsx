@@ -6,6 +6,7 @@ import { readImportFile, IMPORT_ACCEPT } from './extract'
 import { runAiImport, splitBlocks, blockKind, retypeBlock } from './ai-import'
 import type { ChunkResult, BlockKind } from './ai-import'
 import { applyImport } from './apply-import'
+import { SceneIcon, ActionIcon, CharacterIcon, TransitionIcon, CenteredIcon, LyricsIcon, NoteIcon, SectionIcon } from '../shell/icons'
 
 const KIND_LABEL_KEYS: Record<BlockKind, string> = {
   scene_heading: 'toolbar.scene',
@@ -17,6 +18,17 @@ const KIND_LABEL_KEYS: Record<BlockKind, string> = {
   note: 'toolbar.note',
   section: 'toolbar.section',
   other: 'aiimport.kind.other',
+}
+const KIND_ICONS: Record<BlockKind, React.ComponentType<{ size?: number }>> = {
+  scene_heading: SceneIcon,
+  action: ActionIcon,
+  character: CharacterIcon,
+  transition: TransitionIcon,
+  centered: CenteredIcon,
+  lyrics: LyricsIcon,
+  note: NoteIcon,
+  section: SectionIcon,
+  other: ActionIcon,
 }
 const KIND_OPTIONS = (Object.keys(KIND_LABEL_KEYS) as BlockKind[]).filter(k => k !== 'other')
 
@@ -117,7 +129,7 @@ export function AIImportDialog({ onClose }: { onClose: () => void }) {
           <button className="cs-fr-close" aria-label={t('common.close')} onClick={close}>×</button>
         </div>
 
-        <div className="cs-ai-import-body">
+        <div className={step.name === 'review' ? 'cs-ai-import-body cs-ai-import-body-review' : 'cs-ai-import-body'}>
           {error && <div className="cs-ai-import-error" role="alert">{error}</div>}
 
           {step.name === 'source' && (
@@ -211,19 +223,23 @@ export function AIImportDialog({ onClose }: { onClose: () => void }) {
                       const kind = blockKind(block)
                       return (
                         <li key={i} className="cs-ai-import-block">
-                          <select
-                            aria-label={t('aiimport.blockType').replace('{n}', String(i + 1))}
-                            className="cs-settings-select"
-                            value={kind}
-                            onChange={e => {
-                              const blocks = [...step.blocks]
-                              blocks[i] = retypeBlock(block, e.target.value as BlockKind)
-                              setStep({ ...step, blocks })
-                            }}
-                          >
-                            {kind === 'other' && <option value="other">{t(KIND_LABEL_KEYS.other)}</option>}
-                            {KIND_OPTIONS.map(k => <option key={k} value={k}>{t(KIND_LABEL_KEYS[k])}</option>)}
-                          </select>
+                          <label className="cs-ai-import-kind">
+                            {React.createElement(KIND_ICONS[kind], { size: 14 })}
+                            <span>{t(KIND_LABEL_KEYS[kind])}</span>
+                            <svg className="cs-ai-import-kind-chevron" width="8" height="5" viewBox="0 0 8 5" aria-hidden="true"><path d="M1 1l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                            <select
+                              aria-label={t('aiimport.blockType').replace('{n}', String(i + 1))}
+                              value={kind}
+                              onChange={e => {
+                                const blocks = [...step.blocks]
+                                blocks[i] = retypeBlock(block, e.target.value as BlockKind)
+                                setStep({ ...step, blocks })
+                              }}
+                            >
+                              {kind === 'other' && <option value="other">{t(KIND_LABEL_KEYS.other)}</option>}
+                              {KIND_OPTIONS.map(k => <option key={k} value={k}>{t(KIND_LABEL_KEYS[k])}</option>)}
+                            </select>
+                          </label>
                           <pre>{block}</pre>
                         </li>
                       )
