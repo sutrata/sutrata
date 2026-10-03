@@ -1,5 +1,13 @@
 # @sutrata/editor
 
+## 0.4.2
+
+### Patch Changes
+
+- 9473a0e: AI import review: block type selector now shows the element icon with a borderless chip, and the source and formatted panes share one height and background.
+- 9473a0e: AI import now joins hard-wrapped dialogue and action lines into continuous text, keeping line breaks only where the writer intended them.
+- fa28dae: Make the main editor scrollbar draggable: widen the hit area from 4px to 12px (thumb stays slim) and fix a dangling `:hover` selector that was leaking into `.cs-shell`.
+
 ## 0.4.1
 
 ### Patch Changes
