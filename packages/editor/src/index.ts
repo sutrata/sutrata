@@ -41,3 +41,6 @@ export type {
 export { createExportRegistry, useExportRegistry } from './extensions/export-registry'
 export type { Registries } from './extensions/registries'
 export { createRegistries } from './extensions/registries'
+
+export { importDocx, isSutrataDocx } from './file/docx-importer'
+export type { DocxImportResult } from './file/docx-importer'
