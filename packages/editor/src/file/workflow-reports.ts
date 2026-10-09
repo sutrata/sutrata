@@ -592,7 +592,7 @@ export async function buildScreenplayPrintHtml(
 
   // Render cover page
   let coverPageHtml = ''
-  if (frontmatter && (frontmatter['title'] || frontmatter['author'])) {
+  if (!extras.onlyScenes && frontmatter && (frontmatter['title'] || frontmatter['author'])) {
     const titleText = String(frontmatter['title'] || 'Untitled')
     const authorText = String(frontmatter['author'] || '')
     const loglineText = String(frontmatter['logline'] || '')
