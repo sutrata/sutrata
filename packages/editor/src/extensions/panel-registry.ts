@@ -18,6 +18,8 @@ export interface PanelRenderContext {
   sceneIds: string[]
   /** Id of the scene containing the caret, if it has one. */
   activeSceneId: string | null
+  /** Position of the scene containing the caret among all scene headings, from 0 (numbered or not). */
+  activeSceneIndex: number | null
 }
 
 /** A panel contributed by the embedder (OSS spec §11.5). */
@@ -25,6 +27,8 @@ export interface PanelContribution {
   id: string
   title: string
   location: PanelLocation
+  /** True if the panel shows the title page form: the title page dialog then stays closed. */
+  handlesTitlePage?: boolean
   render(ctx: PanelRenderContext): ReactNode
 }
 

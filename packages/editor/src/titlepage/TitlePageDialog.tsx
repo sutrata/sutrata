@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useDocument } from '../context/DocumentContext'
 import { useTranslation } from '../i18n/useTranslation'
@@ -13,8 +13,8 @@ export { OPEN_TITLE_PAGE_EVENT, openTitlePageForm } from '../editor/editor-bus'
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
-const TABS = ['story', 'credits', 'draft', 'contact', 'document', 'other'] as const
-type Tab = typeof TABS[number]
+export const TITLE_PAGE_GROUPS = ['story', 'credits', 'draft', 'contact', 'document', 'other'] as const
+type Tab = typeof TITLE_PAGE_GROUPS[number]
 
 function wordCount(s: string): number {
   return s.split(/\s+/).filter(Boolean).length
@@ -25,7 +25,7 @@ interface Props {
 }
 
 export function TitlePageDialog({ onClose }: Props) {
-  const { ast, text, setText, mode, customStyles, showToast } = useDocument()
+  const { ast, text, setText, mode, showToast } = useDocument()
   const { t } = useTranslation()
   const data = ast.frontmatter?.data as Record<string, unknown> | undefined
   const initial = useMemo(() => readTitlePage(data), []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -36,17 +36,23 @@ export function TitlePageDialog({ onClose }: Props) {
 
   /** Arrow keys move between tabs (vertical tab list; left/right also work). */
   function onTabKey(e: React.KeyboardEvent, current: Tab) {
-    const i = TABS.indexOf(current)
+    const i = TITLE_PAGE_GROUPS.indexOf(current)
     let next: Tab | undefined
-    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = TABS[(i + 1) % TABS.length]
-    else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') next = TABS[(i - 1 + TABS.length) % TABS.length]
-    else if (e.key === 'Home') next = TABS[0]
-    else if (e.key === 'End') next = TABS[TABS.length - 1]
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = TITLE_PAGE_GROUPS[(i + 1) % TITLE_PAGE_GROUPS.length]
+    else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') next = TITLE_PAGE_GROUPS[(i - 1 + TITLE_PAGE_GROUPS.length) % TITLE_PAGE_GROUPS.length]
+    else if (e.key === 'Home') next = TITLE_PAGE_GROUPS[0]
+    else if (e.key === 'End') next = TITLE_PAGE_GROUPS[TITLE_PAGE_GROUPS.length - 1]
     if (!next) return
     e.preventDefault()
     setTab(next)
     tabRefs.current[next]?.focus()
   }
+
+  // Stable between renders, or every keystroke would remount the fields.
+  const TabGroup = useCallback(
+    ({ id, children }: { id: Tab; children: ReactNode }) => <Panel id={id} active={tab}>{children}</Panel>,
+    [tab],
+  )
 
   const set = <K extends keyof TitlePageForm>(key: K, value: TitlePageForm[K]) =>
     setForm(f => ({ ...f, [key]: value }))
@@ -57,21 +63,6 @@ export function TitlePageDialog({ onClose }: Props) {
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
-
-  const langs = languageOptions([
-    form.lang, ...form.langSecondary, ...form.altTitles.map(a => a.lang),
-  ])
-  const langLabel = (code: string) => langs.find(l => l.code === code)?.label ?? code
-  const styles = allStyles(customStyles)
-  const defaultStyleName = resolveStyle(undefined, customStyles).name
-  const logWords = wordCount(form.logline)
-
-  // Frontmatter keys the form neither manages nor shows as a custom row: kept as is.
-  const preservedCount = data
-    ? Object.keys(data).filter(k =>
-        !(MANAGED_KEYS as readonly string[]).includes(k) &&
-        !initial.custom.some(c => c.key === k)).length
-    : 0
 
   function save() {
     const current = readTitlePage(ast.frontmatter?.data as Record<string, unknown> | undefined)
@@ -97,7 +88,7 @@ export function TitlePageDialog({ onClose }: Props) {
 
         <div className="cs-tp-body">
         <div className="cs-tp-tabs" role="tablist" aria-orientation="vertical" aria-label={t('titlePage.title')}>
-          {TABS.map(id => (
+          {TITLE_PAGE_GROUPS.map(id => (
             <button
               key={id}
               ref={el => { tabRefs.current[id] = el }}
@@ -119,7 +110,56 @@ export function TitlePageDialog({ onClose }: Props) {
           className="cs-tp-form"
           onSubmit={e => { e.preventDefault(); save() }}
         >
-          <Panel id="story" active={tab}>
+          <TitlePageFields form={form} set={set} initial={initial} data={data}
+            Group={TabGroup}
+            firstFieldRef={firstFieldRef} />
+        </form>
+        </div>
+
+        <div className="cs-export-actions cs-tp-actions">
+          <button type="button" className="cs-confirm-btn-cancel" onClick={onClose}>{t('titlePage.cancel')}</button>
+          <button type="button" className="cs-confirm-btn-primary" onClick={save}>{t('titlePage.save')}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export type TitlePageGroup = Tab
+
+/**
+ * The title page fields, in their six groups. The caller decides how a group
+ * looks (a tab panel in the dialog, a collapsible section in a side panel).
+ */
+export function TitlePageFields({ form, set, initial, data, Group, firstFieldRef }: {
+  form: TitlePageForm
+  set: <K extends keyof TitlePageForm>(key: K, value: TitlePageForm[K]) => void
+  /** The form as first read from the document, to tell custom rows from preserved keys. */
+  initial: TitlePageForm
+  data: Record<string, unknown> | undefined
+  Group: (props: { id: TitlePageGroup; children: ReactNode }) => ReactNode
+  firstFieldRef?: React.Ref<HTMLInputElement>
+}) {
+  const { customStyles } = useDocument()
+  const { t } = useTranslation()
+  const langs = languageOptions([
+    form.lang, ...form.langSecondary, ...form.altTitles.map(a => a.lang),
+  ])
+  const langLabel = (code: string) => langs.find(l => l.code === code)?.label ?? code
+  const styles = allStyles(customStyles)
+  const defaultStyleName = resolveStyle(undefined, customStyles).name
+  const logWords = wordCount(form.logline)
+
+  // Frontmatter keys the form neither manages nor shows as a custom row: kept as is.
+  const preservedCount = data
+    ? Object.keys(data).filter(k =>
+        !(MANAGED_KEYS as readonly string[]).includes(k) &&
+        !initial.custom.some(c => c.key === k)).length
+    : 0
+
+  return (
+    <>
+          <Group id="story">
             <Field label={t('titlePage.field.title')} htmlFor="cs-tp-f-title">
               <input id="cs-tp-f-title" ref={firstFieldRef} className="cs-tp-input" value={form.title}
                 onChange={e => set('title', e.target.value)} />
@@ -149,35 +189,35 @@ export function TitlePageDialog({ onClose }: Props) {
               <textarea id="cs-tp-f-logline" className="cs-tp-input" rows={2} value={form.logline}
                 onChange={e => set('logline', e.target.value)} />
             </Field>
-          </Panel>
+          </Group>
 
-          <Panel id="credits" active={tab}>
+          <Group id="credits">
             <TextField id="author" label={t('titlePage.field.author')} value={form.author} onChange={v => set('author', v)} />
             <TextField id="credit" label={t('titlePage.field.credit')} placeholder={t('titlePage.placeholder.credit')} value={form.credit} onChange={v => set('credit', v)} />
             <TextField id="source" label={t('titlePage.field.source')} value={form.source} onChange={v => set('source', v)} />
             <TextField id="story" label={t('titlePage.field.story')} value={form.story} onChange={v => set('story', v)} />
             <TextField id="screenplay" label={t('titlePage.field.screenplay')} value={form.screenplay} onChange={v => set('screenplay', v)} />
             <TextField id="dialogue" label={t('titlePage.field.dialogue')} value={form.dialogue} onChange={v => set('dialogue', v)} />
-          </Panel>
+          </Group>
 
-          <Panel id="draft" active={tab}>
+          <Group id="draft">
             <TextField id="draft" label={t('titlePage.field.draft')} placeholder={t('titlePage.placeholder.draft')} value={form.draft} onChange={v => set('draft', v)} />
             <TextField id="revision" label={t('titlePage.field.revision')} value={form.revision} onChange={v => set('revision', v)} />
             <Field label={t('titlePage.field.date')} htmlFor="cs-tp-f-date">
               <DateInput id="cs-tp-f-date" value={form.date} onChange={v => set('date', v)}
                 usePickerLabel={t('titlePage.usePicker')} useTextLabel={t('titlePage.useText')} />
             </Field>
-          </Panel>
+          </Group>
 
-          <Panel id="contact" active={tab}>
+          <Group id="contact">
             <Field label={t('titlePage.field.contact')} htmlFor="cs-tp-f-contact">
               <textarea id="cs-tp-f-contact" className="cs-tp-input" rows={3} value={form.contact}
                 onChange={e => set('contact', e.target.value)} />
             </Field>
             <TextField id="copyright" label={t('titlePage.field.copyright')} placeholder="© 2026 …" value={form.copyright} onChange={v => set('copyright', v)} />
-          </Panel>
+          </Group>
 
-          <Panel id="document" active={tab}>
+          <Group id="document">
             <Field label={t('titlePage.field.lang')} htmlFor="cs-tp-f-lang">
               <select id="cs-tp-f-lang" className="cs-settings-select" value={form.lang}
                 onChange={e => set('lang', e.target.value)}>
@@ -224,9 +264,9 @@ export function TitlePageDialog({ onClose }: Props) {
               </select>
             </Field>
             <TextField id="watermark" label={t('titlePage.field.watermark')} placeholder={t('titlePage.placeholder.watermark')} value={form.watermark} onChange={v => set('watermark', v)} />
-          </Panel>
+          </Group>
 
-          <Panel id="other" active={tab}>
+          <Group id="other">
             {form.custom.map((c, i) => (
               <div className="cs-tp-row" key={i}>
                 <input aria-label={t('titlePage.field.key')} className="cs-tp-input cs-tp-key" value={c.key}
@@ -245,16 +285,8 @@ export function TitlePageDialog({ onClose }: Props) {
             {preservedCount > 0 && (
               <p className="cs-tp-note">{t('titlePage.preserved').replace('{n}', String(preservedCount))}</p>
             )}
-          </Panel>
-        </form>
-        </div>
-
-        <div className="cs-export-actions cs-tp-actions">
-          <button type="button" className="cs-confirm-btn-cancel" onClick={onClose}>{t('titlePage.cancel')}</button>
-          <button type="button" className="cs-confirm-btn-primary" onClick={save}>{t('titlePage.save')}</button>
-        </div>
-      </div>
-    </div>
+          </Group>
+    </>
   )
 }
 

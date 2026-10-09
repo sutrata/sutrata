@@ -26,6 +26,8 @@ export { DEFAULT_SESSION, useSession, useCanEdit } from './extensions/session'
 export type {
   PanelRegistry, PanelContribution, PanelLocation, PanelRenderContext,
 } from './extensions/panel-registry'
+export { TitlePageSections } from './titlepage/TitlePageSections'
+export { openTitlePageForm, OPEN_TITLE_PAGE_EVENT } from './editor/editor-bus'
 export { createPanelRegistry, usePanelRegistry } from './extensions/panel-registry'
 export type {
   DecorationProvider, DecorationSpec, DecorationContext, Anchor,

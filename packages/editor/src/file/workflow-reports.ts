@@ -720,7 +720,7 @@ async function buildScreenplayPrintHtml(
       const printedNumber = sceneNumberOf(node)
       const sceneLabel = printedNumber || String(sceneOrdinal)
       // An omitted scene (§7.4) prints OMITTED in place of its heading; its body is a comment.
-      const title = isOmitted(node) ? 'OMITTED' : textHtml(node.text.toUpperCase())
+      const title = isOmitted(node) ? 'OMITTED' : textHtml(node.text)
       bodyHtml += tagScene(`
         <div class="print-scene-heading">
           <span class="print-scene-title">${title}</span>

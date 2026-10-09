@@ -5,6 +5,7 @@ import { TextSelection } from 'prosemirror-state'
 import type { Command } from 'prosemirror-state'
 import { schema } from './schema'
 import { moveByGrapheme, extendByGrapheme } from './grapheme-cursor'
+import { insertActionAfterHeading } from './scene-heading-exit'
 
 const smartEnter: Command = (state, dispatch) => {
   const { $from } = state.selection
@@ -20,12 +21,7 @@ const smartEnter: Command = (state, dispatch) => {
     return true
   }
   if (node.type === schema.nodes['scene_heading'] && $from.pos === $from.end()) {
-    if (dispatch) {
-      const actionType = schema.nodes['action']!
-      const insertPos = $from.after()
-      const tr = state.tr.insert(insertPos, actionType.create())
-      dispatch(tr.setSelection(TextSelection.near(tr.doc.resolve(insertPos + 1))))
-    }
+    if (dispatch) dispatch(insertActionAfterHeading(state, $from.before()))
     return true
   }
   if (node.type === schema.nodes['character']) {
