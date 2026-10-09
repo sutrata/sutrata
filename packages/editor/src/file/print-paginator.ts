@@ -360,7 +360,7 @@ export function printPaginatorScript(opts: PrintPaginationOptions): string {
       (function () {
         var run = function () {
           try {
-            (${paginatePrintDocument.toString()})(${JSON.stringify(opts)});
+            (${paginatePrintDocument.toString()})(${JSON.stringify(opts).replace(/</g, '\\u003c')});
           } catch (e) {
             console.error('Sutrata: pagination failed, falling back to browser page breaks', e);
             window.__sutrataPrint = { done: true, failed: true, pages: [], ranges: {}, labels: {} };

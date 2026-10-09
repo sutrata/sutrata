@@ -129,3 +129,11 @@ describe('print paginator with locked pages', () => {
     expect(labels).toEqual(['', 'BLUE REVISION'])
   })
 })
+
+describe('printPaginatorScript', () => {
+  it('cannot be closed early by text in its options', async () => {
+    const { printPaginatorScript } = await import('../src/file/print-paginator')
+    const script = printPaginatorScript({ contentHeightPx: 100, pageNumberPrefix: 'p', continuedSuffix: '</script><b>x', lockedPages: { '</script>': { start: 1, end: 1 } } })
+    expect(script.match(/<\/script>/g)?.length).toBe(1)
+  })
+})
