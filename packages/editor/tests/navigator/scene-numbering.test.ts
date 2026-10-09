@@ -72,3 +72,23 @@ describe('scene numbering (format spec §7.4)', () => {
     }
   })
 })
+
+import { renumberLocked } from '../../src/navigator/scene-numbering'
+describe('renumberLocked', () => {
+  it('keeps every number and letters new scenes after the one before', () => {
+    expect(renumberLocked(['1', '2', null, '3'])).toEqual(['1', '2', '2A', '3'])
+    expect(renumberLocked(['1', '2', null, null, '3'])).toEqual(['1', '2', '2A', '2B', '3'])
+    expect(renumberLocked(['1', '2A', null, '3'])).toEqual(['1', '2A', '2B', '3'])
+  })
+  it('never renumbers out-of-order scenes, and re-letters a repeat', () => {
+    expect(renumberLocked(['3', '1', '2'])).toEqual(['3', '1', '2'])
+    expect(renumberLocked(['1', '2', '2', '3'])).toEqual(['1', '2', '2A', '3'])
+  })
+  it('numbers an unnumbered start', () => {
+    expect(renumberLocked([null, '2'])).toEqual(['1', '2'])
+    expect(renumberLocked([null, null])).toEqual(['1', '1A'])
+  })
+  it('skips a lettered number that is already taken', () => {
+    expect(renumberLocked(['1', null, '1A'])).toEqual(['1', '1B', '1A'])
+  })
+})

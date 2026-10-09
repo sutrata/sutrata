@@ -184,6 +184,7 @@ export async function exportToDocx(
   styleOverride?: string,
   customStyles: ScreenplayStyleDefinition[] = [],
   skipNotes = false,
+  watermarkOverride?: string,
 ): Promise<Blob> {
   const frontmatter = ast.frontmatter?.data as Record<string, unknown> | undefined
   const defaultLang = (frontmatter?.['lang'] as string) ?? 'en'
@@ -534,8 +535,18 @@ export async function exportToDocx(
   // page that opens mid-scene — has no DOCX equivalent: it depends on where the page break
   // falls, and Word neither exposes that to a field nor lets a header vary per page within
   // a section. (Only the cover is special-cased, via titlePage below.)
+  // The watermark (frontmatter `watermark:`, or the caller's) goes in the header of every page,
+  // cover included: Word has no watermark a library can set, so it is a grey line of text.
+  const watermarkText = (watermarkOverride ?? (typeof frontmatter?.['watermark'] === 'string' ? frontmatter['watermark'] : '')).trim()
+  const watermarkLine = watermarkText
+    ? [new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [new TextRun({ text: watermarkText, font: bodyFont, size: 18, color: '999999', bold: true })],
+      })]
+    : []
   const runningHeader = new Header({
     children: [
+      ...watermarkLine,
       new Paragraph({
         alignment: AlignmentType.RIGHT,
         children: [
@@ -577,7 +588,7 @@ export async function exportToDocx(
         },
         headers: {
           default: runningHeader,
-          ...(hasCover ? { first: new Header({ children: [new Paragraph({ text: '' })] }) } : {}),
+          ...(hasCover ? { first: new Header({ children: watermarkLine.length ? watermarkLine : [new Paragraph({ text: '' })] }) } : {}),
         },
         children: childrenNodes,
       },

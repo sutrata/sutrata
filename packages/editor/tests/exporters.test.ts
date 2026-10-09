@@ -386,3 +386,37 @@ lang-secondary: [en]
     expect(xml).toContain('ham ṭren chūṭ gae, hai nā?')
   })
 })
+
+describe('print and Word exports for servers', () => {
+  const body = `---\ntitle: T\nauthor: A\nwatermark: SECRET\n---\n\n## INT. ROOM - DAY {#1}\n& x-sc-scene-id: ref-1\n\nFirst.\n\nSecond.\n\n## EXT. ROAD - DAY {#2}\n& x-sc-scene-id: ref-2\n\nThird.\n`
+
+  it('tags blocks with scene keys, marks and locked pages only when asked, and can limit to some scenes', async () => {
+    const { buildScreenplayPrintHtml } = await import('../src/file/workflow-reports')
+    const ast = parse(body)
+    expect(await buildScreenplayPrintHtml(ast, 'T')).not.toContain('ref-1')
+    const html = await buildScreenplayPrintHtml(ast, 'T', undefined, [], false, {
+      offline: true, watermark: 'Priya · AB12CD', marks: { 'ref-1': [-1, 1] }, onlyScenes: ['ref-1'],
+      lockedPages: { 'ref-1': { start: 4, end: 5 } }, revisionLabel: 'BLUE REVISION', tint: '#dbeafe',
+    })
+    expect(html).toContain('data-scene-key="ref-1"')
+    expect(html).not.toContain('ref-2')
+    expect(html).not.toContain('Third.')
+    expect(html).toContain('Priya · AB12CD')
+    expect(html).not.toContain('SECRET')
+    expect(html).not.toContain('fonts.googleapis.com')
+    expect((html.match(/data-mark="1"/g) ?? []).length).toBe(2) // the heading and the second block
+    expect(html).toContain('"lockedPages":{"ref-1":{"start":4,"end":5}}')
+    expect(html).toContain('background: #dbeafe')
+  })
+
+  it('puts the watermark in the Word header of every page', async () => {
+    const blob = await exportToDocx(parse(body), undefined, [], false, 'Priya · AB12CD')
+    const zip = await JSZip.loadAsync(await blob.arrayBuffer())
+    const headers = await Promise.all(Object.keys(zip.files).filter(f => /word\/header\d*\.xml$/.test(f)).map(f => zip.files[f]!.async('string')))
+    expect(headers.length).toBeGreaterThan(0)
+    expect(headers.every(h => h.includes('Priya · AB12CD'))).toBe(true)
+    const own = await exportToDocx(parse(body))
+    const z2 = await JSZip.loadAsync(await own.arrayBuffer())
+    expect(await z2.files['word/header1.xml']!.async('string')).toContain('SECRET')
+  })
+})

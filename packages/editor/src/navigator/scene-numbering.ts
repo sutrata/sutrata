@@ -94,3 +94,39 @@ export function renumberScenes(numbers: readonly (string | null | undefined)[]):
   }
   return out
 }
+
+/**
+ * Renumbering a locked script (spec §5.6, OSS spec §8.6): a scene that has a
+ * usable, unique number keeps it, whatever its position; a scene without one
+ * (new, missing, invalid, or a repeat of an earlier one) takes the number just
+ * after the scene before it, lettered: after 12 comes 12A, after 12A comes
+ * 12B. A scene with no number and nothing before it becomes 1.
+ */
+export function renumberLocked(numbers: readonly (string | null | undefined)[]): string[] {
+  const own = numbers.map(parseSceneNumber)
+  const taken = new Set<string>()
+  const keep = own.map(n => {
+    if (!n) return false
+    const key = formatSceneNumber(n)
+    if (taken.has(key)) return false
+    taken.add(key)
+    return true
+  })
+  const out: string[] = []
+  let prev: SceneNumber | null = null
+  for (let i = 0; i < numbers.length; i++) {
+    if (keep[i]) {
+      prev = own[i]!
+      out.push(formatSceneNumber(prev))
+      continue
+    }
+    let candidate: SceneNumber = prev ? { base: prev.base, suffix: nextLetter(prev.suffix) } : { base: 1, suffix: '' }
+    while (taken.has(formatSceneNumber(candidate))) {
+      candidate = candidate.suffix === '' && !prev ? { base: candidate.base + 1, suffix: '' } : { base: candidate.base, suffix: nextLetter(candidate.suffix) }
+    }
+    taken.add(formatSceneNumber(candidate))
+    prev = candidate
+    out.push(formatSceneNumber(candidate))
+  }
+  return out
+}

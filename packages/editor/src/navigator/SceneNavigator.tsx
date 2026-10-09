@@ -8,13 +8,13 @@ import { schema } from '../editor/schema'
 import { EditorView as CmView } from '@codemirror/view'
 import { StatisticsDialog } from './StatisticsDialog'
 import { EyeIcon, EyeOffIcon, RenumberIcon, OmitIcon, RestoreIcon, StatsIcon, SparklesIcon, CloseIcon } from '../shell/icons'
-import { sceneNumberIssues, renumberScenes } from './scene-numbering'
+import { sceneNumberIssues, renumberScenes, renumberLocked } from './scene-numbering'
 import type { SceneNumberIssue } from './scene-numbering'
 import { setSceneIdsInText, omitSceneInText, restoreSceneInText, applyTextEdit } from './scene-edits'
 import { SCENE_METADATA_PROMPT, SCENE_METADATA_SCHEMA } from '../ai/prompts'
 import { useAI } from '../extensions/ai-provider'
 import type { AIProvider } from '../extensions/ai-provider'
-import { useCanEdit } from '../extensions/session'
+import { isFeatureEnabled, useCanEdit, useSession } from '../extensions/session'
 import { prosemirrorToSutra } from '../editor/prosemirror-to-sutra'
 
 /** Update the scene synopsis in the raw Sutra text. */
@@ -216,6 +216,11 @@ export function SceneNavigator() {
   // actions (reorder, synopsis edits, number locking) only in edit sessions.
   const ai = useAI()
   const canEdit = useCanEdit()
+  const session = useSession()
+  // featureFlags.renumber === false hides Renumber (an embedder protecting a locked script);
+  // featureFlags.lockSceneNumbers === true makes it only letter the scenes that have no number.
+  const canRenumber = isFeatureEnabled(session, 'renumber')
+  const lockNumbers = session.featureFlags['lockSceneNumbers'] === true
   const [scenes, setScenes] = useState<SceneEntry[]>([])
   const [sections, setSections] = useState<SectionEntry[]>([])
   const [dragIndex, setDragIndex] = useState<number | null>(null)
@@ -553,7 +558,7 @@ export function SceneNavigator() {
   const handleRenumber = useCallback(() => {
     const current = liveText()
     const list = buildSceneList(current)
-    const next = renumberScenes(list.map(s => s.id))
+    const next = (lockNumbers ? renumberLocked : renumberScenes)(list.map(s => s.id))
     const ids = next.map((n, i) => (n === list[i]!.id ? undefined : n))
     const changed = ids.filter(n => n !== undefined).length
     if (changed === 0) {
@@ -562,7 +567,7 @@ export function SceneNavigator() {
     }
     applyTextEdit(setSceneIdsInText(current, ids), setText)
     showToast(t(changed === 1 ? 'navigator.toast.renumberedOne' : 'navigator.toast.renumberedMany').replace('{count}', String(changed)), 'success')
-  }, [liveText, setText, showToast, t])
+  }, [liveText, setText, showToast, t, lockNumbers])
 
   const handleOmitToggle = useCallback((scene: SceneEntry) => {
     const current = liveText()
@@ -644,7 +649,7 @@ export function SceneNavigator() {
                 <SparklesIcon size={14} />
               </button>
             )}
-            {canEdit && (
+            {canEdit && canRenumber && (
               <button
                 type="button"
                 className="cs-nav-action-btn"

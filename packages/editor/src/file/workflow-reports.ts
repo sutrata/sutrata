@@ -522,12 +522,41 @@ export async function openScreenplayPrintPreview(
   win.document.close()
 }
 
-async function buildScreenplayPrintHtml(
+/** What an embedder can change about a printed screenplay (Sutrata Cloud's print worker uses
+ *  all of it; the app uses none). */
+export interface PrintExtras {
+  /** Stamped on every page in place of the frontmatter `watermark:` (e.g. a recipient's name and trace code). */
+  watermark?: string
+  /** No Google Fonts link: the fonts come from the page's own @font-face rules (a server with no network). */
+  offline?: boolean
+  /** Locked pages from an earlier issue, keyed by scene key (see PrintPaginationOptions). */
+  lockedPages?: Record<string, { start: number; end: number }>
+  /** Revised blocks per scene key: indexes into the scene's content, -1 for the heading.
+   *  Each gets a margin mark (*), and its page the revision label. */
+  marks?: Record<string, number[]>
+  revisionLabel?: string
+  /** Page colour for a coloured-paper revision, any CSS colour. */
+  tint?: string
+  /** Print only these scene keys (the revised pages of a revision), with their locked page numbers. */
+  onlyScenes?: string[]
+  /** Tag each block with its scene key (`data-scene-key`), so the page can report the layout per scene. Implied by the options above; off otherwise, since a key can be a private x- reference. */
+  sceneKeys?: boolean
+}
+
+/** The `x-sc-scene-id` of a scene, or its number, or its position: how a scene is named in
+ *  `PrintExtras` and in the layout the paginator reports. */
+export function sceneKeyOf(node: SceneHeadingNode, ordinal: number): string {
+  return node.metadata.find(m => m.key === 'x-sc-scene-id')?.value.trim() || sceneNumberOf(node) || `#${ordinal}`
+}
+
+/** The standalone HTML of the screenplay print view. */
+export async function buildScreenplayPrintHtml(
   ast: DocumentNode,
   title: string,
   styleOverride?: string,
   customStyles: ScreenplayStyleDefinition[] = [],
   skipNotes = false,
+  extras: PrintExtras = {},
 ): Promise<string> {
   const frontmatter = ast.frontmatter?.data as Record<string, unknown> | undefined
   const defaultLang = (frontmatter?.['lang'] as string) ?? 'en'
@@ -545,7 +574,9 @@ async function buildScreenplayPrintHtml(
   const pageFormat = (frontmatter?.['page'] as string)?.toLowerCase() === 'a4' ? 'a4' : 'letter'
   const pageHeightIn = pageFormat === 'a4' ? 11.69 : 11
 
-  const watermarkValue = typeof frontmatter?.['watermark'] === 'string' ? frontmatter['watermark'].trim() : ''
+  const watermarkValue = extras.watermark !== undefined
+    ? extras.watermark.trim()
+    : typeof frontmatter?.['watermark'] === 'string' ? frontmatter['watermark'].trim() : ''
   const watermarkHtml = watermarkValue ? `<div class="print-watermark">${escapeHtml(watermarkValue)}</div>` : ''
 
   // Render cover page
@@ -702,10 +733,13 @@ async function buildScreenplayPrintHtml(
    *  print-paginator.ts decides whether a page opens mid-scene (-> "8 CONTINUED:") or on
    *  a fresh one. The label is the scene's own number when it has one, else its position
    *  in the script — the same thing the heading prints on the right. */
-  function tagScene(html: string, label: string, isHeading = false): string {
+  function tagScene(html: string, label: string, isHeading = false, key = '', marked = false): string {
     const attrs = ` data-scene="${escapeHtml(label)}"${isHeading ? ` data-scene-start="${escapeHtml(label)}"` : ''}`
+      + (key && emitKeys ? ` data-scene-key="${escapeHtml(key)}"` : '') + (marked ? ' data-mark="1"' : '')
     return html.replace('<div', `<div${attrs}`)
   }
+  const only = extras.onlyScenes ? new Set(extras.onlyScenes) : null
+  const emitKeys = !!(extras.sceneKeys || extras.lockedPages || extras.marks || extras.onlyScenes)
 
   let sceneOrdinal = 0
   for (const node of ast.children) {
@@ -716,6 +750,9 @@ async function buildScreenplayPrintHtml(
       }
     } else if (node.type === 'scene-heading') {
       sceneOrdinal++
+      const key = sceneKeyOf(node, sceneOrdinal)
+      if (only && !only.has(key)) continue
+      const marks = new Set(extras.marks?.[key] ?? [])
       // Scene number: the {#id} (format spec §6.1).
       const printedNumber = sceneNumberOf(node)
       const sceneLabel = printedNumber || String(sceneOrdinal)
@@ -726,23 +763,26 @@ async function buildScreenplayPrintHtml(
           <span class="print-scene-title">${title}</span>
           ${printedNumber ? `<span class="print-scene-num">${escapeHtml(printedNumber)}</span>` : ''}
         </div>
-      `, sceneLabel, true)
-      for (const sub of node.children) {
-        bodyHtml += tagScene(renderContentNode(sub), sceneLabel)
-      }
-    } else {
+      `, sceneLabel, true, key, marks.has(-1))
+      node.children.forEach((sub, index) => {
+        bodyHtml += tagScene(renderContentNode(sub), sceneLabel, false, key, marks.has(index))
+      })
+    } else if (!only) {
       bodyHtml += renderContentNode(node)
     }
   }
+
+  const tint = extras.tint ? extras.tint.replace(/[^#\w(),.% -]/g, '') : ''
+  const fontLinks = extras.offline ? '' : `<link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Noto+Sans+Devanagari&family=Noto+Sans+Tamil&family=Noto+Sans+Telugu&family=Noto+Sans+Kannada&family=Noto+Sans+Malayalam&family=Noto+Sans+Bengali&family=Noto+Sans+Gujarati&family=Noto+Sans+Gurmukhi&family=Noto+Sans+Oriya&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Noto+Serif+Devanagari&family=Noto+Serif+Tamil:ital@0;1&family=Noto+Serif+Telugu&family=Noto+Serif+Kannada&family=Noto+Serif+Malayalam&family=Noto+Serif+Bengali&family=Noto+Serif+Gujarati&family=Noto+Serif+Gurmukhi&family=Noto+Serif+Oriya&display=swap" rel="stylesheet">`
 
   return `
     <!DOCTYPE html>
     <html>
       <head>
         <title>${escapeHtml(title)}</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Noto+Sans+Devanagari&family=Noto+Sans+Tamil&family=Noto+Sans+Telugu&family=Noto+Sans+Kannada&family=Noto+Sans+Malayalam&family=Noto+Sans+Bengali&family=Noto+Sans+Gujarati&family=Noto+Sans+Gurmukhi&family=Noto+Sans+Oriya&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Noto+Serif+Devanagari&family=Noto+Serif+Tamil:ital@0;1&family=Noto+Serif+Telugu&family=Noto+Serif+Kannada&family=Noto+Serif+Malayalam&family=Noto+Serif+Bengali&family=Noto+Serif+Gujarati&family=Noto+Serif+Gurmukhi&family=Noto+Serif+Oriya&display=swap" rel="stylesheet">
+        ${fontLinks}
         <style>
           /* Statically-instanced (non-variable) copies of this export's own fonts, embedded
              as data: URIs — see embed-fonts.ts for why: Chromium's print/PDF-to-file font
@@ -801,6 +841,13 @@ async function buildScreenplayPrintHtml(
             z-index: -1;
           }
 
+          /* Margin marks for revised blocks, and the revision label in the page header. */
+          [data-mark] { position: relative; }
+          [data-mark]::after { content: '*'; position: absolute; right: -0.55in; top: 0; font-weight: 700; }
+          .print-page-header { position: relative; }
+          .print-page-revision { position: absolute; left: 0; right: 0; text-align: center; font-size: 9pt; letter-spacing: 0.04em; }
+          ${tint ? `.print-page { background: ${tint}; -webkit-print-color-adjust: exact; print-color-adjust: exact; }` : ''}
+
           @media print {
             .print-btn-bar { display: none !important; }
             body { padding: 0; }
@@ -819,6 +866,8 @@ async function buildScreenplayPrintHtml(
           contentHeightPx: Math.round((pageHeightIn - style.page.marginTopIn - style.page.marginBottomIn) * CSS_PX_PER_IN),
           pageNumberPrefix: 'p',
           continuedSuffix: 'CONTINUED:',
+          ...(extras.lockedPages ? { lockedPages: extras.lockedPages } : {}),
+          ...(extras.revisionLabel ? { revisionLabel: extras.revisionLabel } : {}),
         })}
       </body>
     </html>

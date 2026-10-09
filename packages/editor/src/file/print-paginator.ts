@@ -20,6 +20,25 @@ export interface PrintPaginationOptions {
   /** Left-hand header cell on a page that opens mid-scene: the scene number, then this
    *  (e.g. "8 CONTINUED:"). */
   continuedSuffix: string
+  /** Pages locked by an earlier issue of the script (a locked shooting script). A scene that
+   *  was on pages `start`..`end` begins on page `start` again, and when it grows past `end` the
+   *  extra pages are lettered (12, 12A, 12B) instead of renumbering everything after it.
+   *  Keyed by the scene key printed in `data-scene-key`. Scenes not listed (new ones) simply
+   *  follow on from the previous content. */
+  lockedPages?: Record<string, { start: number; end: number }>
+  /** Printed in the middle of the header of every page that holds a revised block
+   *  (`data-mark`), e.g. "BLUE REVISION 09/10/26". */
+  revisionLabel?: string
+}
+
+/** What a finished layout leaves on `window.__sutrataPrint`, for the embedder (the print
+ *  worker) to read: the page labels, and for each scene the first and last page it used. */
+export interface PrintLayout {
+  done: true
+  failed?: boolean
+  pages: { label: string; scenes: string[] }[]
+  ranges: Record<string, { start: number; end: number }>
+  labels: Record<string, string[]>
 }
 
 export function paginatePrintDocument(opts: PrintPaginationOptions): void {
@@ -49,9 +68,20 @@ export function paginatePrintDocument(opts: PrintPaginationOptions): void {
   // would spill a stray sliver onto the next sheet.
   const SLACK_PX = 4
 
-  type Page = { el: HTMLElement; body: HTMLElement; continued: HTMLElement; number: HTMLElement }
+  type Page = { el: HTMLElement; body: HTMLElement; continued: HTMLElement; number: HTMLElement; revision: HTMLElement; base: number; letter: number }
   const pages: Page[] = []
-  function newPage(): Page {
+  const letters = (n: number) => (n === 0 ? '' : n <= 26 ? String.fromCharCode(64 + n) : 'Z' + (n - 26))
+  const labelOf = (base: number, letter: number) => String(base) + letters(letter)
+  /** The scene the block being placed belongs to, for the locked-page numbering below. */
+  let currentKey: string | null = null
+  function nextLabel(): { base: number; letter: number } {
+    const last = pages[pages.length - 1]
+    if (!opts.lockedPages || !last) return { base: pages.length + 1, letter: 0 }
+    const range = currentKey !== null ? opts.lockedPages[currentKey] : undefined
+    if (range && last.base + 1 <= range.end) return { base: last.base + 1, letter: 0 }
+    return { base: last.base, letter: last.letter + 1 }
+  }
+  function newPage(label?: { base: number; letter: number }): Page {
     const el = document.createElement('section')
     el.className = 'print-page'
     el.style.height = opts.contentHeightPx + 'px'
@@ -59,21 +89,25 @@ export function paginatePrintDocument(opts: PrintPaginationOptions): void {
     header.className = 'print-page-header'
     const continued = document.createElement('span')
     continued.className = 'print-page-continued'
+    const revision = document.createElement('span')
+    revision.className = 'print-page-revision'
     const number = document.createElement('span')
     number.className = 'print-page-number'
     header.appendChild(continued)
+    header.appendChild(revision)
     header.appendChild(number)
     const body = document.createElement('div')
     body.className = 'print-page-body'
     el.appendChild(header)
     el.appendChild(body)
     root.appendChild(el)
-    const page = { el, body, continued, number }
+    const at = label ?? nextLabel()
+    const page = { el, body, continued, number, revision, base: at.base, letter: at.letter }
     pages.push(page)
     // Numbered as soon as the page exists, not in the header pass at the end: an empty
     // header measures as a bare margin, and every block would then be placed against a
     // page height ~one line too generous.
-    number.textContent = opts.pageNumberPrefix + String(pages.length)
+    number.textContent = opts.pageNumberPrefix + labelOf(page.base, page.letter)
     return page
   }
 
@@ -212,6 +246,22 @@ export function paginatePrintDocument(opts: PrintPaginationOptions): void {
   for (let i = 0; i < blocks.length; i++) {
     const block: HTMLElement = pending ?? blocks[i]!
     pending = null
+    currentKey = block.getAttribute('data-scene-key') ?? currentKey
+
+    // A scene that was on locked pages starts on its page again, even if the scenes before it
+    // came up short (the page simply ends early).
+    if (opts.lockedPages && block.getAttribute('data-scene-start') !== null) {
+      const range = opts.lockedPages[block.getAttribute('data-scene-key') ?? '']
+      if (range && page.base < range.start) {
+        if (page.body.children.length === 0) {
+          page.base = range.start
+          page.letter = 0
+          page.number.textContent = opts.pageNumberPrefix + labelOf(page.base, page.letter)
+        } else {
+          page = newPage({ base: range.start, letter: 0 })
+        }
+      }
+    }
 
     // An explicit Sutra page break (===) just starts the next page.
     if (block.className.indexOf('print-page-break') >= 0) {
@@ -273,6 +323,30 @@ export function paginatePrintDocument(opts: PrintPaginationOptions): void {
     }
   }
 
+  // A revised block makes its page a revised page.
+  if (opts.revisionLabel) {
+    for (const p of pages) if (p.body.querySelector('[data-mark]')) p.revision.textContent = opts.revisionLabel
+  }
+
+  // Hand the layout to whoever is rendering this (the print worker reads it before printing).
+  const layout: PrintLayout = { done: true, pages: [], ranges: {}, labels: {} }
+  for (const p of pages) {
+    const label = labelOf(p.base, p.letter)
+    const keys: string[] = []
+    p.body.querySelectorAll('[data-scene-key]').forEach(el => {
+      const k = el.getAttribute('data-scene-key')!
+      if (keys.indexOf(k) < 0) keys.push(k)
+    })
+    layout.pages.push({ label, scenes: keys })
+    for (const k of keys) {
+      const r = layout.ranges[k]
+      if (!r) layout.ranges[k] = { start: p.base, end: p.base }
+      else { r.start = Math.min(r.start, p.base); r.end = Math.max(r.end, p.base) }
+      ;(layout.labels[k] ??= []).push(label)
+    }
+  }
+  ;(window as unknown as { __sutrataPrint?: PrintLayout }).__sutrataPrint = layout
+
   flow.parentNode?.removeChild(flow)
 }
 
@@ -289,6 +363,7 @@ export function printPaginatorScript(opts: PrintPaginationOptions): string {
             (${paginatePrintDocument.toString()})(${JSON.stringify(opts)});
           } catch (e) {
             console.error('Sutrata: pagination failed, falling back to browser page breaks', e);
+            window.__sutrataPrint = { done: true, failed: true, pages: [], ranges: {}, labels: {} };
           }
         };
         if (document.fonts && document.fonts.ready) {

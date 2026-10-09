@@ -14,6 +14,8 @@ import { createContext, useContext } from 'react'
  *   handle clicks.
  *
  * `featureFlags`: `ai: false` hides AI features, `voice: false` hides voice;
+ * `renumber: false` hides the navigator's Renumber; `lockSceneNumbers: true` makes Renumber
+ * keep every existing number and only letter the scenes without one (a locked script);
  * `localFiles: false` hides New, Open and Save As, for embedders whose
  * documents are not local files (Save stays: it saves through the adapter).
  *
