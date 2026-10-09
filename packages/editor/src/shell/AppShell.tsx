@@ -41,11 +41,14 @@ export function AppShell() {
   const [sidebarTab, setSidebarTab] = useState('navigator')
   const activeSidebar = sidebarPanels.find(p => p.id === sidebarTab)
 
+  // A panel that shows the title page form replaces the dialog.
+  const titlePageInPanel = inspectorPanels.some(p => p.handlesTitlePage)
   useEffect(() => {
+    if (titlePageInPanel) return
     const open = () => setTitlePageVisible(true)
     window.addEventListener(OPEN_TITLE_PAGE_EVENT, open)
     return () => window.removeEventListener(OPEN_TITLE_PAGE_EVENT, open)
-  }, [])
+  }, [titlePageInPanel])
 
   return (
     <div className={`cs-shell ${metadataVisible ? '' : 'cs-hide-metadata'}`}>

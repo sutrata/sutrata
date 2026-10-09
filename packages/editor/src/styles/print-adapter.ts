@@ -199,7 +199,6 @@ export function styleToPrintCss(style: ScreenplayStyleDefinition, pageFormat: 'l
           /* Screenplay items */
           .print-scene-heading {
             ${fontProps(e.sceneHeading)}
-            text-transform: uppercase;
             ${marginProps(e.sceneHeading)}
             display: flex;
             justify-content: space-between;${KEEP_WITH_NEXT}

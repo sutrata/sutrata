@@ -378,7 +378,6 @@ html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
   text-decoration: var(--cs-scene-heading-text-decoration, none);
   margin-left: max(var(--cs-scene-heading-margin-left, 10%), 8px);
   margin-right: max(var(--cs-scene-heading-margin-right, 8%), 8px);
-  text-transform: uppercase;
   margin-top: var(--cs-scene-heading-margin-top, 1em);
   display: flex;
   align-items: baseline;
@@ -3070,6 +3069,15 @@ html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
   font-size: 12px;
   color: var(--cs-ui-text-light-secondary, #59574f);
 }
+/* Title page in a side panel: collapsible groups, one field per row. */
+.cs-tp-group { border-bottom: 1px solid var(--cs-ui-border-light-subtle, #eeece4); }
+.cs-tp-group-title { padding: 8px 0; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--cs-ui-text-light-secondary, #59574f); }
+.cs-tp-group-body { padding-bottom: 10px; }
+.cs-tp-sections .cs-tp-field, .cs-tp-sections .cs-tp-row { grid-template-columns: 1fr; gap: 4px; }
+.cs-tp-sections .cs-tp-row { grid-template-columns: 1fr auto; }
+.cs-tp-sections .cs-tp-row > :first-child { grid-column: 1 / -1; }
+.cs-tp-sections .cs-tp-add { margin-left: 0; }
+
 .cs-tp-actions {
   border-top: 1px solid var(--cs-ui-border-light-subtle, #eeece4);
   padding: 12px 16px;

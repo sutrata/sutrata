@@ -1,6 +1,7 @@
 import type { Node as PmNode } from 'prosemirror-model'
 import { TextSelection } from 'prosemirror-state'
 import type { EditorView, NodeView, ViewMutationRecord } from 'prosemirror-view'
+import { afterHeadingMetadata, insertActionAfterHeading } from './scene-heading-exit'
 
 /**
  * NodeView for scene_heading. Renders the heading text (ProseMirror-managed)
@@ -97,14 +98,17 @@ export class SceneHeadingView implements NodeView {
       e.preventDefault()
       e.stopPropagation()
       this.commit()
-      // Move cursor to the start of the node after the scene heading
+      // Move cursor to the start of the node after the scene heading; at the
+      // end of the document there is none, so start an empty line there.
       const pos = this.getPos()
       if (pos !== undefined) {
         const node = this.pmView.state.doc.nodeAt(pos)
         if (node) {
           const afterPos = pos + node.nodeSize
           const { doc } = this.pmView.state
-          if (afterPos <= doc.content.size) {
+          if (afterHeadingMetadata(this.pmView.state, pos) >= doc.content.size) {
+            this.pmView.dispatch(insertActionAfterHeading(this.pmView.state, pos))
+          } else if (afterPos <= doc.content.size) {
             const sel = TextSelection.near(doc.resolve(afterPos), 1)
             this.pmView.dispatch(this.pmView.state.tr.setSelection(sel))
           }
