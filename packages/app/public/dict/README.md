@@ -1,38 +1,13 @@
-# Spellcheck Dictionary Assets
+# Spellcheck dictionary assets
 
-This directory holds `.dic` and `.aff` files for Hunspell-compatible spellchecking.
+Hunspell `.aff`/`.dic` pairs for the spell check (Settings > Spell check). They are
+not committed: `pnpm --filter @sutrata/app dictionaries` (also run by `dev` and `build`)
+downloads a pinned copy from https://github.com/LibreOffice/dictionaries into this
+folder, via `packages/editor/scripts/fetch-dictionaries.mjs`. Files already here are kept.
 
-## Required Files
+English (`en_US`) is always checked; the writer picks one regional language to go with it:
+Tamil, Hindi, Marathi, Telugu, Kannada, Bengali, Gujarati, Punjabi or Odia. There is no
+open Hunspell dictionary for Malayalam yet.
 
-| Language | Code | Files |
-|---|---|---|
-| English (US) | en | en_US.dic, en_US.aff |
-| Hindi | hi | hi_IN.dic, hi_IN.aff |
-| Tamil | ta | ta_IN.dic, ta_IN.aff |
-| Telugu | te | te_IN.dic, te_IN.aff |
-| Kannada | kn | kn_IN.dic, kn_IN.aff |
-| Malayalam | ml | ml_IN.dic, ml_IN.aff |
-| Bengali | bn | bn_IN.dic, bn_IN.aff |
-| Gujarati | gu | gu_IN.dic, gu_IN.aff |
-| Gurmukhi/Punjabi | pa | pa_IN.dic, pa_IN.aff |
-| Odia | or | or_IN.dic, or_IN.aff |
-
-## Acquisition
-
-### English
-Download from LibreOffice: https://github.com/LibreOffice/dictionaries/tree/master/en
-
-### Indic scripts
-Available from:
-- https://github.com/LibreOffice/dictionaries (search by language code)
-- https://hunspell.github.io/
-
-### Installation
-Place each pair in this directory:
-```
-packages/app/public/dict/en_US.dic
-packages/app/public/dict/en_US.aff
-...
-```
-
-The app lazy-loads dictionaries on first use for each language.
+Each dictionary has its own licence (BSD, MPL, GPL, ...); see the folders in the source repo.
+The files are fetched when a language is first used and cached by the service worker.

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { EditorState } from 'prosemirror-state'
 import { schema } from '../../src/editor/schema'
-import { createSpellcheckPlugin, setSpellcheckLanguage, tokenizeWords } from '../../src/spellcheck/spellcheck-plugin'
+import { createSpellcheckPlugin, tokenizeWords } from '../../src/spellcheck/spellcheck-plugin'
 
 describe('spellcheck-plugin', () => {
   it('createSpellcheckPlugin returns a Plugin', () => {
@@ -19,11 +19,6 @@ describe('spellcheck-plugin', () => {
     // Access state via plugin key (correct way without a live EditorView)
     const pluginState = plugin.getState(state)
     expect(pluginState).toBeDefined()
-  })
-
-  it('setSpellcheckLanguage does not throw', () => {
-    expect(() => setSpellcheckLanguage('hi')).not.toThrow()
-    expect(() => setSpellcheckLanguage('en')).not.toThrow()
   })
 
   it('plugin is registered in buildPlugins', async () => {

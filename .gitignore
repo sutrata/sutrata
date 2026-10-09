@@ -9,3 +9,7 @@ node_modules
 .codex/
 .impeccable/
 CLAUDE.local.md
+
+# Spell check dictionaries, fetched by `pnpm --filter @sutrata/app dictionaries`
+packages/app/public/dict/*.aff
+packages/app/public/dict/*.dic

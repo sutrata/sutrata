@@ -358,3 +358,12 @@ export const CloseIcon = ({ size }: IconProps) => (
   </svg>
 )
 
+
+/** A book with a tick (spell check on) or a cross (off, or not working). */
+export const SpellcheckIcon = ({ size, checked }: IconProps & { checked: boolean }) => (
+  <svg {...base(size)}>
+    <path d="M3 2.5h7a1.5 1.5 0 0 1 1.5 1.5v9.5H4.5A1.5 1.5 0 0 1 3 12z" />
+    <path d="M3 12a1.5 1.5 0 0 1 1.5-1.5h7" />
+    {checked ? <polyline points="9.5 6.5 11.5 8.5 15 4.5" /> : <path d="M9 5.5l4 4M13 5.5l-4 4" />}
+  </svg>
+)

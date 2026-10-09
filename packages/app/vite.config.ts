@@ -11,7 +11,16 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['fonts/**', 'dict/**'],
+      includeAssets: ['fonts/**'],
+      workbox: {
+        // Dictionaries are large and used by one language at a time: cached when first used, not at install.
+        globIgnores: ['dict/**'],
+        runtimeCaching: [{
+          urlPattern: ({ url }: { url: URL }) => url.pathname.startsWith('/dict/'),
+          handler: 'CacheFirst',
+          options: { cacheName: 'dictionaries' },
+        }],
+      },
       manifest: {
         name: 'Sutrata',
         short_name: 'Sutrata',

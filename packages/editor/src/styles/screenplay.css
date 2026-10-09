@@ -1288,6 +1288,32 @@ html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
   font-weight: 600;
 }
 
+.cs-sb-spell { position: relative; display: inline-flex; }
+.cs-sb-spell-btn { font-size: 11px; gap: 4px; padding: 2px 6px; opacity: 0.75; }
+.cs-sb-spell-btn.cs-sb-spell-on { opacity: 1; }
+.cs-sb-spell-pop {
+  position: absolute; bottom: calc(100% + 8px); left: 0; z-index: 50;
+  width: 264px; max-width: calc(100vw - 16px); padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 12px;
+  background: var(--cs-ui-bg-panel, #fcfbfa); border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(20, 20, 19, 0.16), 0 1px 3px rgba(20, 20, 19, 0.1);
+  font-size: 12px; color: var(--cs-ui-text-light-primary, #1c1b18);
+}
+/* The options stack: the on/off row stays a row, the rest put the label over a full-width control. */
+.cs-sb-spell-pop .cs-settings-row { flex-direction: column; align-items: stretch; gap: 5px; }
+.cs-sb-spell-pop .cs-settings-row:first-child { flex-direction: row; align-items: center; justify-content: space-between; }
+.cs-sb-spell-pop .cs-settings-label { font-size: 12px; font-weight: 600; color: var(--cs-ui-text-light-primary, #1c1b18); }
+.cs-sb-spell-pop .cs-settings-row:not(:first-child) .cs-settings-label { font-weight: 500; color: var(--cs-ui-text-light-secondary, #59574f); }
+.cs-sb-spell-pop input[type='checkbox'] { width: 16px; height: 16px; margin: 0; accent-color: var(--cs-ui-accent, #c4760a); cursor: pointer; }
+.cs-sb-spell-pop .cs-settings-select { width: 100%; min-width: 0; border-color: var(--cs-ui-border-light, #e2e0d6); }
+.cs-sb-spell-pop .cs-settings-select:focus-visible,
+.cs-sb-spell-pop input[type='checkbox']:focus-visible { outline: 2px solid var(--cs-ui-accent, #c4760a); outline-offset: 2px; }
+.cs-sb-spell-pop .cs-settings-select:disabled { opacity: 0.55; cursor: default; }
+.cs-sb-spell-pop .cs-spell-ignored { padding-top: 10px; border-top: 1px solid var(--cs-ui-border-light, #eeece4); }
+.cs-sb-spell-pop .cs-settings-note { margin: 0; }
+.cs-sb-spell-pop .cs-spell-ignored-list { max-width: 100%; justify-content: flex-start; }
+@media (max-width: 640px) { .cs-sb-spell-btn span { display: none; } }
+
 .cs-sb-sep {
   color: var(--cs-ui-text-light-muted, #8c897f);
   opacity: 0.5;
@@ -1317,83 +1343,6 @@ html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
 }
 .cs-sb-dot-dirty { background: var(--cs-ui-accent-badge, #d97706); }
 .cs-sb-dot-clean { background: #10b981; }
-
-.cs-lang-status {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
-.cs-lang-status-btn,
-.cs-lang-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: var(--cs-ui-bg-panel-subtle, #f4f2ea);
-  border: 1px solid var(--cs-ui-border-light, #e2e0d6);
-  border-radius: 12px;
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--cs-ui-text-light-primary, #1c1b18);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.cs-lang-status-btn:hover,
-.cs-lang-pill:hover {
-  background: var(--cs-ui-accent-subtle, #fef3c7);
-  border-color: var(--cs-ui-accent-border, #fcd34d);
-  color: var(--cs-ui-accent-active, #92400e);
-}
-
-.cs-lang-code {
-  font-family: monospace;
-  letter-spacing: 0.5px;
-  font-weight: 700;
-}
-
-.cs-lang-menu {
-  position: absolute;
-  bottom: calc(100% + 4px);
-  right: 0;
-  background: #ffffff;
-  border: 1px solid var(--cs-ui-border-light, #e2e0d6);
-  border-radius: 4px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-  z-index: 1000;
-  min-width: 190px;
-  max-height: 300px;
-  overflow-y: auto;
-  padding: 4px;
-}
-
-.cs-lang-option {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 6px 10px;
-  background: transparent;
-  border: none;
-  text-align: left;
-  font-size: 12px;
-  color: var(--cs-ui-text-light-primary, #1c1b18);
-  border-radius: 4px;
-  cursor: pointer;
-  box-sizing: border-box;
-  transition: background-color 0.1s;
-}
-
-.cs-lang-option:hover {
-  background: var(--cs-ui-bg-panel-subtle, #f4f2ea);
-}
-
-.cs-lang-option.cs-lang-active {
-  background: var(--cs-ui-accent-subtle, #fef3c7);
-  font-weight: 600;
-  color: var(--cs-ui-accent-active, #92400e);
-}
 
 /* Statistics Dialog */
 .cs-stats-summary-grid {
@@ -1946,6 +1895,24 @@ html, body, #root { height: 100%; margin: 0; padding: 0; overflow: hidden; }
 }
 
 /* Spellcheck underline */
+.cs-spell-menu {
+  position: fixed; z-index: 1000; min-width: 160px; max-width: 280px; padding: 4px;
+  background: var(--cs-ui-bg-panel, #fff); border: 1px solid var(--cs-ui-border-light, #ddd);
+  border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); display: flex; flex-direction: column;
+}
+.cs-spell-menu-item {
+  text-align: left; padding: 6px 10px; font-size: 13px; background: none; border: none; border-radius: 4px;
+  color: inherit; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cs-spell-menu-item:hover:not(:disabled), .cs-spell-menu-item:focus-visible { background: var(--cs-ui-accent-subtle, #fef3c7); outline: none; }
+.cs-spell-menu-item:disabled { opacity: 0.6; cursor: default; }
+.cs-spell-menu-suggestion { font-weight: 600; }
+.cs-spell-menu-rule { height: 1px; margin: 4px 2px; background: var(--cs-ui-border-light, #e8e8e4); }
+.cs-spell-ignored { align-items: flex-start; }
+.cs-spell-ignored-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; max-width: 60%; }
+.cs-spell-ignored-list li { display: inline-flex; align-items: center; gap: 2px; padding: 1px 4px 1px 8px; font-size: 12px; background: var(--cs-ui-bg-subtle, #f2f2ef); border-radius: 10px; }
+.cs-spell-ignored-remove { border: none; background: none; cursor: pointer; font-size: 14px; line-height: 1; padding: 0 3px; color: inherit; }
+.cs-settings-note { margin: 4px 0 0; font-size: 12px; color: var(--cs-ui-warning, #c2410c); }
 .cs-spell-error {
   text-decoration: underline wavy #e53935;
   text-underline-offset: 2px;

@@ -202,6 +202,13 @@ async function ensureAIReady(ai: AIProvider, showToast: (m: string, type?: 'info
   return false
 }
 
+/** Shows the full heading as a tooltip, only when the list has clipped it. */
+function titleIfClipped(e: React.MouseEvent<HTMLElement>) {
+  const el = e.currentTarget
+  if (el.scrollWidth > el.clientWidth) el.title = el.textContent ?? ''
+  else el.removeAttribute('title')
+}
+
 export function SceneNavigator() {
   const { text, setText, showToast, setNavVisible } = useDocument()
   const { t } = useTranslation()
@@ -581,7 +588,7 @@ export function SceneNavigator() {
       }}
     >
       <div className="cs-nav-scene-info">
-        <div className="cs-nav-heading">{section.heading || '—'}</div>
+        <div className="cs-nav-heading" onMouseEnter={titleIfClipped}>{section.heading || '—'}</div>
       </div>
     </div>
   )
@@ -716,7 +723,7 @@ export function SceneNavigator() {
             }}
           >
             <div className="cs-nav-scene-info">
-              <div className="cs-nav-heading">{scene.heading}</div>
+              <div className="cs-nav-heading" onMouseEnter={titleIfClipped}>{scene.heading}</div>
 
               {showNavSynopsis && (
                 <div className="cs-nav-synopsis-row" style={{ marginTop: '4px' }}>

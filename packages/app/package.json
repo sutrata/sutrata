@@ -5,11 +5,12 @@
   "license": "GPL-3.0-or-later",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "dev": "npm run dictionaries && vite",
+    "build": "npm run dictionaries && tsc && vite build",
     "providers:update": "node scripts/update-providers.mjs",
     "test": "vitest run --passWithNoTests",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "dictionaries": "node ../editor/scripts/fetch-dictionaries.mjs public/dict"
   },
   "dependencies": {
     "@sutrata/editor": "workspace:*",
