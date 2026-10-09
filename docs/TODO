@@ -16,6 +16,8 @@
    print/PDF export (workflow-reports.ts), but is not applied in DOCX export
    (docx-exporter.ts). Also no per-export toggle to opt out when the field is
    set — it's implicitly always-on.
+   DONE on branch feat/c1-print: the Word export puts the watermark (or the caller's
+   override) in the header of every page; the opt-out toggle is still open.
 10. @sutrata/cloud-connector (OSS spec §11.1, deferred): an open
     StorageAdapter for a documented sync API. Not planned for now; if built,
     it is not bundled by default and the app must work identically without it.
@@ -31,6 +33,8 @@
     - per-block margin marks (e.g. revision stars) and a per-page header label
       (e.g. revision color and date).
     Keep the default output unchanged when neither is given.
+    DONE on branch feat/c1-print: locked pages are per scene (start and end page), see
+    PrintPaginationOptions.lockedPages, PrintExtras and the `@sutrata/editor/dist/print.js` entry.
 19. Scene number locking (OSS spec §8.6, P1): the "lock scene numbers" mode is
     specified but not implemented — once locked, Renumber letters new scenes
     only (a scene after 12 becomes 12A) and never changes an existing number.
@@ -38,3 +42,4 @@
     false`), so an embedder can protect a locked script before the full mode
     exists; today the navigator's Renumber action is available to every edit
     session.
+    DONE on branch feat/c1-print: featureFlags `renumber: false` and `lockSceneNumbers: true`.
