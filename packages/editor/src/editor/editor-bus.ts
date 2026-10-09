@@ -50,6 +50,20 @@ export function openTitlePageForm(): void {
   window.dispatchEvent(new CustomEvent(OPEN_TITLE_PAGE_EVENT))
 }
 
+/**
+ * Window event for "edit this scene's attributes", fired by the pencil on a
+ * scene heading. A panel that shows scene attributes (the cloud inspector)
+ * calls preventDefault() to take it; otherwise the pencil opens its own menu.
+ */
+export const EDIT_SCENE_ATTRS_EVENT = 'cs:edit-scene-attrs'
+
+/** Returns true if something took the request. */
+export function requestSceneAttrsEdit(): boolean {
+  const event = new CustomEvent(EDIT_SCENE_ATTRS_EVENT, { cancelable: true })
+  window.dispatchEvent(event)
+  return event.defaultPrevented
+}
+
 // Text the document context is applying from storage (a SaveResult or a
 // remote update). The source view applies it outside its undo history.
 let externalText: string | null = null

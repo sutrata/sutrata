@@ -26,7 +26,8 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "scripts/fetch-dictionaries.mjs"
   ],
   "scripts": {
     "build": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\" && tsc && node scripts/copy-assets.mjs",
@@ -43,6 +44,8 @@
     "@sutrata/parser": "workspace:*",
     "diff": "^9.0.0",
     "docx": "^9.7.1",
+    "emscripten-wasm-loader": "3.0.3",
+    "hunspell-asm": "4.0.2",
     "jszip": "^3.10.1",
     "prosemirror-commands": "^1.5.2",
     "prosemirror-history": "^1.4.0",

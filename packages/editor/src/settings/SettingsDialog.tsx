@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react'
 import { useTranslation } from '../i18n/useTranslation'
 import { usePanels } from '../extensions/panel-registry'
 import { usePanelContext } from '../shell/use-panel-context'
+import { SpellcheckSettings } from '../spellcheck/SpellcheckSettings'
 
 const UI_LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -74,6 +75,8 @@ export function SettingsDialog({ onClose }: Props) {
               ))}
             </select>
           </div>
+
+          <SpellcheckSettings />
 
           {sections.map(section => (
             <section key={section.id} className="cs-settings-section" aria-label={section.title}>

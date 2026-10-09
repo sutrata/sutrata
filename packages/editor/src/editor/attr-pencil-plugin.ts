@@ -5,7 +5,9 @@
  * A pencil widget (visible on hover) sits at the end of every scene heading
  * and at the top-right of the title page card.
  *
- * - Scene heading: opens a dropdown of attribute keys not yet present (plus a
+ * - Scene heading: puts the caret in the scene and, if a panel edits scene
+ *   attributes (it handles EDIT_SCENE_ATTRS_EVENT), hands over to it.
+ *   Otherwise opens a dropdown of attribute keys not yet present (plus a
  *   custom-key input). Picking one inserts the node via a normal PM
  *   transaction and places the cursor in the empty value, so there is no full
  *   state rebuild and no cursor jump.
@@ -17,7 +19,7 @@ import { Decoration, DecorationSet } from 'prosemirror-view'
 import type { EditorView } from 'prosemirror-view'
 import type { Node as PmNode } from 'prosemirror-model'
 import { schema } from './schema'
-import { openTitlePageForm } from './editor-bus'
+import { openTitlePageForm, requestSceneAttrsEdit } from './editor-bus'
 
 const SCENE_META_KEYS = ['synopsis', 'status', 'tags', 'location', 'time', 'lang']
 
@@ -142,6 +144,12 @@ export function createAttrPencilPlugin(): Plugin {
             // Widget inside the heading, after its text
             decos.push(Decoration.widget(offset + node.nodeSize - 1, view =>
               makePencil('cs-attr-pencil', 'Add scene attribute', btn => {
+                // A panel that edits scene attributes takes over, with the caret in this scene.
+                const heading = view.state.doc.nodeAt(offset)
+                if (heading) {
+                  view.dispatch(view.state.tr.setSelection(TextSelection.near(view.state.doc.resolve(offset + heading.nodeSize - 1), -1)))
+                }
+                if (requestSceneAttrsEdit()) return
                 const ctx = sceneAttrContext(view, offset)
                 const options = SCENE_META_KEYS.filter(k => !ctx.presentKeys.has(k))
                 showMenu(btn, options, key => {

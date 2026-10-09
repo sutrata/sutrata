@@ -1,11 +1,11 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import { useDocument } from '../context/DocumentContext'
-import { LanguageStatus } from './LanguageStatus'
 import { buildSceneList } from '../navigator/scene-list'
 import { StatisticsDialog } from '../navigator/StatisticsDialog'
 import { VersionHistory } from './VersionHistory'
 import { StatsIcon, HistoryIcon } from './icons'
 import { useTranslation } from '../i18n/useTranslation'
+import { SpellcheckStatus } from '../spellcheck/SpellcheckStatus'
 import { useAI, formatActivity } from '../extensions/ai-provider'
 import { useCanEdit } from '../extensions/session'
 import type { AIActivity } from '../extensions/ai-provider'
@@ -85,6 +85,8 @@ export function StatusBar() {
           <span className="cs-sb-metric cs-sb-metric-words" title={t('statusbar.wordsTooltip')}>
             <strong>{wordCount.toLocaleString()}</strong> <span className="cs-sb-metric-label">{t('statusbar.words')}</span>
           </span>
+          <span className="cs-sb-sep">•</span>
+          <SpellcheckStatus />
         </div>
 
         <div className="cs-sb-center">
@@ -120,7 +122,6 @@ export function StatusBar() {
             <StatsIcon size={13} />
             <span>{t('statusbar.statsButton')}</span>
           </button>
-          <LanguageStatus />
         </div>
       </footer>
 
