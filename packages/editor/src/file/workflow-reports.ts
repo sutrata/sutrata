@@ -563,10 +563,21 @@ export async function buildScreenplayPrintHtml(
   const style = resolveStyle(styleOverride ?? (frontmatter?.['style'] as string | undefined), customStyles)
   // Noto Sans is the Latin fallback in the print font stack (print-adapter.ts), so embed it
   // too: the desktop's hidden print webview cannot load /fonts/ paths on its own.
+  // Offline (a server with no Google Fonts): the families for every script the document
+  // actually uses must be embedded as well, or its text falls back to boxes.
+  const scriptFamilies: string[] = []
+  if (extras.offline) {
+    const names: Record<string, string> = { hi: 'Devanagari', ta: 'Tamil', te: 'Telugu', kn: 'Kannada', ml: 'Malayalam', bn: 'Bengali', gu: 'Gujarati', pa: 'Gurmukhi', or: 'Oriya', si: 'Sinhala' }
+    const everything = JSON.stringify(ast)
+    for (const [code, re] of Object.entries(SCRIPT_UNICODE_RANGES)) {
+      if (re.test(everything)) scriptFamilies.push(`Noto Sans ${names[code]}`, `Noto Serif ${names[code]}`)
+    }
+  }
   const embeddedFontFaceCss = await embedFontFacesFor([...new Set([
     style.fontFamily,
     ...Object.values(style.complexScriptFontOverrides ?? {}),
     'Noto Sans',
+    ...scriptFamilies,
   ])])
 
   // Paper the export prints on — frontmatter's `page:`, the same field docx-exporter.ts
