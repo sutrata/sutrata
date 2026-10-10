@@ -1,5 +1,32 @@
 # @sutrata/editor
 
+## 0.5.0
+
+### Minor Changes
+
+- 24c291d: Print and lock support for embedders (Sutrata Cloud's production office):
+  
+  - New `@sutrata/editor/dist/print.js` entry with `buildScreenplayPrintHtml` and `sceneKeyOf`: the screenplay print view without the editor UI, with `PrintExtras` for a per-recipient watermark, no network fonts, revision margin marks and label, a page tint, printing only some scenes, and locked pages.
+  - The print paginator takes `lockedPages` (a scene keeps its locked start page; added pages are lettered, 12, 12A) and `revisionLabel`, and reports its layout on `window.__sutrataPrint`.
+  - Word export accepts a watermark override and puts the watermark (the frontmatter `watermark:` or the override) in the header of every page.
+  - `SessionContext.featureFlags`: `renumber: false` hides the navigator's Renumber; `lockSceneNumbers: true` makes it keep every existing number and letter only the scenes without one.
+- a0c3a06: Export `importDocx` and `isSutrataDocx` so hosts (Sutrata Cloud) can import a Sutrata-exported Word file as a new script.
+- 2358796: Spell check for English plus one regional language (Tamil, Hindi, Marathi, Telugu, Kannada, Bengali, Gujarati, Punjabi or Odia), switched on in Settings. Words are checked with Hunspell (WebAssembly) in a worker; the dictionaries are fetched from `/dict/` (see `scripts/fetch-dictionaries.mjs`, or `configureSpellcheck({ dictionaryBaseUrl })`).
+  
+  The scene heading pencil now fires a cancelable `EDIT_SCENE_ATTRS_EVENT` after placing the caret in the scene; a panel that edits scene attributes can take it, otherwise the attribute menu opens as before. Scene names in the navigator show a tooltip when they are clipped. The language picker in the status bar (which only inserted a `{lang=..}` tag) is removed.
+  
+  ### Migration
+  
+  None for embedders. The `setSpellcheckLanguage` export (never public) is gone.
+  
+  Right-click a misspelled word for suggestions, or to ignore it (the ignore list is kept in the browser and managed in Settings). Character names are ignored automatically, for as long as a character has that name in the script.
+  
+  The status bar has a spell check control after the word count, as in Word: it shows off, EN or EN + the regional language, and opens a popover with the same options as Settings.
+
+### Patch Changes
+
+- 287d407: Toolbar tooltips stay inside the viewport at the first and last buttons, and show on long-press on touch screens. The app bar's "Screenplay Style" button is now labelled "Design" in every locale.
+
 ## 0.4.2
 
 ### Patch Changes
