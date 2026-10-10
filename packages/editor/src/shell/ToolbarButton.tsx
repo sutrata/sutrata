@@ -1,4 +1,5 @@
 import React from 'react'
+import { tipProps } from './tooltip-position'
 
 interface ToolbarButtonProps {
   label: string
@@ -16,6 +17,7 @@ export function ToolbarButton({ label, sigil, shortcut, active, onClick, childre
       aria-label={label}
       className={`cs-tb-btn${active ? ' cs-tb-active' : ''}`}
       onClick={onClick}
+      {...tipProps}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
         {children}

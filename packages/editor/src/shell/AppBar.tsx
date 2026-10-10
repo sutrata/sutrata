@@ -16,6 +16,7 @@ import { useCanEdit, useSession, isFeatureEnabled } from '../extensions/session'
 import { usePanels } from '../extensions/panel-registry'
 import { usePanelContext } from './use-panel-context'
 import { useCommands, useCommandContext, displayShortcut } from './use-commands'
+import { tipProps } from './tooltip-position'
 
 interface AbBtnProps {
   label: string
@@ -34,6 +35,7 @@ function AbBtn({ label, shortcut, active, variant, onClick, children }: AbBtnPro
       aria-label={label}
       className={`cs-ab-btn${active ? ' cs-ab-active' : ''}${variantClass}`}
       onClick={onClick}
+      {...tipProps}
     >
       {children}
       <span className="cs-tb-tip" role="tooltip">
