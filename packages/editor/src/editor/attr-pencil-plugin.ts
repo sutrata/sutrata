@@ -37,7 +37,7 @@ function onDocMousedown(e: MouseEvent) {
   if (openMenu && !openMenu.contains(e.target as Node)) closeMenu()
 }
 
-function showMenu(anchor: HTMLElement, options: string[], onPick: (key: string) => void) {
+function showMenu(rect: DOMRect, options: string[], onPick: (key: string) => void) {
   closeMenu()
   const menu = document.createElement('div')
   menu.className = 'cs-attr-menu'
@@ -73,7 +73,6 @@ function showMenu(anchor: HTMLElement, options: string[], onPick: (key: string) 
   customRow.appendChild(input)
   menu.appendChild(customRow)
 
-  const rect = anchor.getBoundingClientRect()
   menu.style.left = `${rect.left}px`
   menu.style.top = `${rect.bottom + 4}px`
   document.body.appendChild(menu)
@@ -144,6 +143,8 @@ export function createAttrPencilPlugin(): Plugin {
             // Widget inside the heading, after its text
             decos.push(Decoration.widget(offset + node.nodeSize - 1, view =>
               makePencil('cs-attr-pencil', 'Add scene attribute', btn => {
+                // Measure first: the selection change below redraws the widget and detaches btn.
+                const rect = btn.getBoundingClientRect()
                 // A panel that edits scene attributes takes over, with the caret in this scene.
                 const heading = view.state.doc.nodeAt(offset)
                 if (heading) {
@@ -152,7 +153,7 @@ export function createAttrPencilPlugin(): Plugin {
                 if (requestSceneAttrsEdit()) return
                 const ctx = sceneAttrContext(view, offset)
                 const options = SCENE_META_KEYS.filter(k => !ctx.presentKeys.has(k))
-                showMenu(btn, options, key => {
+                showMenu(rect, options, key => {
                   const fresh = sceneAttrContext(view, offset)
                   insertNode(view, fresh.insertPos, schema.nodes['scene_metadata']!.create({ metaKey: key }))
                 })
