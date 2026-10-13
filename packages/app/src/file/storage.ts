@@ -117,7 +117,7 @@ export async function saveVersion(path: string, content: string): Promise<boolea
   }
   const db = await openDb()
   const now = getMonotonicTimestamp()
-  const versionId = `${path}__${now}_${Math.random().toString(36).slice(2)}`
+  const versionId = `${path}__${now}_${crypto.randomUUID()}`
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE_VERSIONS, 'readwrite')
     tx.objectStore(STORE_VERSIONS).add({ id: versionId, path, content, timestamp: now })

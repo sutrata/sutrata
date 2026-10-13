@@ -228,7 +228,7 @@ export function DocumentProvider({
   }, [])
 
   const showToast = useCallback((message: string, type: 'info' | 'success' | 'warn' | 'error' = 'info') => {
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    const id = crypto.randomUUID()
     setToasts((prev) => [...prev, { id, message, type }])
   }, [])
 
