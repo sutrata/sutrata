@@ -335,5 +335,8 @@
   "navigator.toast.renumberedOne": "{count} காட்சி மறுஎண்ணிடப்பட்டது.",
   "navigator.toast.renumberedMany": "{count} காட்சிகள் மறுஎண்ணிடப்பட்டன.",
   "navigator.hideSynopsis": "சுருக்கம் & நேரத்தை மறை",
-  "navigator.showSynopsis": "சுருக்கம் & நேரத்தைக் காட்டு"
+  "navigator.showSynopsis": "சுருக்கம் & நேரத்தைக் காட்டு",
+  "update.available": "புதுப்பிப்பு உள்ளது",
+  "update.reload": "மீண்டும் ஏற்று",
+  "update.dismiss": "மூடு"
 }

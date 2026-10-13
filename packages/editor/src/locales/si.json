@@ -335,5 +335,8 @@
   "navigator.toast.renumberedOne": "දර්ශන {count} නැවත අංක කරන ලදී.",
   "navigator.toast.renumberedMany": "දර්ශන {count} නැවත අංක කරන ලදී.",
   "navigator.hideSynopsis": "සාරාංශය සහ කාලය සඟවන්න",
-  "navigator.showSynopsis": "සාරාංශය සහ කාලය පෙන්වන්න"
+  "navigator.showSynopsis": "සාරාංශය සහ කාලය පෙන්වන්න",
+  "update.available": "යාවත්කාලීනයක් ලබා ගත හැක",
+  "update.reload": "නැවත පූරණය කරන්න",
+  "update.dismiss": "වසන්න"
 }

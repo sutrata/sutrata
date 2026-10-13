@@ -335,5 +335,8 @@
   "navigator.toast.renumberedOne": "{count}টি দৃশ্য পুনরায় নম্বর করা হয়েছে।",
   "navigator.toast.renumberedMany": "{count}টি দৃশ্য পুনরায় নম্বর করা হয়েছে।",
   "navigator.hideSynopsis": "সারসংক্ষেপ ও সময়কাল লুকান",
-  "navigator.showSynopsis": "সারসংক্ষেপ ও সময়কাল দেখান"
+  "navigator.showSynopsis": "সারসংক্ষেপ ও সময়কাল দেখান",
+  "update.available": "আপডেট উপলব্ধ",
+  "update.reload": "পুনরায় লোড করুন",
+  "update.dismiss": "বন্ধ করুন"
 }

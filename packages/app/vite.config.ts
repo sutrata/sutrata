@@ -10,7 +10,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['fonts/**'],
       workbox: {
         // Dictionaries are large and used by one language at a time: cached when first used, not at install.

@@ -4,6 +4,7 @@ import { localStorageAdapter } from './local-storage-adapter'
 import { createByoKeyAIProvider, createWebSpeechProvider } from './ai/byo-key-providers'
 import { AISettingsSection } from './ai/AISettingsSection'
 import { OnboardingDialog } from './ai/OnboardingDialog'
+import { UpdatePrompt } from './UpdatePrompt'
 
 export function App() {
   const [setupOpen, setSetupOpen] = useState(false)
@@ -29,6 +30,7 @@ export function App() {
       panels={panels}
     >
       <AppShell />
+      <UpdatePrompt />
       {setupOpen && <OnboardingDialog onClose={() => setSetupOpen(false)} />}
     </DocumentProvider>
   )

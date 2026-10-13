@@ -335,5 +335,8 @@
   "navigator.toast.renumberedOne": "{count} ਦ੍ਰਿਸ਼ ਨੂੰ ਮੁੜ ਨੰਬਰ ਦਿੱਤਾ ਗਿਆ।",
   "navigator.toast.renumberedMany": "{count} ਦ੍ਰਿਸ਼ਾਂ ਨੂੰ ਮੁੜ ਨੰਬਰ ਦਿੱਤੇ ਗਏ।",
   "navigator.hideSynopsis": "ਸਾਰ ਅਤੇ ਮਿਆਦ ਲੁਕਾਓ",
-  "navigator.showSynopsis": "ਸਾਰ ਅਤੇ ਮਿਆਦ ਵਿਖਾਓ"
+  "navigator.showSynopsis": "ਸਾਰ ਅਤੇ ਮਿਆਦ ਵਿਖਾਓ",
+  "update.available": "ਅੱਪਡੇਟ ਉਪਲਬਧ ਹੈ",
+  "update.reload": "ਮੁੜ ਲੋਡ ਕਰੋ",
+  "update.dismiss": "ਬੰਦ ਕਰੋ"
 }

@@ -335,5 +335,8 @@
   "navigator.toast.renumberedOne": "{count} દૃશ્યને ફરી નંબર આપ્યો.",
   "navigator.toast.renumberedMany": "{count} દૃશ્યોને ફરી નંબર આપ્યા.",
   "navigator.hideSynopsis": "સારાંશ અને સમયગાળો છુપાવો",
-  "navigator.showSynopsis": "સારાંશ અને સમયગાળો બતાવો"
+  "navigator.showSynopsis": "સારાંશ અને સમયગાળો બતાવો",
+  "update.available": "અપડેટ ઉપલબ્ધ છે",
+  "update.reload": "ફરી લોડ કરો",
+  "update.dismiss": "બંધ કરો"
 }

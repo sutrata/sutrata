@@ -335,5 +335,8 @@
   "navigator.toast.renumberedOne": "{count} సన్నివేశానికి తిరిగి నంబర్ ఇవ్వబడింది.",
   "navigator.toast.renumberedMany": "{count} సన్నివేశాలకు తిరిగి నంబర్లు ఇవ్వబడ్డాయి.",
   "navigator.hideSynopsis": "సారాంశం & వ్యవధిని దాచు",
-  "navigator.showSynopsis": "సారాంశం & వ్యవధిని చూపు"
+  "navigator.showSynopsis": "సారాంశం & వ్యవధిని చూపు",
+  "update.available": "అప్‌డేట్ అందుబాటులో ఉంది",
+  "update.reload": "మళ్లీ లోడ్ చేయండి",
+  "update.dismiss": "మూసివేయి"
 }

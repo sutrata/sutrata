@@ -335,5 +335,8 @@
   "navigator.toast.renumberedOne": "{count} दृश्य का पुनः क्रमांकन किया गया।",
   "navigator.toast.renumberedMany": "{count} दृश्यों का पुनः क्रमांकन किया गया।",
   "navigator.hideSynopsis": "सारांश और अवधि छिपाएँ",
-  "navigator.showSynopsis": "सारांश और अवधि दिखाएँ"
+  "navigator.showSynopsis": "सारांश और अवधि दिखाएँ",
+  "update.available": "अपडेट उपलब्ध है",
+  "update.reload": "पुनः लोड करें",
+  "update.dismiss": "बंद करें"
 }

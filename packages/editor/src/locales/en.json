@@ -335,5 +335,8 @@
   "navigator.toast.renumberedOne": "Renumbered {count} scene.",
   "navigator.toast.renumberedMany": "Renumbered {count} scenes.",
   "navigator.hideSynopsis": "Hide Synopsis & Duration",
-  "navigator.showSynopsis": "Show Synopsis & Duration"
+  "navigator.showSynopsis": "Show Synopsis & Duration",
+  "update.available": "Update available",
+  "update.reload": "Reload",
+  "update.dismiss": "Dismiss"
 }

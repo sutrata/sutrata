@@ -335,5 +335,8 @@
   "navigator.toast.renumberedOne": "{count} രംഗം പുനഃക്രമീകരിച്ച് നമ്പറിട്ടു.",
   "navigator.toast.renumberedMany": "{count} രംഗങ്ങൾ പുനഃക്രമീകരിച്ച് നമ്പറിട്ടു.",
   "navigator.hideSynopsis": "സംഗ്രഹവും ദൈർഘ്യവും മറയ്ക്കുക",
-  "navigator.showSynopsis": "സംഗ്രഹവും ദൈർഘ്യവും കാണിക്കുക"
+  "navigator.showSynopsis": "സംഗ്രഹവും ദൈർഘ്യവും കാണിക്കുക",
+  "update.available": "അപ്‌ഡേറ്റ് ലഭ്യമാണ്",
+  "update.reload": "വീണ്ടും ലോഡ് ചെയ്യുക",
+  "update.dismiss": "അടയ്ക്കുക"
 }

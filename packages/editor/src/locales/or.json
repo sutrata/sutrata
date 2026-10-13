@@ -335,5 +335,8 @@
   "navigator.toast.renumberedOne": "{count}ଟି ଦୃଶ୍ୟକୁ ପୁନଃସଂଖ୍ୟା ଦିଆଗଲା।",
   "navigator.toast.renumberedMany": "{count}ଟି ଦୃଶ୍ୟକୁ ପୁନଃସଂଖ୍ୟା ଦିଆଗଲା।",
   "navigator.hideSynopsis": "ସାରାଂଶ ଓ ଅବଧି ଲୁଚାନ୍ତୁ",
-  "navigator.showSynopsis": "ସାରାଂଶ ଓ ଅବଧି ଦେଖାନ୍ତୁ"
+  "navigator.showSynopsis": "ସାରାଂଶ ଓ ଅବଧି ଦେଖାନ୍ତୁ",
+  "update.available": "ଅପଡେଟ୍ ଉପଲବ୍ଧ",
+  "update.reload": "ପୁନଃ ଲୋଡ୍ କରନ୍ତୁ",
+  "update.dismiss": "ବନ୍ଦ କରନ୍ତୁ"
 }

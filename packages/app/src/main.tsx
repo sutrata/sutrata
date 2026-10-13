@@ -4,6 +4,9 @@ import { App } from './App'
 import { LanguageProvider, TranslationProvider } from '@sutrata/editor'
 import '@sutrata/editor/dist/shell/fonts/fonts.css'
 import '@sutrata/editor/dist/styles/screenplay.css'
+import { registerServiceWorker } from './pwa'
+
+registerServiceWorker()
 
 const root = document.getElementById('root')!
 createRoot(root).render(

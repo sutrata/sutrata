@@ -335,5 +335,8 @@
   "navigator.toast.renumberedOne": "{count} ದೃಶ್ಯಕ್ಕೆ ಮರುಸಂಖ್ಯೆ ನೀಡಲಾಗಿದೆ.",
   "navigator.toast.renumberedMany": "{count} ದೃಶ್ಯಗಳಿಗೆ ಮರುಸಂಖ್ಯೆ ನೀಡಲಾಗಿದೆ.",
   "navigator.hideSynopsis": "ಸಾರಾಂಶ ಮತ್ತು ಅವಧಿ ಮರೆಮಾಡಿ",
-  "navigator.showSynopsis": "ಸಾರಾಂಶ ಮತ್ತು ಅವಧಿ ತೋರಿಸಿ"
+  "navigator.showSynopsis": "ಸಾರಾಂಶ ಮತ್ತು ಅವಧಿ ತೋರಿಸಿ",
+  "update.available": "ಅಪ್‌ಡೇಟ್ ಲಭ್ಯವಿದೆ",
+  "update.reload": "ಮರುಲೋಡ್ ಮಾಡಿ",
+  "update.dismiss": "ಮುಚ್ಚಿ"
 }
