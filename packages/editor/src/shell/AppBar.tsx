@@ -71,6 +71,8 @@ export function AppBar() {
   const name = fileDisplayName ?? filePath ?? 'untitled.sutra'
   // Embedders whose documents are not local files turn these off.
   const localFiles = isFeatureEnabled(useSession(), 'localFiles')
+  // `export: false` removes Export (Word, Fountain, PDF, print) for embedders that control copies.
+  const canExport = isFeatureEnabled(useSession(), 'export')
   const nextMode = mode === 'formatted' ? 'source' : 'formatted'
 
   const handleNew = () => {
@@ -199,14 +201,16 @@ export function AppBar() {
             <span className="cs-ab-sep" />
           </>
         )}
-        <AbBtn
-          label={t('appbar.export')}
-          variant="secondary"
-          active={exportVisible}
-          onClick={() => setExportVisible(!exportVisible)}
-        >
-          <ExportIcon size={18} />
-        </AbBtn>
+        {canExport && (
+          <AbBtn
+            label={t('appbar.export')}
+            variant="secondary"
+            active={exportVisible}
+            onClick={() => setExportVisible(!exportVisible)}
+          >
+            <ExportIcon size={18} />
+          </AbBtn>
+        )}
         {canEdit && (
           <AbBtn label={t('appbar.style')} active={styleVisible} onClick={() => setStyleVisible(!styleVisible)}>
             <StyleIcon size={18} />
@@ -386,24 +390,24 @@ export function AppBar() {
                 <SaveAsIcon size={18} />
                 <span>{t('appbar.saveAs')}</span>
               </button>}
-              <button
+              {canExport && <button
                 type="button"
                 className="cs-mm-item"
                 onClick={() => { setExportVisible(true); setMobileMenuOpen(false) }}
               >
                 <ExportIcon size={18} />
                 <span>{t('appbar.export')}</span>
-              </button>
+              </button>}
             </div>}
-            {!canEdit && <div className="cs-mm-section">
-              <button
+            {!canEdit && canExport && <div className="cs-mm-section">
+              {canExport && <button
                 type="button"
                 className="cs-mm-item"
                 onClick={() => { setExportVisible(true); setMobileMenuOpen(false) }}
               >
                 <ExportIcon size={18} />
                 <span>{t('appbar.export')}</span>
-              </button>
+              </button>}
             </div>}
 
             {appbarCommands.length > 0 && <div className="cs-mm-section">

@@ -16,7 +16,7 @@ import { ConfirmDialog } from './ConfirmDialog'
 import { ToastContainer } from './Toast'
 import { VoiceToolbar } from '../ai/VoiceToolbar'
 import { useSpeech } from '../extensions/speech-provider'
-import { useCanEdit } from '../extensions/session'
+import { useCanEdit, useSession, isFeatureEnabled } from '../extensions/session'
 import { usePanels } from '../extensions/panel-registry'
 import { usePanelContext } from './use-panel-context'
 import { useTranslation } from '../i18n/useTranslation'
@@ -32,6 +32,7 @@ export function AppShell() {
   const [titlePageVisible, setTitlePageVisible] = useState(false)
   const speech = useSpeech()
   const canEdit = useCanEdit()
+  const canExport = isFeatureEnabled(useSession(), 'export')
   const { t } = useTranslation()
   const panelContext = usePanelContext()
   // The scene navigator is the built-in first sidebar tab; embedder sidebar
@@ -111,7 +112,7 @@ export function AppShell() {
       </div>
       <StatusBar />
       <FindReplace />
-      {exportVisible && <ExportDialog />}
+      {exportVisible && canExport && <ExportDialog />}
       {titlePageVisible && canEdit && <TitlePageDialog onClose={() => setTitlePageVisible(false)} />}
       {settingsVisible && <SettingsDialog onClose={() => setSettingsVisible(false)} />}
       {styleVisible && canEdit && <StyleDialog onClose={() => setStyleVisible(false)} />}
