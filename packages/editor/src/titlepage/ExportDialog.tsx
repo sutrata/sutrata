@@ -18,7 +18,7 @@ export function ExportDialog() {
   const { ast, text, filePath, setExportVisible, resolvedStyle, customStyles, showToast } = useDocument()
   const { t } = useTranslation()
   const registered = useRegistryList(useExportRegistry())
-  const exporters = useMemo(() => withBuiltins(builtinExporters(t), registered), [t, registered])
+  const exporters = useMemo(() => withBuiltins(builtinExporters(t), registered).filter(e => !e.hidden), [t, registered])
   const screenplayFormats = exporters.filter(e => e.group === 'screenplay')
   const reportFormats = exporters.filter(e => e.group === 'report')
   const reportFamilies = useMemo(() => {
@@ -82,7 +82,8 @@ export function ExportDialog() {
       const blob = output instanceof Blob ? output : output?.blob
       setWarnings(output && !(output instanceof Blob) ? output.warnings ?? [] : [])
       if (blob) downloadBlob(selected.fileName(ctx), blob)
-      showToast(selected.successMessage ?? t('export.exported').replace('{label}', selected.label), blob ? 'success' : 'info')
+      if (selected.successMessage !== '') showToast(selected.successMessage ?? t('export.exported').replace('{label}', selected.label), blob ? 'success' : 'info')
+      if (selected.closeDialog) setExportVisible(false)
     } catch (err) {
       console.error('Export failed', err)
       setWarnings(['An error occurred during export. Please check the console.'])

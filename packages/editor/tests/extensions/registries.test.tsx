@@ -157,4 +157,22 @@ describe('ExportRegistry', () => {
     expect(screen.getByText('One-Liner Schedule')).toBeInTheDocument()
     click.mockRestore()
   })
+  it('an entry with a built-in id and hidden: true removes it; closeDialog closes after run, with no toast for ""', async () => {
+    const r = createRegistries()
+    const run = vi.fn(async () => {})
+    r.exporters.register({ id: 'pdf', label: 'x', group: 'screenplay', hidden: true, run, fileName: () => 'x' })
+    r.exporters.register({ id: 'oneliner-print', label: 'x', group: 'report', hidden: true, run, fileName: () => 'x' })
+    r.exporters.register({ id: 'ext.open', label: 'Opens elsewhere', group: 'screenplay', successMessage: '', closeDialog: true, run, fileName: () => 'x' })
+    await act(async () => { mount({ exporters: r.exporters }) })
+    await act(async () => { doc.setExportVisible(true) })
+
+    const cards = screen.getAllByRole('radio').map(el => el.textContent)
+    expect(cards.some(c => c?.includes('PDF / Print Preview'))).toBe(false)
+    expect(cards.some(c => c?.includes('Microsoft Word (.docx)'))).toBe(true)
+
+    fireEvent.click(screen.getByText('Opens elsewhere'))
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Download' })) })
+    expect(run).toHaveBeenCalled()
+    expect(doc.exportVisible).toBe(false)
+  })
 })

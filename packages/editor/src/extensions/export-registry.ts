@@ -46,8 +46,12 @@ export interface ExportContribution {
   supports?: { style?: boolean; skipNotes?: boolean; romanize?: boolean }
   run(ctx: ExportContext): Promise<ExportOutput>
   fileName(ctx: ExportContext): string
-  /** Toast shown after a successful export. */
+  /** Toast shown after a successful export; '' for none. */
   successMessage?: string
+  /** An embedder entry with a built-in's id and `hidden: true` takes that format out of the dialog. */
+  hidden?: boolean
+  /** Close the dialog once `run` has finished (for a format that opens something of its own). */
+  closeDialog?: boolean
 }
 
 export type ExportRegistry = RegistryStore<ExportContribution>
