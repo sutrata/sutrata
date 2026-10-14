@@ -20,6 +20,8 @@ export interface PanelRenderContext {
   activeSceneId: string | null
   /** Position of the scene containing the caret among all scene headings, from 0 (numbered or not). */
   activeSceneIndex: number | null
+  /** True while the caret is in the title page (the front matter), not in a scene. */
+  inTitlePage: boolean
 }
 
 /** A panel contributed by the embedder (OSS spec §11.5). */
