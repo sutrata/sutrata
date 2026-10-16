@@ -153,3 +153,52 @@
 .cs-ai-combo-option.is-active { background: var(--cs-ui-bg-panel-subtle, #f4f2ea); }
 .cs-ai-combo-option[aria-selected="true"] { font-weight: 600; color: var(--cs-ui-accent, #c4760a); }
 .cs-ai-combo-empty { padding: 10px 12px; font-size: 13px; color: var(--cs-ui-text-light-muted, #8c897f); }
+
+.cs-ai-hint { font-size: 12px; color: var(--cs-ui-text-light-secondary, #59574f); }
+.cs-ai-input:disabled { background: var(--cs-ui-bg-panel-subtle, #f4f2ea); color: var(--cs-ui-text-light-secondary, #59574f); }
+
+/* Custom endpoint list */
+.cs-ai-endpoint-list {
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+  border: 1px solid var(--cs-ui-border-light, #d6d3c8);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.cs-ai-endpoint {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #fff;
+}
+.cs-ai-endpoint + .cs-ai-endpoint { border-top: 1px solid var(--cs-ui-border-light, #e2e0d6); }
+.cs-ai-endpoint.is-editing { background: var(--cs-ui-bg-panel-subtle, #f4f2ea); }
+.cs-ai-endpoint-info { display: flex; flex-direction: column; min-width: 0; }
+.cs-ai-endpoint-name { font-size: 13px; font-weight: 600; color: var(--cs-ui-text-light-primary, #1c1b18); }
+.cs-ai-endpoint-url {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--cs-ui-text-light-secondary, #59574f);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cs-ai-endpoint-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.cs-ai-endpoint-confirm { font-size: 12px; color: var(--cs-ui-text-light-secondary, #59574f); margin-right: 4px; }
+.cs-ai-btn-danger {
+  padding: 5px 12px;
+  border: 1px solid #b91c1c;
+  border-radius: 4px;
+  background: #b91c1c;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cs-ai-btn-danger:hover { background: #991b1b; }
+.cs-ai-btn-danger:focus-visible,
+.cs-ai-btn-ghost:focus-visible,
+.cs-ai-btn-secondary:focus-visible { outline: 2px solid var(--cs-ui-accent, #c4760a); outline-offset: 2px; }

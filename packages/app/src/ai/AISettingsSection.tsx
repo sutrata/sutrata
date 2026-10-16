@@ -16,8 +16,7 @@ export function AISettingsSection({ openSetup }: { openSetup: () => void }) {
       <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-start' }}>
         <button
           type="button"
-          className="cs-voice-btn-primary"
-          style={{ padding: '6px 12px', fontSize: '12px' }}
+          className="cs-ai-btn-secondary"
           onClick={() => {
             setSettingsVisible(false)
             openSetup()
