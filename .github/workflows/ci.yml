@@ -16,7 +16,7 @@ jobs:
     name: Parser tests
     # Skip the release bot's "Version packages" PR and its merge commit: they
     # only bump versions/changelogs, and the code was already tested on push.
-    if: github.head_ref != 'changeset-release/main' && !startsWith(github.event.head_commit.message, 'chore: version packages')
+    if: "github.head_ref != 'changeset-release/main' && !startsWith(github.event.head_commit.message, 'chore: version packages')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -31,7 +31,7 @@ jobs:
     name: Editor tests + build
     # Skip the release bot's "Version packages" PR and its merge commit: they
     # only bump versions/changelogs, and the code was already tested on push.
-    if: github.head_ref != 'changeset-release/main' && !startsWith(github.event.head_commit.message, 'chore: version packages')
+    if: "github.head_ref != 'changeset-release/main' && !startsWith(github.event.head_commit.message, 'chore: version packages')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -47,7 +47,7 @@ jobs:
     name: App build
     # Skip the release bot's "Version packages" PR and its merge commit: they
     # only bump versions/changelogs, and the code was already tested on push.
-    if: github.head_ref != 'changeset-release/main' && !startsWith(github.event.head_commit.message, 'chore: version packages')
+    if: "github.head_ref != 'changeset-release/main' && !startsWith(github.event.head_commit.message, 'chore: version packages')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -63,7 +63,7 @@ jobs:
     name: Extension contract
     # Skip the release bot's "Version packages" PR and its merge commit: they
     # only bump versions/changelogs, and the code was already tested on push.
-    if: github.head_ref != 'changeset-release/main' && !startsWith(github.event.head_commit.message, 'chore: version packages')
+    if: "github.head_ref != 'changeset-release/main' && !startsWith(github.event.head_commit.message, 'chore: version packages')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -97,7 +97,7 @@ jobs:
     name: Font coverage (tofu gate)
     # Skip the release bot's "Version packages" PR and its merge commit: they
     # only bump versions/changelogs, and the code was already tested on push.
-    if: github.head_ref != 'changeset-release/main' && !startsWith(github.event.head_commit.message, 'chore: version packages')
+    if: "github.head_ref != 'changeset-release/main' && !startsWith(github.event.head_commit.message, 'chore: version packages')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
