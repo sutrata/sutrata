@@ -1,5 +1,13 @@
 # @sutrata/editor
 
+## 0.5.1
+
+### Patch Changes
+
+- 56a015e: Fix the scene pencil's attribute menu opening in the top-left corner: the anchor is now measured before the caret move redraws the pencil.
+- ce69868: Use `crypto.randomUUID()` for toast ids.
+- cd94de9: Add `update.available`, `update.reload` and `update.dismiss` strings to all locales for the app's update prompt.
+
 ## 0.5.0
 
 ### Minor Changes
