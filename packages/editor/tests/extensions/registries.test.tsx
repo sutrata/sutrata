@@ -71,6 +71,25 @@ describe('PanelRegistry', () => {
     expect(screen.getByRole('region', { name: 'Scene info' })).toHaveTextContent('Active: 2')
   })
 
+  it('a sidebar tab with an icon is the icon until it is selected, then the icon and its title; the title stays its name and tooltip', async () => {
+    const r = createRegistries()
+    r.panels.register({ id: 'notes', title: 'Notes', location: 'sidebar', icon: <svg data-testid="notes-icon" />, render: () => <p>Body</p> })
+    r.panels.register({ id: 'plain', title: 'Plain', location: 'sidebar', render: () => <p>Plain body</p> })
+    await act(async () => { mount({ panels: r.panels }) })
+
+    const notes = screen.getByRole('tab', { name: 'Notes' })
+    expect(notes).toHaveAttribute('title', 'Notes')
+    expect(notes.querySelector('.cs-sidebar-tab-label')).toBeNull()
+    expect(screen.getByRole('tab', { name: 'Plain' }).querySelector('.cs-sidebar-tab-label')).not.toBeNull()
+    // The built-in Scenes tab has an icon of its own.
+    expect(screen.getByRole('tab', { name: 'Scenes' }).querySelector('svg')).not.toBeNull()
+
+    fireEvent.click(notes)
+    expect(notes.querySelector('.cs-sidebar-tab-label')).toHaveTextContent('Notes')
+    expect(screen.getByTestId('notes-icon')).toBeInTheDocument()
+    expect(screen.getByRole('tabpanel', { name: 'Notes' })).toHaveTextContent('Body')
+  })
+
   it('the default layout is unchanged without sidebar panels', async () => {
     await act(async () => { mount({}) })
     expect(screen.queryByRole('tablist', { name: 'Sidebar' })).toBeNull()

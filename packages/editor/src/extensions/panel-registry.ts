@@ -29,6 +29,12 @@ export interface PanelContribution {
   id: string
   title: string
   location: PanelLocation
+  /**
+   * A `sidebar` tab's icon (16px, `currentColor`). With one, the tab shows only the icon until it is selected, then the icon and
+   * `title`; `title` is its tooltip and accessible name. Without one the tab is its title, as before. Icons keep a row of tabs
+   * short in every language.
+   */
+  icon?: ReactNode
   /** True if the panel shows the title page form: the title page dialog then stays closed. */
   handlesTitlePage?: boolean
   render(ctx: PanelRenderContext): ReactNode

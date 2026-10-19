@@ -22,6 +22,13 @@ import { usePanelContext } from './use-panel-context'
 import { useTranslation } from '../i18n/useTranslation'
 import { SelectionMenu } from '../editor/SelectionMenu'
 
+/** The built-in Scenes tab's icon: a list. */
+const NavigatorTabIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M5.5 4h8M5.5 8h8M5.5 12h8M2.5 4h.01M2.5 8h.01M2.5 12h.01" />
+  </svg>
+)
+
 export function AppShell() {
   const {
     mode, ribbonVisible, navVisible, setNavVisible, exportVisible, settingsVisible,
@@ -70,18 +77,24 @@ export function AppShell() {
             ) : (
               <div className="cs-sidebar">
                 <div className="cs-sidebar-tabs" role="tablist" aria-label={t('shell.sidebar')}>
-                  {[{ id: 'navigator', title: t('navigator.title') }, ...sidebarPanels].map(p => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={(activeSidebar?.id ?? 'navigator') === p.id}
-                      className={`cs-sidebar-tab${(activeSidebar?.id ?? 'navigator') === p.id ? ' cs-sidebar-tab-active' : ''}`}
-                      onClick={() => setSidebarTab(p.id)}
-                    >
-                      {p.title}
-                    </button>
-                  ))}
+                  {[{ id: 'navigator', title: t('navigator.title'), icon: <NavigatorTabIcon /> as React.ReactNode }, ...sidebarPanels].map(p => {
+                    const active = (activeSidebar?.id ?? 'navigator') === p.id
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={active}
+                        aria-label={p.icon ? p.title : undefined}
+                        title={p.icon ? p.title : undefined}
+                        className={`cs-sidebar-tab${active ? ' cs-sidebar-tab-active' : ''}`}
+                        onClick={e => { setSidebarTab(p.id); e.currentTarget.scrollIntoView?.({ block: 'nearest', inline: 'nearest' }) }}
+                      >
+                        {p.icon}
+                        {(!p.icon || active) && <span className="cs-sidebar-tab-label">{p.title}</span>}
+                      </button>
+                    )
+                  })}
                 </div>
                 {activeSidebar ? (
                   <div className="cs-sidebar-panel" role="tabpanel" aria-label={activeSidebar.title}>
