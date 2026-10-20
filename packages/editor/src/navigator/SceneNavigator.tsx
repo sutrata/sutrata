@@ -17,53 +17,6 @@ import type { AIProvider } from '../extensions/ai-provider'
 import { isFeatureEnabled, useCanEdit, useSession } from '../extensions/session'
 import { prosemirrorToSutra } from '../editor/prosemirror-to-sutra'
 
-/** Update the scene synopsis in the raw Sutra text. */
-function updateSynopsisInText(text: string, sceneOffset: number, newSynopsis: string): string {
-  const lines = text.split('\n')
-  let currentOffset = 0
-  let targetLineIdx = -1
-
-  for (let i = 0; i < lines.length; i++) {
-    if (currentOffset === sceneOffset) {
-      targetLineIdx = i
-      break
-    }
-    currentOffset += (lines[i]?.length ?? 0) + 1
-  }
-
-  if (targetLineIdx === -1) return text
-
-  let synopsisLineIdx = -1
-  let insertIdx = targetLineIdx + 1
-
-  for (let j = targetLineIdx + 1; j < lines.length; j++) {
-    const line = (lines[j] ?? '').trim()
-    if (line.startsWith('##') || line.startsWith('#')) break
-    if (line.startsWith('& synopsis:')) {
-      synopsisLineIdx = j
-      break
-    }
-    if (line.startsWith('&')) {
-      insertIdx = j + 1
-    } else if (line !== '') {
-      break
-    }
-  }
-
-  const newLines = [...lines]
-  if (synopsisLineIdx !== -1) {
-    if (newSynopsis.trim() === '') {
-      newLines.splice(synopsisLineIdx, 1)
-    } else {
-      newLines[synopsisLineIdx] = `& synopsis: ${newSynopsis}`
-    }
-  } else if (newSynopsis.trim() !== '') {
-    newLines.splice(insertIdx, 0, `& synopsis: ${newSynopsis}`)
-  }
-
-  return newLines.join('\n')
-}
-
 /** Update a scene metadata key/value in the raw Sutra text. */
 function updateSceneMetadataInText(text: string, sceneOffset: number, key: string, val: string): string {
   const lines = text.split('\n')
@@ -229,8 +182,6 @@ export function SceneNavigator() {
   // New States
   const [showNavSynopsis, setShowNavSynopsis] = useState(true)
   const [statsOpen, setStatsOpen] = useState(false)
-  const [editingSceneIdx, setEditingSceneIdx] = useState<number | null>(null)
-  const [editVal, setEditVal] = useState('')
 
   // AI Generation States
   const [isProcessing, setIsProcessing] = useState(false)
@@ -480,70 +431,6 @@ export function SceneNavigator() {
     [canEdit, dragIndex, text, scenes, setText]
   )
 
-  const commitSynopsis = useCallback((idx: number, scene: SceneEntry) => {
-    setEditingSceneIdx(null)
-    const newSynopsis = editVal.trim()
-    if (newSynopsis === scene.synopsis) return
-
-    const view = getEditorView()
-    if (view) {
-      let headingPmPos: number | null = null
-      let headingCount = 0
-      view.state.doc.forEach((node, offset) => {
-        if (headingPmPos !== null) return
-        if (node.type.name === 'scene_heading') {
-          headingCount++
-          if (headingCount === scene.index) headingPmPos = offset
-        }
-      })
-
-      if (headingPmPos !== null) {
-        let tr = view.state.tr
-        let existingPos: number | null = null
-        let index = view.state.doc.resolve(headingPmPos).index(0) + 1
-        let pos = headingPmPos + view.state.doc.nodeAt(headingPmPos)!.nodeSize
-
-        while (index < view.state.doc.childCount) {
-          const sibling = view.state.doc.child(index)
-          if (sibling.type.name === 'scene_metadata') {
-            if (sibling.attrs['metaKey'] === 'synopsis') {
-              existingPos = pos
-              break
-            }
-          } else {
-            break
-          }
-          pos += sibling.nodeSize
-          index++
-        }
-
-        if (existingPos !== null) {
-          const node = view.state.doc.nodeAt(existingPos)!
-          if (newSynopsis === '') {
-            tr = tr.delete(existingPos, existingPos + node.nodeSize)
-          } else {
-            tr = tr.replaceWith(
-              existingPos + 1,
-              existingPos + node.nodeSize - 1,
-              schema.text(newSynopsis)
-            )
-          }
-        } else if (newSynopsis !== '') {
-          const insertPos = headingPmPos + view.state.doc.nodeAt(headingPmPos)!.nodeSize
-          const metaNode = schema.nodes['scene_metadata']!.create(
-            { metaKey: 'synopsis' },
-            schema.text(newSynopsis)
-          )
-          tr = tr.insert(insertPos, metaNode)
-        }
-        view.dispatch(tr)
-      }
-    } else {
-      const nextText = updateSynopsisInText(text, scene.textOffset, newSynopsis)
-      setText(nextText)
-    }
-  }, [editVal, text, setText])
-
   /**
    * Current editor text: the navigator's `text` can lag the editor by a
    * render, and these actions rewrite whole scenes.
@@ -733,57 +620,8 @@ export function SceneNavigator() {
               {showNavSynopsis && (
                 <div className="cs-nav-synopsis-row" style={{ marginTop: '4px' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    {!canEdit ? (
-                      scene.synopsis ? <div className="cs-nav-scene-synopsis">{scene.synopsis}</div> : null
-                    ) : editingSceneIdx === idx ? (
-                      <input
-                        type="text"
-                        className="cs-nav-synopsis-input"
-                        value={editVal}
-                        onChange={e => setEditVal(e.target.value)}
-                        onBlur={() => commitSynopsis(idx, scene)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') commitSynopsis(idx, scene)
-                          if (e.key === 'Escape') setEditingSceneIdx(null)
-                        }}
-                        autoFocus
-                        onClick={e => e.stopPropagation()}
-                      />
-                    ) : scene.synopsis ? (
-                      <div
-                        className="cs-nav-scene-synopsis"
-                        onClick={e => {
-                          e.stopPropagation()
-                          setEditingSceneIdx(idx)
-                          setEditVal(scene.synopsis)
-                        }}
-                        title={t('navigator.editSynopsis')}
-                      >
-                        {scene.synopsis}
-                      </div>
-                    ) : (
-                      <div
-                        className="cs-nav-scene-synopsis cs-nav-synopsis-placeholder"
-                        onClick={e => {
-                          e.stopPropagation()
-                          setEditingSceneIdx(idx)
-                          setEditVal('')
-                        }}
-                        role="button"
-                        tabIndex={0}
-                        aria-label={t('navigator.addSynopsis')}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.stopPropagation()
-                            e.preventDefault()
-                            setEditingSceneIdx(idx)
-                            setEditVal('')
-                          }
-                        }}
-                      >
-                        + Synopsis
-                      </div>
-                    )}
+                    {/* Read-only: a click anywhere on the scene goes to it. The synopsis is edited in the scene details. */}
+                    {scene.synopsis ? <div className="cs-nav-scene-synopsis">{scene.synopsis}</div> : null}
                   </div>
 
                   {ai && <button
