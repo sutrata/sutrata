@@ -8,6 +8,8 @@ import {
   deleteApiKey,
   listModels,
   testConnection,
+  parseExtraBody,
+  getExtraBody,
   isKeyOptional,
   AIConfig,
   ModelConfig,
@@ -38,6 +40,7 @@ export function ProviderSettings() {
   const [models, setModels] = useState<ModelsState>({ status: 'no-key' })
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle')
   const [testError, setTestError] = useState('')
+  const [extraBodyError, setExtraBodyError] = useState('')
 
   const providers = getProviders(config)
   const provider = providers.find(p => p.id === config.activeProvider)
@@ -91,6 +94,20 @@ export function ProviderSettings() {
 
   const selectModel = (id: string) => {
     updateConfig(c => ({ ...c, modelByProvider: { ...c.modelByProvider, [c.activeProvider]: id } }))
+    setExtraBodyError('')
+  }
+
+  const savedExtraBody = model ? getExtraBody(config, config.activeProvider, model) : undefined
+  const saveExtraBody = (text: string) => {
+    const parsed = parseExtraBody(text)
+    if (!parsed.ok) { setExtraBodyError(parsed.error); return }
+    setExtraBodyError('')
+    updateConfig(c => {
+      const forProvider = { ...c.extraBodyByModel?.[c.activeProvider] }
+      if (parsed.value) forProvider[model] = parsed.value
+      else delete forProvider[model]
+      return { ...c, extraBodyByModel: { ...c.extraBodyByModel, [c.activeProvider]: forProvider } }
+    })
   }
 
   const handleTest = async () => {
@@ -104,7 +121,7 @@ export function ProviderSettings() {
     setTestStatus('testing')
     setTestError('')
     try {
-      await testConnection(provider, key.trim(), model || undefined)
+      await testConnection(provider, key.trim(), model || undefined, savedExtraBody)
       setTestStatus('success')
     } catch (e: any) {
       setTestStatus('error')
@@ -219,6 +236,27 @@ export function ProviderSettings() {
           </span>
         )}
       </div>
+
+      {model && (
+        <div className="cs-ai-field">
+          <label className="cs-ai-label" htmlFor="cs-ai-extra-body">Extra request body for this model (optional)</label>
+          <input
+            id="cs-ai-extra-body"
+            className="cs-ai-input is-mono"
+            key={`${config.activeProvider}/${model}`}
+            defaultValue={savedExtraBody ? JSON.stringify(savedExtraBody) : ''}
+            onBlur={e => saveExtraBody(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') saveExtraBody(e.currentTarget.value) }}
+            placeholder='{"chat_template_kwargs": {"enable_thinking": false}}'
+            spellCheck={false}
+            aria-describedby="cs-ai-extra-body-hint"
+          />
+          <span id="cs-ai-extra-body-hint" className="cs-ai-hint">
+            A JSON object added to every request to {model}, for switches the model understands, such as turning off a reasoning model's thinking. Kept separately for each provider and model.
+          </span>
+          {extraBodyError && <span className="cs-ai-status is-error" role="alert">{extraBodyError}</span>}
+        </div>
+      )}
 
       <div className="cs-ai-actions">
         <button

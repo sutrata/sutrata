@@ -22,6 +22,26 @@ export interface AIConfig {
   modelByProvider: Record<string, string>;
   /** User-added endpoints; one with a bundled provider's id replaces it. */
   customProviders: ProviderConfig[];
+  /** JSON merged into the request body for one model at one provider, by
+   * provider id then model id. Which switches a model understands depends on
+   * the model (e.g. {"chat_template_kwargs":{"enable_thinking":false}} to stop
+   * a reasoning model thinking aloud) and on how the provider spells them, so
+   * it is kept per pair. The fields the app sets itself (model, messages,
+   * temperature, response_format) always win. */
+  extraBodyByModel?: Record<string, Record<string, Record<string, unknown>>>;
+}
+
+export function getExtraBody(config: AIConfig, providerId: string, model: string): Record<string, unknown> | undefined {
+  return config.extraBodyByModel?.[providerId]?.[model];
+}
+
+/** Parses the "extra request body" field: empty means none, anything but a JSON object is an error message. */
+export function parseExtraBody(text: string): { ok: true; value?: Record<string, unknown> } | { ok: false; error: string } {
+  if (!text.trim()) return { ok: true };
+  let parsed: unknown;
+  try { parsed = JSON.parse(text); } catch { return { ok: false, error: 'Extra request body is not valid JSON.' }; }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { ok: false, error: 'Extra request body must be a JSON object, like {"key": "value"}.' };
+  return { ok: true, value: parsed as Record<string, unknown> };
 }
 
 /** Opaque JSON Schema object — forwarded into provider request bodies and/or
@@ -175,7 +195,8 @@ async function invokeProvider(
   key: string,
   prompt: string,
   systemPrompt: string,
-  responseSchema?: JsonSchema
+  responseSchema?: JsonSchema,
+  extraBody?: Record<string, unknown>
 ): Promise<string> {
   let url = '';
   let headers: Record<string, string> = {};
@@ -186,6 +207,7 @@ async function invokeProvider(
     url = `${provider.baseUrl}/messages`;
     headers = { ...authHeaders(provider, key), 'content-type': 'application/json' };
     body = {
+      ...extraBody,
       model,
       max_tokens: 2000,
       system: systemPrompt,
@@ -212,6 +234,7 @@ async function invokeProvider(
       ? `${systemPrompt}\n\n[OUTPUT FORMAT]\nRespond with ONLY a single JSON object matching this JSON schema — no markdown fences, no commentary, no extra text before or after it:\n${JSON.stringify(responseSchema)}`
       : systemPrompt;
     body = {
+      ...extraBody,
       model,
       messages: [
         { role: 'system', content: effectiveSystemPrompt },
@@ -252,7 +275,12 @@ async function invokeProvider(
     if (!text) throw new Error('Invalid response from Anthropic: missing content text');
     return text;
   } else {
-    const text = res.data?.choices?.[0]?.message?.content;
+    const choice = res.data?.choices?.[0];
+    // Some hosts (Cloudflare Workers AI with thinking switched off) put the whole answer in
+    // `reasoning_content` and leave `content` null. If the model ran out of room, that field
+    // holds unfinished thinking, not an answer.
+    const text = choice?.message?.content
+      || (choice?.finish_reason === 'length' ? '' : choice?.message?.reasoning_content || choice?.message?.reasoning);
     if (!text) throw new Error(`Invalid response from ${provider.name}: missing message content`);
     return text;
   }
@@ -408,7 +436,7 @@ async function resolveAndInvoke(
   notifySubscribers();
 
   try {
-    return await invokeProvider(provider, model, key, prompt, systemPrompt, responseSchema);
+    return await invokeProvider(provider, model, key, prompt, systemPrompt, responseSchema, getExtraBody(config, provider.id, model));
   } catch (e: any) {
     if (e instanceof ModelUnavailableError) throw e;
     throw new Error(`AI generation failed. [${provider.name} / ${model}] ${e.message || String(e)}`);
@@ -532,9 +560,9 @@ export async function listModels(
  * Verifies the key: with a model, by a one-word completion against it;
  * without one, by listing the provider's models (no tokens spent).
  */
-export async function testConnection(provider: ProviderConfig, apiKey: string, model?: string): Promise<void> {
+export async function testConnection(provider: ProviderConfig, apiKey: string, model?: string, extraBody?: Record<string, unknown>): Promise<void> {
   if (model) {
-    const text = await invokeProvider(provider, model, apiKey, 'Hello, reply with one word: OK', 'Connection test verification.');
+    const text = await invokeProvider(provider, model, apiKey, 'Hello, reply with one word: OK', 'Connection test verification.', undefined, extraBody);
     if (!text.trim()) throw new Error('Empty response from provider.');
     return;
   }

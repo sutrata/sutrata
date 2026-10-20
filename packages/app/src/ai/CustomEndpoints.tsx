@@ -82,10 +82,13 @@ export function CustomEndpoints({ onGoToKeys }: Props) {
     const customProviders = current.customProviders.filter(p => p.id !== providerId)
     const modelByProvider = { ...current.modelByProvider }
     delete modelByProvider[providerId]
+    const extraBodyByModel = { ...current.extraBodyByModel }
+    delete extraBodyByModel[providerId]
     saveAIConfig({
       ...current,
       customProviders,
       modelByProvider,
+      extraBodyByModel,
       activeProvider: current.activeProvider === providerId ? 'anthropic' : current.activeProvider,
     })
     await deleteApiKey(providerId)

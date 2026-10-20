@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { extractJson, listModels, isAIConfigured, callAI, setApiKey, deleteApiKey, ModelUnavailableError, ProviderConfig } from '../src/ai/ai-client';
+import { extractJson, listModels, isAIConfigured, callAI, setApiKey, deleteApiKey, ModelUnavailableError, parseExtraBody, getExtraBody, testConnection, ProviderConfig } from '../src/ai/ai-client';
 
 describe('extractJson', () => {
   it('parses a clean JSON object', () => {
@@ -184,5 +184,57 @@ describe('isAIConfigured', () => {
     expect(await isAIConfigured(config)).toBe(true);
     expect(await isAIConfigured({ ...config, modelByProvider: {} })).toBe(false);
     await deleteApiKey('anthropic');
+  });
+});
+
+describe('extra request body', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('parses the settings field: empty is none, only a JSON object is accepted', () => {
+    expect(parseExtraBody('  ')).toEqual({ ok: true });
+    expect(parseExtraBody('{"a":{"b":false}}')).toEqual({ ok: true, value: { a: { b: false } } });
+    expect(parseExtraBody('{oops')).toMatchObject({ ok: false });
+    expect(parseExtraBody('[1]')).toMatchObject({ ok: false });
+    expect(parseExtraBody('"x"')).toMatchObject({ ok: false });
+  });
+
+  it('is merged into the chat request without overriding what the app sets', async () => {
+    const provider: ProviderConfig = { id: 'cf', name: 'Cloudflare', baseUrl: 'https://example.test/v1' };
+    const m = mockFetch(() => [200, { choices: [{ message: { content: 'OK' } }] }]);
+    try {
+      await testConnection(provider, 'k', 'real-model', { chat_template_kwargs: { enable_thinking: false }, model: 'sneaky', temperature: 9 });
+      expect(m.calls[0]!.body).toMatchObject({ model: 'real-model', temperature: 0.1, chat_template_kwargs: { enable_thinking: false } });
+    } finally { m.restore(); }
+  });
+
+  it('is looked up per provider and model, and used by real calls only for the chosen pair', async () => {
+    await setApiKey('cf', 'k');
+    const cfg = {
+      activeProvider: 'cf', modelByProvider: { cf: 'gemma' }, customProviders: [{ id: 'cf', name: 'Cloudflare', baseUrl: 'https://example.test/v1' }],
+      extraBodyByModel: { cf: { gemma: { chat_template_kwargs: { enable_thinking: false } } } },
+    };
+    expect(getExtraBody(cfg, 'cf', 'gemma')).toEqual({ chat_template_kwargs: { enable_thinking: false } });
+    expect(getExtraBody(cfg, 'cf', 'other-model')).toBeUndefined();
+    expect(getExtraBody(cfg, 'groq', 'gemma')).toBeUndefined();
+    expect(getExtraBody({ ...cfg, extraBodyByModel: undefined }, 'cf', 'gemma')).toBeUndefined();
+    const m = mockFetch(() => [200, { choices: [{ message: { content: 'hi' } }] }]);
+    try {
+      await callAI('p', 's', cfg);
+      expect(m.calls[0]!.body.chat_template_kwargs).toEqual({ enable_thinking: false });
+    } finally { m.restore(); }
+  });
+
+  it('takes the answer from reasoning_content when content is null, unless the model ran out of room', async () => {
+    const provider: ProviderConfig = { id: 'cf', name: 'Cloudflare', baseUrl: 'https://example.test/v1' };
+    let message: any = { content: null, reasoning_content: 'OK' };
+    let finish = 'stop';
+    const m = mockFetch(() => [200, { choices: [{ message, finish_reason: finish }] }]);
+    try {
+      await expect(testConnection(provider, 'k', 'm')).resolves.toBeUndefined();
+      message = { content: 'real', reasoning_content: 'thinking aloud' };
+      await expect(testConnection(provider, 'k', 'm')).resolves.toBeUndefined();
+      message = { content: null, reasoning_content: 'half a thought' }; finish = 'length';
+      await expect(testConnection(provider, 'k', 'm')).rejects.toThrow(/missing message content/);
+    } finally { m.restore(); }
   });
 });
