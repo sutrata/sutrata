@@ -1,5 +1,11 @@
 # @sutrata/editor
 
+## 0.6.0
+
+### Minor Changes
+
+- 2e84728: Sidebar panels can give an `icon`. A tab with one shows only the icon until it is selected (its title is the tooltip and accessible name), and the tab row scrolls sideways when it holds more tabs than fit.
+
 ## 0.5.1
 
 ### Patch Changes
